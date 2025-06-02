@@ -1,5 +1,4 @@
-﻿using Comfort.Common;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
@@ -7,6 +6,7 @@ using Paulov.Tarkov.WebServer.DOTNET.Models;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels.Survey;
+using Paulov.Tarkov.WebServer.DOTNET.Services;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -132,24 +132,20 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 if (!items.ContainsKey("time"))
                     items.Add("time", DateTime.Now.Ticks / 1000);
 
-                //await HttpBodyConverters.CompressIntoResponseBodyBSG(document.RootElement.GetRawText(), Request, Response);
-
                 var rawText = items.ToJson();
 
-                Singleton<BackendConfigSettingsClass>.Create(items["config"].ToObject<BackendConfigSettingsClass>());
-                _ = Singleton<BackendConfigSettingsClass>.Instance;
+                //Singleton<BackendConfigSettingsClass>.Create(items["config"].ToObject<BackendConfigSettingsClass>());
+                //_ = Singleton<BackendConfigSettingsClass>.Instance;
+                GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
 
                 return new BSGSuccessBodyResult(rawText);
             }
             else
             {
                 Response.StatusCode = 500;
-                return new JsonResult("FUCKED");
+                return new JsonResult("BAD");
 
             }
-            //if (DatabaseProvider.TryLoadGlobalsArena(out var items))
-            //    await HttpBodyConverters.CompressIntoResponseBodyBSG(items, Request, Response);
-
         }
 
 

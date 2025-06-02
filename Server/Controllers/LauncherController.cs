@@ -6,6 +6,12 @@ using System.Text;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
+    /// <summary>
+    /// Provides endpoints for user authentication, registration, and server connectivity in the launcher.
+    /// </summary>
+    /// <remarks>This controller includes methods for logging in, registering a new user, and interacting with
+    /// the server. It handles HTTP POST requests and produces JSON responses. Use this controller to manage user
+    /// profiles and establish server connections.</remarks>
     [ApiController]
     [Produces("application/json")]
     public class LauncherController : ControllerBase
@@ -16,7 +22,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         /// Login to the Server
         /// </summary>
         /// <returns></returns>
-        //[HttpPost(Name = "login")]
         [Route("launcher/profile/login", Name = "LauncherLogin")]
         [Route("launcher/profile/login/{username}", Name = "LauncherLoginWithUsername")]
         [HttpPost]

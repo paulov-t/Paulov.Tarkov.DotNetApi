@@ -1,4 +1,5 @@
 ﻿using ChatShared;
+using EFT;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -6,9 +7,18 @@ using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Models;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
+using Paulov.Tarkov.WebServer.DOTNET.Services;
 
 namespace Paulov.Tarkov.Web.Api.Controllers
 {
+    /// <summary>
+    /// Provides functionality for managing game profiles, including creating and searching profiles.
+    /// </summary>
+    /// <remarks>This controller handles operations related to game profiles, such as creating new profiles
+    /// and searching for existing ones. It interacts with session data and utilizes a save provider to manage profile
+    /// persistence.</remarks>
+    [ApiController]
+    [Produces("application/json")]
     public class GameProfileController : ControllerBase
     {
 
@@ -31,88 +41,96 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Create a Profile
+        /// </summary>
+        /// <returns></returns>
         [Route("client/game/profile/create")]
         [HttpPost]
-        public async void ProfileCreate()
+        public async Task<IActionResult> ProfileCreate()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            var gameMode = HttpContext.Session.GetString("GameMode");
+            var gameMode = HttpContext.Session != null && HttpContext.Session.GetString("GameMode") != null ? HttpContext.Session.GetString("GameMode") : "pve";
 
+            var sessionId = SessionId;
             var profile = saveProvider.LoadProfile(SessionId);
             if (profile == null)
             {
+#if DEBUG
+                sessionId = saveProvider.GetProfiles().Keys.First();
+                // if we are running from Swagger and havent "logged in". just get this here
+                profile = saveProvider.LoadProfile(sessionId);
+#else
                 Response.StatusCode = 500;
                 return;
+#endif
             }
+
+            if (requestBody == null || !requestBody.ContainsKey("side"))
+            {
+                if (requestBody == null)
+                    requestBody = new Dictionary<string, object>();
+
+                requestBody.Add("side", "usec");
+                requestBody.Add("nickname", "Swagger");
+                requestBody.Add("headId", "60a6aaad42fd2735e4589978");
+                requestBody.Add("voiceId", "5fc615110b735e7b024c76ea");
+            }
+
+            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
 
             if (!DatabaseProvider.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
             {
                 Response.StatusCode = 500;
-                return;
+                return new BSGErrorBodyResult(500, "");
             }
 
             if (!DatabaseProvider.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
             {
                 Response.StatusCode = 500;
-                return;
+                return new BSGErrorBodyResult(500, "");
             }
 
             var template = profileTemplates[(string)profile.Edition][requestBody["side"].ToString().ToLower()]["character"];
             template["Customization"]["Head"] = requestBody["headId"].ToString();
-            template["_id"] = SessionId;
+            template["_id"] = sessionId;
             template["aid"] = new Random().Next(100000, 500000);
             template["savage"] = null;
             template["Info"]["Nickname"] = requestBody["nickname"].ToString();
             template["Info"]["LowerNickname"] = requestBody["nickname"].ToString().ToLower();
             template["Info"]["RegistrationDate"] = new Random().Next(100000, 500000);// (long)Math.Floor((decimal)DateTime.Now.Ticks / 1000);
             template["Info"]["Voice"] = customizationTemplates[requestBody["voiceId"].ToString()]["_name"];
+            template["Stats"] = JToken.FromObject(new GClass2021()
+            {
+                Eft = new GClass2020()
+                {
+
+                }
+                ,
+                Arena = new GClass2020()
+                {
+
+                }
+            });
+            template["WishList"] = JToken.FromObject(new Dictionary<MongoID, byte>());
             // Get Template Profile
-            var pmcData = template.ToObject<AccountProfileCharacter2>();
+            var pmcData = template.ToObject<AccountProfileCharacter>();
             if (pmcData == null)
             {
                 Response.StatusCode = 500;
-                return;
+                return new BSGErrorBodyResult(500, "");
             }
 
-            if (!DatabaseProvider.TryLoadCustomization(out var customization))
-            {
-                Response.StatusCode = 500;
-                return;
-            }
-
-            pmcData.Id = SessionId;
-            if (requestBody == null)
-            {
-                Response.StatusCode = 412; // pre condition
-                return;
-            }
-
-            if (!requestBody.ContainsKey("nickname"))
-            {
-                Response.StatusCode = 412; // pre condition
-                return;
-            }
-
-            var pmcDataInfo = pmcData.Info;
-            pmcDataInfo.Nickname = requestBody["nickname"].ToString();
-            pmcDataInfo.Nickname = requestBody["nickname"].ToString().ToLower();
-            //pmcDataInfo.RegistrationDate = (int)Math.Round((DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds);
-            //pmcDataInfo.Voice = ((JToken)customization[requestBody["voiceId"].ToString()])["_name"];
-
-            //var pmcCustomizationInfo = ((JToken)pmcData["Customization"]).ToObject<Dictionary<string, dynamic>>();
-            //pmcCustomizationInfo["Head"] = requestBody["headId"].ToString();
-            //pmcData["Customization"] = pmcCustomizationInfo;
-
-            //profile.Characters["pmc"] = JObject.Parse(pmcData.ToJson());
-            //profile.Characters["scav"] = null;
-            //profile.Info["wipe"] = false;
+            profile.CurrentMode = gameMode;
+            saveProvider.GetAccountProfileMode(sessionId).Characters.PMC = pmcData;
 
             saveProvider.CleanIdsOfInventory(profile);
-            saveProvider.SaveProfile(SessionId, profile);
+            saveProvider.SaveProfile(sessionId, profile);
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(profile), Request, Response);
             requestBody = null;
+
+            return new BSGSuccessBodyResult(JsonConvert.SerializeObject(profile));
 
         }
 

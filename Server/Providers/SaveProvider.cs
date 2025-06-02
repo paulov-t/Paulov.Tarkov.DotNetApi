@@ -83,6 +83,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             if (prof == null)
                 return null;
 
+            if (prof.Modes == null)
+                prof.Modes = new AccountProfileModes();
+
             switch (prof.CurrentMode)
             {
                 case "regular":
