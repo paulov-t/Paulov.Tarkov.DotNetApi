@@ -1,7 +1,6 @@
 ﻿//using ComponentAce.Compression.Libs.zlib;
 using ComponentAce.Compression.Libs.zlib;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SIT.BSGHelperLibrary;
@@ -11,7 +10,6 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.IO;
 using System.IO.Compression;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -220,41 +218,27 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
                     .Replace("/[\t]/g", "")
                     .Replace("/[\\]/g", "")
                     ;
-                //.replace(/[\f] / g, "")
-                //.replace(/[\n] / g, "")
-                //.replace(/[\r] / g, "")
-                //.replace(/[\t] / g, "")
-                //.replace(/[\\] / g, "");
             }
 
             if (!response.Headers.IsReadOnly)
             {
-                //response.Headers.Add("content-encoding", "deflate");
-                //response.Headers.Add("accept-encoding", "deflate");
-                response.Headers.Append("Content-Type", "application/json");
-                //response.Headers.Add("Transfer-Encoding", "chunked");
-                //if(!response.Headers.ContainsKey("Set-Cookie"))
-                //    response.Headers.Add("Set-Cookie", $"PHPSESSID=");
+                // Must send application/json responses
+                if (!response.Headers.ContainsKey("content-type") || response.Headers["content-type"] != "application/json")
+                    response.Headers["content-type"] = "application/json";
+
+                // If we are not Unity / Tarkov, then instruct client to deflate
+                if (request.Headers.ContainsKey("user-agent") && !request.Headers["user-agent"].ToString().StartsWith("Unity"))
+                    response.Headers["content-encoding"] = "deflate";
             }
-            response.ContentType = "application/json";
             response.StatusCode = 200;
 
+            // Zlib Compress the String
             if (!string.IsNullOrEmpty(stringToConvert))
             {
-                if (request.Headers.AcceptEncoding == "deflate, gzip" || request.Headers.AcceptEncoding == "deflate")
-                {
-                    var bytes = SimpleZlib.CompressToBytes(stringToConvert, 6);
-                    GC.AddMemoryPressure(bytes.Length);
-                    var rom = new ReadOnlyMemory<byte>(bytes);
-                    response.Headers.ContentLength = rom.Length;
-                    await response.BodyWriter.WriteAsync(rom);
-                    bytes = null;
-
-                }
-                else
-                {
-                    await response.BodyWriter.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(stringToConvert)));
-                }
+                var bytes = SimpleZlib.CompressToBytes(stringToConvert, 6);
+                response.Headers.ContentLength = bytes.Length;
+                await response.BodyWriter.WriteAsync(new ReadOnlyMemory<byte>(bytes));
+                bytes = null;
             }
             stringToConvert = null;
         }
