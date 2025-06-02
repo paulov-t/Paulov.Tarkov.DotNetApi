@@ -71,7 +71,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
 
         public ProfileModel LoadProfile(string sessionId)
         {
-            if (sessionId == null) return null;
+            if (string.IsNullOrEmpty(sessionId))
+                return null;
 
             var prof = Profiles[sessionId] as ProfileModel;
             //CleanIdsOfInventory(prof);
