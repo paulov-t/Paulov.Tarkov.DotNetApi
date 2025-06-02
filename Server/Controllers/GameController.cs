@@ -136,7 +136,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
                 var rawText = items.ToJson();
 
-                Singleton<BackendConfigSettingsClass>.Create(items.ToObject<BackendConfigSettingsClass>());
+                Singleton<BackendConfigSettingsClass>.Create(items["config"].ToObject<BackendConfigSettingsClass>());
+                _ = Singleton<BackendConfigSettingsClass>.Instance;
 
                 return new BSGSuccessBodyResult(rawText);
             }

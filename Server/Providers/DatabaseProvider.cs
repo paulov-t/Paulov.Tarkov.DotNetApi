@@ -156,7 +156,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             var filePath = ConvertPath(databaseFilePath);
 
             var jsonDocument = GetJsonDocument(databaseFilePath);
-            dbFile = JObject.Parse(jsonDocument.RootElement.GetRawText());
+            var rawText = jsonDocument.RootElement.GetRawText();
+            dbFile = JObject.Parse(rawText, CachedJsonLoadSettings);
 
             result = dbFile != null;
             return result;

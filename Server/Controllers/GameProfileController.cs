@@ -52,8 +52,21 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 return;
             }
 
-            var template = profileTemplates[(string)profile.Edition][requestBody["side"].ToString().ToLower()]["character"];
+            if (!DatabaseProvider.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            {
+                Response.StatusCode = 500;
+                return;
+            }
 
+            var template = profileTemplates[(string)profile.Edition][requestBody["side"].ToString().ToLower()]["character"];
+            template["Customization"]["Head"] = requestBody["headId"].ToString();
+            template["_id"] = SessionId;
+            template["aid"] = new Random().Next(100000, 500000);
+            template["savage"] = null;
+            template["Info"]["Nickname"] = requestBody["nickname"].ToString();
+            template["Info"]["LowerNickname"] = requestBody["nickname"].ToString().ToLower();
+            template["Info"]["RegistrationDate"] = new Random().Next(100000, 500000);// (long)Math.Floor((decimal)DateTime.Now.Ticks / 1000);
+            template["Info"]["Voice"] = customizationTemplates[requestBody["voiceId"].ToString()]["_name"];
             // Get Template Profile
             var pmcData = template.ToObject<AccountProfileCharacter2>();
             if (pmcData == null)
