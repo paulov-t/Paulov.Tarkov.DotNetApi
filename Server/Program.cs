@@ -39,7 +39,13 @@ namespace SIT.WebServer
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             //builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo());
+
+                var filePath = Path.Combine(System.AppContext.BaseDirectory, "Paulov.Tarkov.WebServer.DOTNET.xml");
+                c.IncludeXmlComments(filePath);
+            });
 
 
             builder.Services.AddDistributedMemoryCache();
