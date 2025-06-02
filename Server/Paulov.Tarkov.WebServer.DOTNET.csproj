@@ -18,15 +18,10 @@
 		<None Include="$(ProjectDir)assets\**" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <None Remove="files\files.zip" />
-	  <None Remove="G:\Work\Tarkov\Paulov\Web\Paulov.Tarkov.WebServer.DOTNET\Server\assets\database.zip" />
-	  <None Remove="G:\Work\Tarkov\Paulov\Web\Paulov.WebServer\Server\assets\database.zip" />
-	</ItemGroup>
 
 	<ItemGroup>
 	  <EmbeddedResource Include="files\files.zip" />
-	  <EmbeddedResource Include="G:\Work\Tarkov\Paulov\Web\Paulov.Tarkov.WebServer.DOTNET\Server\assets\database.zip" />
+	  <EmbeddedResource Include="assets\database.zip" />
 	</ItemGroup>
 
 	<ItemGroup>
