@@ -1,0 +1,81 @@
+﻿@{
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>
+        Paulov-t Offline Tarkov Web Server
+    </title>
+
+    <meta name="description" content="Paulov's Tarkov API for Offline 'SPT-like' play, Tarkov Ammo & Item Prices">
+
+    <script src="https://kit.fontawesome.com/8e79626818.js" crossorigin="anonymous"></script>
+    <link rel='stylesheet' href='https://bootswatch.com/5/darkly/bootstrap.min.css' crossorigin="anonymous" />
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark justify-content-between">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <img src="files/prestige/675864ffa4c475834b0de8ff.png" width="25" />&nbsp;Paulov-t
+            </a>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/swagger">
+                            <i class="fa-solid fa-file-code"></i>&nbsp;
+                            Swagger API Docs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/ammo">
+                            <i class="fa-solid fa-bullseye"></i>&nbsp;
+                            Ammo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/items">
+                            <i class="fa-solid fa-box"></i>&nbsp;
+                            Items
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/traders">
+                            <i class="fa-solid fa-user-tie"></i>&nbsp;
+                            Traders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/live-players">
+                            <i class="fa-solid fa-users"></i>&nbsp;
+                            Live Players
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://github.com/paulov-t/Paulov.Tarkov.DotNetApi" target="_blank">
+                            <i class="fa fa-github" aria-hidden="true"></i>&nbsp;
+                            GitHub
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://ko-fi.com/paulovt" target="_blank">
+                            <i class="fa fa-coffee" aria-hidden="true"></i>&nbsp;
+                            Ko-Fi
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+
+    </nav>
+    <div class="mb-5"></div>
+
+
+    <div class="container-fluid mt-5">
+        <div class="container">
+            @RenderBody()
+        </div>
+    </div>
+</body>
+</html>
