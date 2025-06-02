@@ -49,7 +49,20 @@ namespace Paulov.Tarkov.WebServer.DOTNET.ResponseModels
         {
             ArgumentNullException.ThrowIfNull(context);
 
-            return HttpBodyConverters.CompressIntoResponseBodyBSG(BodyValue, context.HttpContext.Request, context.HttpContext.Response);
+            var responseText = "";
+
+            if (BodyValue is Array)
+            {
+                var data = BodyValue != null ? BodyValue?.ToJson() : null;
+                responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+            }
+            else
+            {
+                var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
+                responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+            }
+
+            return HttpBodyConverters.CompressStringIntoResponseBody(responseText, context.HttpContext.Request, context.HttpContext.Response);
         }
     }
 }
