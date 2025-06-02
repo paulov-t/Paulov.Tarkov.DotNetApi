@@ -1,13 +1,7 @@
-﻿using ComponentAce.Compression.Libs.zlib;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.AspNetCore.Server.HttpSys;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Microsoft.AspNetCore.Mvc;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
-using System.IO.Compression;
+using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 using System.Text;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
@@ -83,17 +77,19 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         }
 
 
-        //[Route("/launcher/server/connect", Name = "LauncherConnect")]
-        //[HttpPost]
-        //public void LauncherServerConnect(int? retry, bool? debug)
-        //{
-        //}
+        [Route("/launcher/server/connect", Name = "LauncherConnect")]
+        [HttpPost]
+        public async Task<IActionResult> LauncherServerConnect()
+        {
+            return new BSGSuccessBodyResult(true);
+        }
 
-        //[Route("/launcher/ping", Name = "LauncherPing")]
-        //[HttpPost]
-        //public void LauncherServerPing(int? retry, bool? debug)
-        //{
-        //}
+        [Route("/launcher/ping", Name = "LauncherPing")]
+        [HttpPost]
+        public IActionResult LauncherServerPing()
+        {
+            return new BSGSuccessBodyResult(true);
+        }
 
 
 
