@@ -69,30 +69,26 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             locales = new();
             localesDict = new();
             languages = new();
-            //var languagesJsonText = File.ReadAllText(Path.Combine("locales", "languages.json"));
-            //languages = JObject.Parse(languagesJsonText);
 
-            //string basePath = localesPath;
-            //var dirs = Directory.GetDirectories(localesPath);
-            //foreach (var dir in dirs)
-            //{
-            //    var files = Directory.GetFiles(dir);
-            //    foreach (var file in files)
-            //    {
-            //        string localename = dir.Replace(basePath + "\\", "");
-            //        string localename_add = file.Replace(dir + "\\", "").Replace(".json", "");
+            var db = DatabaseAssetZipArchive;
+            if (db == null)
+                return false;
 
-            //        using (var sr = new StreamReader(file))
-            //            locales.Add(localename + "_" + localename_add, sr.ReadToEnd());
+            var languagesEntry = db.Entries.First(x => x.Name == "languages.json");
+            TryLoadDatabaseFile(languagesEntry.FullName, out languages);
 
-            //        //localesDict.Add(localename + "_" + localename_add, JsonConvert.DeserializeObject<Dictionary<string, object>>(File.ReadAllText(file)));
-            //        localesDict.Add(localename + "_" + localename_add, JObject.Parse(File.ReadAllText(file)));
-
-            //        result = true;
-            //    }
-            //    files = null;
-            //}
-            //dirs = null;
+            foreach (var language in languages)
+            {
+                var localeEntries = db.Entries.Where(x => x.FullName.EndsWith(".json") && x.FullName.StartsWith("database/locales"));
+                localeEntries = localeEntries.Where(x => x.FullName.EndsWith(language.Key + ".json"));
+                foreach (var localeEntry in localeEntries)
+                {
+                    if (localeEntry.FullName.Contains("global"))
+                        localesDict.Add("global_" + language.Key, JObject.Parse(GetJsonDocument(localeEntry.FullName).RootElement.GetRawText()));
+                    else if (localeEntry.FullName.Contains("menu"))
+                        localesDict.Add("menu_" + language.Key, JObject.Parse(GetJsonDocument(localeEntry.FullName).RootElement.GetRawText()));
+                }
+            }
 
             return result;
         }
@@ -100,28 +96,28 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
         public static bool TryLoadLocaleGlobalEn(
             out string globalEn)
         {
-            bool result = false;
             globalEn = null;
-
-            //var localesPath = Path.Combine(DatabaseAssetPath, "locales");
+            var localesPath = Path.Combine("database", "locales", "global", "en.json");
             //globalEn = File.ReadAllText(Path.Combine(localesPath, "global", "en.json"));
-
-            return result;
+            globalEn = GetJsonDocument(localesPath).RootElement.GetRawText();
+            return true;
         }
 
         public static bool TryLoadLanguages(
             out JObject languages)
         {
             languages = new();
-            //var localesPath = Path.Combine(DatabaseAssetPath, "locales");
-            //languages = JObject.Parse(File.ReadAllText((Path.Combine(localesPath, "languages.json"))));
-            return true;
+            var db = DatabaseAssetZipArchive;
+            if (db == null)
+                return false;
+
+            var languagesEntry = db.Entries.First(x => x.Name == "languages.json");
+            return TryLoadDatabaseFile(languagesEntry.FullName, out languages);
         }
 
         public static string ConvertPath(in string databaseFilePath)
         {
-            //return databaseFilePath.Contains("\\") ? DatabaseAssetPath + "\\" + databaseFilePath : Path.Combine(DatabaseAssetPath, databaseFilePath);
-            return Path.Combine("database", databaseFilePath).Replace("\\", "/");
+            return Path.Combine("database", databaseFilePath).Replace("\\", "/").Replace("database/database", "database");
         }
 
         public static JsonDocument GetJsonDocument(string databaseFilePath)
@@ -139,41 +135,15 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             return jsonDocument;
         }
 
-        //public static bool TryLoadDatabaseFile<T>(
-        //in string databaseFilePath,
-        //out T model)
-        //{
-        //    bool result = false;
-        //    model = default(T);
-
-        //    var filePath = ConvertPath(databaseFilePath);
-
-        //    var bytes = File.ReadAllBytes(filePath);
-        //    JsonDocument jsonDocument = JsonDocument.Parse(bytes, CachedJsonDocumentOptions);
-        //    result = bytes != null;
-
-        //    var jobj = JObject.Parse(jsonDocument.RootElement.GetRawText(), CachedJsonLoadSettings);
-        //    var temp = jobj.ToObject<Dictionary<string, object>>(CachedSerializer).SITToJson();
-        //    model = temp.ParseJsonTo<T>();
-        //    return result;
-        //}
-
         public static bool TryLoadDatabaseFile(
         in string databaseFilePath,
         out Dictionary<string, object> templates)
         {
             bool result = false;
 
-            var filePath = ConvertPath(databaseFilePath);
-            if (!File.Exists(filePath))
-            {
-                templates = new Dictionary<string, object>();
-                return false;
-            }
-
-            var stringTemplates = File.ReadAllText(filePath);
-            result = stringTemplates != null;
-            templates = JsonConvert.DeserializeObject<Dictionary<string, object>>(stringTemplates);
+            var jsonDocument = GetJsonDocument(databaseFilePath);
+            TryLoadDatabaseFile(databaseFilePath, out JObject dbFile);
+            templates = dbFile.ToObject<Dictionary<string, object>>();
 
             return result;
         }
@@ -186,15 +156,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             var filePath = ConvertPath(databaseFilePath);
 
             var jsonDocument = GetJsonDocument(databaseFilePath);
-            dbFile = jsonDocument.Deserialize<JObject>();
+            dbFile = JObject.Parse(jsonDocument.RootElement.GetRawText());
 
-            if (!File.Exists(filePath))
-            {
-                dbFile = null;
-                return false;
-            }
-
-            dbFile = JObject.Parse(File.ReadAllText(filePath));
             result = dbFile != null;
             return result;
         }
@@ -215,9 +178,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
         {
             bool result = false;
 
-            var filePath = Path.Combine(DatabaseAssetPath, databaseFilePath);
-
-            dbFile = JArray.Parse(File.ReadAllText(filePath));
+            dbFile = JArray.Parse(GetJsonDocument(databaseFilePath).RootElement.GetRawText());
             result = dbFile != null;
             return result;
         }
@@ -228,8 +189,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
         {
             bool result = false;
 
-            var filePath = Path.Combine(DatabaseAssetPath, databaseFilePath);
-            stringTemplates = File.ReadAllText(filePath);
+            stringTemplates = GetJsonDocument(databaseFilePath).RootElement.GetRawText();
             result = stringTemplates != null;
             return result;
         }
@@ -241,11 +201,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
         {
             bool result = false;
 
-            var filePath = Path.Combine(DatabaseAssetPath, "templates", templateFile);
-
-            var stringTemplates = File.ReadAllText(filePath);
-            result = stringTemplates != null;
-            templates = JsonConvert.DeserializeObject<Dictionary<string, object>>(stringTemplates);
+            var filePath = Path.Combine("templates", templateFile);
+            var document = GetJsonDocument(filePath);
+            result = document != null;
+            templates = JsonConvert.DeserializeObject<Dictionary<string, object>>(document.RootElement.GetRawText());
 
             return result;
         }
@@ -265,12 +224,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             in int? page = null
             )
         {
-            var itemsPath = Path.Combine(DatabaseAssetPath, "templates", "items.json");
-
-            var stringTemplates = File.ReadAllText(itemsPath);
-
-            templatesRaw = stringTemplates;
-            return templatesRaw != null;
+            var templates = new Dictionary<string, object>();
+            TryLoadTemplateFile("items.json", out templates);
+            templatesRaw = JsonConvert.SerializeObject(templates);
+            return true;
         }
 
         public static bool TryLoadCustomization(
@@ -306,42 +263,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
                     );
             }
             return result;
-        }
-
-        public static bool TryLoadLocations(
-         out JObject locations)
-        {
-            JObject locationsRaw = new();
-            foreach (var dir in Directory.GetDirectories(Path.Combine(DatabaseAssetPath, "locations")).Select(x => new DirectoryInfo(x)))
-            {
-                locationsRaw.Add(dir.Name, new JObject());
-                foreach (var f in Directory.GetFiles(dir.FullName).Select(x => new FileInfo(x)))
-                {
-                    try
-                    {
-                        var ob = locationsRaw[dir.Name].ToObject<JObject>();
-                        var readText = JsonDocument.Parse(File.ReadAllBytes(f.FullName)).RootElement.GetRawText();
-                        var n = f.Name.Replace(".json", "");
-                        if (readText.StartsWith("["))
-                        {
-                            ob.Add(n, JArray.Parse(readText));
-                        }
-                        else
-                        {
-                            ob.Add(n, JObject.Parse(readText));
-                        }
-                        locationsRaw[dir.Name] = ob;
-                        readText = null;
-                    }
-                    catch
-                    {
-
-                    }
-                }
-            }
-
-            locations = locationsRaw;
-            return locations.Count > 0;
         }
 
         public static bool TryLoadLocationBases(
