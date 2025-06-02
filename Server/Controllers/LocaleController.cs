@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
+using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -25,18 +26,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/languages")]
         [HttpPost]
-        public async void Languages(int? retry, bool? debug)
+        public async Task<IActionResult> Languages(int? retry, bool? debug)
         {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
-
             DatabaseProvider.TryLoadLanguages(out var languages);
-
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(
-                languages
-                , Request
-                , Response);
-
-            languages = null;
+            return new BSGSuccessBodyResult(languages);
         }
 
         [Route("client/locale/{language}")]
