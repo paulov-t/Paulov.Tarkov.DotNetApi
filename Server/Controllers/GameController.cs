@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Comfort.Common;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
@@ -134,6 +135,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 //await HttpBodyConverters.CompressIntoResponseBodyBSG(document.RootElement.GetRawText(), Request, Response);
 
                 var rawText = items.ToJson();
+
+                Singleton<BackendConfigSettingsClass>.Create(items.ToObject<BackendConfigSettingsClass>());
 
                 return new BSGSuccessBodyResult(rawText);
             }
@@ -747,8 +750,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var indexOfSlash3 = Request.ToString().IndexOf('/', 7);
             string backendUrl = $"https://{ip}/";
 
+            string mode = requestBody["sessionMode"] != null ? requestBody["sessionMode"].ToString() : null;
+            if (mode == null)
+                mode = "pve";
+
+            HttpContext.Session.SetString("GameMode", mode);
+
             await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
-                new Dictionary<string, object>() { { "gameMode", "pve" }, { "backendUrl", ip } }
+                new Dictionary<string, object>() { { "gameMode", mode }, { "backendUrl", ip } }
                 , Request, Response);
 
         }

@@ -140,7 +140,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             var pmcProfile = GetPmcProfile(sessionId);
             if (pmcProfile == null) return null;
 
-            var objTradersInfo = pmcProfile.TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
+            var objTradersInfo = pmcProfile.GetProfile().TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
 
             return objTradersInfo;
         }
@@ -191,8 +191,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             if (profile == null)
                 return;
 
-            var inventory = GetAccountProfileMode(profile.AccountId)?.Characters?.PMC?.Inventory;
-            CleanIdsOfItems(inventory);
+            //var inventory = GetAccountProfileMode(profile.AccountId)?.Characters?.PMC?.Inventory;
+            //CleanIdsOfItems(inventory);
 
         }
 

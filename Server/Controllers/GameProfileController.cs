@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
+using Paulov.Tarkov.WebServer.DOTNET.Models;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 
@@ -36,6 +37,8 @@ namespace Paulov.Tarkov.Web.Api.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
+            var gameMode = HttpContext.Session.GetString("GameMode");
+
             var profile = saveProvider.LoadProfile(SessionId);
             if (profile == null)
             {
@@ -49,9 +52,11 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 return;
             }
 
+            var template = profileTemplates[(string)profile.Edition][requestBody["side"].ToString().ToLower()]["character"];
+
             // Get Template Profile
-            var templateProfile = profileTemplates[(string)profile.Edition][requestBody["side"].ToString().ToLower()].ToObject<Dictionary<string, dynamic>>();
-            if (templateProfile == null)
+            var pmcData = template.ToObject<AccountProfileCharacter2>();
+            if (pmcData == null)
             {
                 Response.StatusCode = 500;
                 return;
@@ -63,11 +68,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 return;
             }
 
-            var pmcData = ((JToken)templateProfile["character"]).ToObject<Dictionary<string, dynamic>>();
-            pmcData["_id"] = $"{SessionId}";
-            pmcData["aid"] = $"{profile.AccountId}";
-            pmcData["savage"] = $"scav{SessionId}";
-            pmcData["sessionId"] = $"{SessionId}";
+            pmcData.Id = SessionId;
             if (requestBody == null)
             {
                 Response.StatusCode = 412; // pre condition
@@ -80,16 +81,15 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 return;
             }
 
-            var pmcDataInfo = ((JToken)pmcData["Info"]).ToObject<Dictionary<string, dynamic>>();
-            pmcDataInfo["Nickname"] = requestBody["nickname"].ToString();
-            pmcDataInfo["LowerNickname"] = requestBody["nickname"].ToString().ToLower();
-            pmcDataInfo["RegistrationDate"] = (int)Math.Round((DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds);
-            pmcDataInfo["Voice"] = ((JToken)customization[requestBody["voiceId"].ToString()])["_name"];
-            pmcData["Info"] = pmcDataInfo;
+            var pmcDataInfo = pmcData.Info;
+            pmcDataInfo.Nickname = requestBody["nickname"].ToString();
+            pmcDataInfo.Nickname = requestBody["nickname"].ToString().ToLower();
+            //pmcDataInfo.RegistrationDate = (int)Math.Round((DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds);
+            //pmcDataInfo.Voice = ((JToken)customization[requestBody["voiceId"].ToString()])["_name"];
 
-            var pmcCustomizationInfo = ((JToken)pmcData["Customization"]).ToObject<Dictionary<string, dynamic>>();
-            pmcCustomizationInfo["Head"] = requestBody["headId"].ToString();
-            pmcData["Customization"] = pmcCustomizationInfo;
+            //var pmcCustomizationInfo = ((JToken)pmcData["Customization"]).ToObject<Dictionary<string, dynamic>>();
+            //pmcCustomizationInfo["Head"] = requestBody["headId"].ToString();
+            //pmcData["Customization"] = pmcCustomizationInfo;
 
             //profile.Characters["pmc"] = JObject.Parse(pmcData.ToJson());
             //profile.Characters["scav"] = null;
