@@ -5,7 +5,6 @@ using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
-using System.Linq;
 
 namespace Paulov.Tarkov.Web.Api.Controllers
 {
@@ -33,10 +32,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
         [Route("client/game/profile/create")]
         [HttpPost]
-        public async void ProfileCreate(
-              [FromQuery] int? retry
-              , bool? debug
-             )
+        public async void ProfileCreate()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
@@ -47,21 +43,19 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 return;
             }
 
-            if (!DatabaseProvider.TryLoadDatabaseFile("templates/profiles.json", out JObject profiles))
+            if (!DatabaseProvider.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
             {
                 Response.StatusCode = 500;
                 return;
             }
 
             // Get Template Profile
-            var templateProfile = profiles[(string)profile.Info["edition"]][requestBody["side"].ToString().ToLower()].ToObject<Dictionary<string, dynamic>>();
+            var templateProfile = profileTemplates[(string)profile.Edition][requestBody["side"].ToString().ToLower()].ToObject<Dictionary<string, dynamic>>();
             if (templateProfile == null)
             {
                 Response.StatusCode = 500;
                 return;
             }
-
-
 
             if (!DatabaseProvider.TryLoadCustomization(out var customization))
             {
@@ -97,9 +91,9 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             pmcCustomizationInfo["Head"] = requestBody["headId"].ToString();
             pmcData["Customization"] = pmcCustomizationInfo;
 
-            profile.Characters["pmc"] = JObject.Parse(pmcData.ToJson());
-            profile.Characters["scav"] = null;
-            profile.Info["wipe"] = false;
+            //profile.Characters["pmc"] = JObject.Parse(pmcData.ToJson());
+            //profile.Characters["scav"] = null;
+            //profile.Info["wipe"] = false;
 
             saveProvider.CleanIdsOfInventory(profile);
             saveProvider.SaveProfile(SessionId, profile);
@@ -111,10 +105,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
         [Route("client/game/profile/search")]
         [HttpPost]
-        public async Task<IActionResult> ProfileSearch(
-            [FromQuery] int? retry
-            , bool? debug
-           )
+        public async Task<IActionResult> ProfileSearch()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
@@ -133,7 +124,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             {
                 var pmc = saveProvider.GetPmcProfile(p.Key);
                 var info = new UpdatableChatMember.UpdatableChatMemberInfo();
-                info.Nickname = pmc["Info"]["Nickname"].ToString();
+                info.Nickname = pmc.Info.Nickname;// pmc["Info"]["Nickname"].ToString();
                 info.Side = EFT.EChatMemberSide.Usec;
                 info.Banned = false;
                 info.Ignored = false;

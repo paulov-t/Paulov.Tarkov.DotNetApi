@@ -51,8 +51,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
                 HttpContext.Session.Set("SessionId", Encoding.UTF8.GetBytes(sessionId));
                 var profile = saveProvider.LoadProfile(sessionId);
-                int aid = int.Parse(profile.Info["aid"].ToString());
-                HttpContext.Session.SetInt32("AccountId", aid);
+                //int aid = int.Parse(profile.AccountId);
+                //HttpContext.Session.SetInt32("AccountId", aid);
 
                 await HttpBodyConverters.CompressStringIntoResponseBody(sessionId, Request, Response);
             }

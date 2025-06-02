@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
+using Paulov.Tarkov.WebServer.DOTNET.Models;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels.Survey;
@@ -77,8 +78,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var profile = saveProvider.LoadProfile(sessionId);
             if (profile != null)
             {
-                int aid = int.Parse(profile.Info["aid"].ToString());
-                HttpContext.Session.SetInt32("AccountId", aid);
+                //int aid = int.Parse(profile.Info["aid"].ToString());
+                //HttpContext.Session.SetInt32("AccountId", aid);
             }
 
             var config = new Dictionary<string, object>()
@@ -161,7 +162,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/game/profile/list")]
         [HttpPost]
-        public async void ProfileList(int? retry, bool? debug)
+        public IActionResult ProfileList(int? retry, bool? debug)
         {
             var sessionId = SessionId;
 
@@ -169,46 +170,41 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (profile == null)
             {
                 Response.StatusCode = 500;
-                return;
+                return null;
             }
 
-            var profileInfo = profile.Info as dynamic;
-            if (profileInfo != null)
-            {
-                JArray list = new();
-                if ((bool)profileInfo["wipe"])
-                {
+            List<AccountProfileCharacter> list = new();
+            var pmcProfile = saveProvider.GetPmcProfile(sessionId);
+            if (pmcProfile != null)
+                list.Add(pmcProfile);
+            var scavProfile = saveProvider.GetScavProfile(sessionId);
+            if (scavProfile != null)
+                list.Add(pmcProfile);
 
-                }
-                else
-                {
-                    list.Add(saveProvider.GetPmcProfile(sessionId));
-                    list.Add(saveProvider.GetScavProfile(sessionId));
-                }
-                await HttpBodyConverters.CompressIntoResponseBodyBSG(list.ToJson(), Request, Response);
-            }
-
-
+            return new BSGSuccessBodyResult(list);
         }
 
         [Route("client/game/profile/nickname/reserved")]
         [HttpPost]
-        public async void NicknameReserved()
+        public IActionResult NicknameReserved()
         {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG("\"Paulov\"", Request, Response);
+            var sessionId = SessionId;
+            var name = saveProvider.GetProfiles()[sessionId].Username;
+
+            return new BSGSuccessBodyResult(name);
 
         }
 
         [Route("client/game/profile/nickname/validate")]
         [HttpPost]
-        public async void NicknameValidate()
+        public async Task<IActionResult> NicknameValidate()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
             if (requestBody["nickname"].ToString().Length < 3)
             {
                 await HttpBodyConverters.CompressIntoResponseBodyBSG(null, Request, Response, 256, "The nickname is too short");
-                return;
+                return null;
             }
             //else if (saveProvider.NameExists(requestBody["nickname"].ToString()))
             //{
@@ -218,7 +214,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             JObject obj = new();
             obj.TryAdd("status", "ok");
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(obj), Request, Response);
+
+            return new BSGSuccessBodyResult(obj);
 
         }
 
@@ -441,8 +438,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         public async void CustomizationStorage(int? retry, bool? debug)
         {
             Dictionary<string, object> packetResult = new();
-            packetResult.Add("_id", $"{SessionId}");
-            packetResult.Add("suites", saveProvider.LoadProfile(SessionId).Suits);
+            //packetResult.Add("_id", $"{SessionId}");
+            //packetResult.Add("suites", saveProvider.GetAccountProfileMode(SessionId).Characters.PMC.Suits);
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packetResult), Request, Response);
         }
 

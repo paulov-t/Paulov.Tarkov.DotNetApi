@@ -51,15 +51,23 @@ namespace Paulov.Tarkov.WebServer.DOTNET.ResponseModels
 
             var responseText = "";
 
-            if (BodyValue != null && (BodyValue is Array || BodyValue.GetType().FullName.Contains("List`1")))
+            if (BodyValue != null)
             {
-                var data = BodyValue != null ? BodyValue?.ToJson() : null;
-                responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
-            }
-            else
-            {
-                var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
-                responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                if ((BodyValue is Array || BodyValue.GetType().FullName.Contains("List`1")))
+                {
+                    var data = BodyValue != null ? BodyValue?.ToJson() : null;
+                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                }
+                else if (BodyValue is string && !BodyValue.ToString().StartsWith("{") && !BodyValue.ToString().StartsWith("["))
+                {
+                    var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
+                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": \"" + data + "\" }";
+                }
+                else
+                {
+                    var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
+                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                }
             }
 
             return HttpBodyConverters.CompressStringIntoResponseBody(responseText, context.HttpContext.Request, context.HttpContext.Response);

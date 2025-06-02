@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Dynamic;
+using Paulov.Tarkov.WebServer.DOTNET.Models;
 using MongoID = Paulov.Tarkov.WebServer.DOTNET.BSG.MongoID;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Providers
@@ -23,14 +22,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
                 if (fileText == null)
                     continue;
 
-                var model = JsonConvert.DeserializeObject<ProfileModel>(fileText);
+                var model = JsonConvert.DeserializeObject<Account>(fileText);
                 Profiles.Add(fileInfo.Name.Replace(".json", ""), model);
             }
         }
 
-        private Dictionary<string, ProfileModel> Profiles { get; } = new Dictionary<string, ProfileModel>();
+        private Dictionary<string, Account> Profiles { get; } = new Dictionary<string, Account>();
 
-        public Dictionary<string, ProfileModel> GetProfiles()
+        public Dictionary<string, Account> GetProfiles()
         {
             return Profiles;
         }
@@ -41,14 +40,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
                 return null;
 
             var sessionId = new MongoID(true).ToString();
-            var newProfileDetails = new Dictionary<string, object>()
+            var newProfileDetails = new Account()
             {
-                { "id", sessionId },
-                { "aid", Randomizer.Next(1000000000, int.MaxValue) },
-                { "username", parameters["username"] },
-                { "password", parameters.ContainsKey("password") ? parameters["password"] : "" },
-                { "wipe", true },
-                { "edition", parameters["edition"] }
+                AccountId = sessionId,
+                Username = parameters["username"].ToString(),
+                Password = parameters["password"].ToString(), // Needs to be Hashed!
+                Edition = parameters["edition"].ToString()
             };
 
             CreateProfile(newProfileDetails);
@@ -58,7 +55,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             return sessionId;
         }
 
-        public void SaveProfile(string sessionId, ProfileModel profileModel = null)
+        public void SaveProfile(string sessionId, Account profileModel = null)
         {
             if (profileModel != null)
                 Profiles[sessionId] = profileModel;
@@ -69,111 +66,97 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             File.WriteAllText(filePath, JsonConvert.SerializeObject(Profiles[sessionId], Formatting.Indented));
         }
 
-        public ProfileModel LoadProfile(string sessionId)
+        public Account LoadProfile(string sessionId)
         {
             if (string.IsNullOrEmpty(sessionId))
                 return null;
 
-            var prof = Profiles[sessionId] as ProfileModel;
+            var prof = Profiles[sessionId] as Account;
             //CleanIdsOfInventory(prof);
 
             return prof;
         }
 
-        public JObject GetPmcProfile(string sessionId)
+        public AccountProfileMode GetAccountProfileMode(string sessionId)
         {
-            var prof = Profiles[sessionId] as ProfileModel;
+            var prof = Profiles[sessionId] as Account;
             if (prof == null)
                 return null;
 
-            var characters = prof.Characters;
+            switch (prof.CurrentMode)
+            {
+                case "regular":
+                    return prof.Modes.Regular;
+                case "pve":
+                    return prof.Modes.PVE;
+                case "arena":
+                    return prof.Modes.Arena;
+            }
+
+            return null;
+        }
+
+        public AccountProfileCharacter GetPmcProfile(string sessionId)
+        {
+            var prof = Profiles[sessionId] as Account;
+            if (prof == null)
+                return null;
+
+            var characters = GetAccountProfileMode(sessionId)?.Characters;
             if (characters == null)
                 return null;
 
-            var pmcObject = characters["pmc"].ToObject<JObject>();
+            var pmcObject = characters.PMC;
             if (pmcObject == null)
                 return null;
 
             // Add Arena
-            if (!pmcObject.ContainsKey("Presets"))
-                pmcObject.Add("Presets", new JObject());
+            //if (!pmcObject.ContainsKey("Presets"))
+            //    pmcObject.Add("Presets", new JObject());
 
-            if (!pmcObject.ContainsKey("RankInfo"))
-                pmcObject.Add("RankInfo", new JObject());
+            //if (!pmcObject.ContainsKey("RankInfo"))
+            //    pmcObject.Add("RankInfo", new JObject());
 
-            if (pmcObject.ContainsKey("Info"))
-            {
+            //if (pmcObject.ContainsKey("Info"))
+            //{
 
-                var info = JObject.Parse(JsonConvert.SerializeObject(pmcObject["Info"]));
-                if (!info.ContainsKey("RankInfo"))
-                {
-                    //var rankInfo = new JObject();
-                    ////new RankInfo() { id = "None", points = new Dictionary<string, int>() };
-                    //rankInfo.Add(new { id = "None", points = new JObject() });
-                    //info.Add("RankInfo", rankInfo);
-                }
-                //if (pmcObject["Info"]. == null)
-                //    pmcObject["Info"].RankInfo = new JObject();
-            }
+            //    var info = JObject.Parse(JsonConvert.SerializeObject(pmcObject["Info"]));
+            //    if (!info.ContainsKey("RankInfo"))
+            //    {
+            //        //var rankInfo = new JObject();
+            //        ////new RankInfo() { id = "None", points = new Dictionary<string, int>() };
+            //        //rankInfo.Add(new { id = "None", points = new JObject() });
+            //        //info.Add("RankInfo", rankInfo);
+            //    }
+            //    //if (pmcObject["Info"]. == null)
+            //    //    pmcObject["Info"].RankInfo = new JObject();
+            //}
 
             return pmcObject;
         }
 
-        public Dictionary<string, EFT.Profile.TraderInfo> GetPmcProfileTradersInfo(string sessionId)
+        public Dictionary<EFT.MongoID, EFT.Profile.TraderInfo> GetPmcProfileTradersInfo(string sessionId)
         {
             var pmcProfile = GetPmcProfile(sessionId);
             if (pmcProfile == null) return null;
 
-            var objTradersInfo = pmcProfile["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
+            var objTradersInfo = pmcProfile.TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
 
             return objTradersInfo;
         }
 
-        public JObject GetScavProfile(string sessionId)
+        public AccountProfileCharacter GetScavProfile(string sessionId)
         {
-            //DatabaseProvider.TryLoadDatabaseFile("playerScav.json", out JObject scav);
-            //scav["aid"] = sessionId;
-            //scav["id"] = "scav" + sessionId;
-            //scav["_id"] = "scav" + sessionId;
-            //JObject.FromObject(scav["Info"])["RegistrationDate"] = 1;
-            //return scav;
-
-            var prof = Profiles[sessionId] as ProfileModel;
-            if (prof == null)
-                return null;
-
-            var characters = prof.Characters;
+            var characters = GetAccountProfileMode(sessionId)?.Characters;
             if (characters == null)
                 return null;
 
-            var pmcObject = characters["scav"].ToObject<JObject>();
-            if (pmcObject == null)
-                return null;
-
-            // Add Arena
-            if (!pmcObject.ContainsKey("Presets"))
-                pmcObject.Add("Presets", new JObject());
-
-            if (!pmcObject.ContainsKey("RankInfo"))
-                pmcObject.Add("RankInfo", new JObject());
-
-            if (pmcObject.ContainsKey("Info"))
-            {
-
-                var info = JObject.Parse(JsonConvert.SerializeObject(pmcObject["Info"]));
-                if (!info.ContainsKey("RankInfo"))
-                {
-                }
-            }
-
-            return pmcObject;
+            return characters.Scav;
         }
 
-        private void CreateProfile(Dictionary<string, object> newProfileDetails)
+        private void CreateProfile(Account newProfileDetails)
         {
-            var newProfile = new ProfileModel();
-            newProfile.Info = newProfileDetails;
-            Profiles.Add(newProfileDetails["id"].ToString(), newProfile);
+            Profiles.Add(newProfileDetails.AccountId, newProfileDetails);
         }
 
         public bool ProfileExists(string username, out string sessionId)
@@ -181,11 +164,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             sessionId = null;
             foreach (var profile in Profiles.Values)
             {
-                var info = profile.Info;
-                var infoUsername = info["username"].ToString();
-                if (info["username"].ToString() == username)
+                if (profile.Username == username)
                 {
-                    sessionId = info["id"].ToString();
+                    sessionId = profile.AccountId;
                     return true;
                 }
             }
@@ -198,87 +179,82 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
         {
             foreach (var profile in Profiles.Values)
             {
-                var info = profile.Info;
-                var infoUsername = info["username"].ToString();
-                if (info["username"].ToString() == username)
+                if (profile.Username == username)
                     return true;
             }
 
             return false;
         }
 
-        public void CleanIdsOfInventory(ProfileModel profile)
+        public void CleanIdsOfInventory(Account profile)
         {
             if (profile == null)
                 return;
 
-            //if (profile.Characters.ContainsKey("pmc") && !profile.Characters["pmc"].ContainsKey("Inventory"))
-            //    return;
-
-            var inventory = profile.Characters["pmc"]["Inventory"];
+            var inventory = GetAccountProfileMode(profile.AccountId)?.Characters?.PMC?.Inventory;
             CleanIdsOfItems(inventory);
 
         }
 
-        public void CleanIdsOfItems(JToken inventory)
+        public void CleanIdsOfItems(EFT.InventoryLogic.Inventory inventory)
         {
-            var equipmentId = inventory["equipment"].ToString();
-            var fastPanelId = inventory["fastPanel"].ToString();
-            var hideoutAreaStashesId = inventory["hideoutAreaStashes"].ToString();
-            var questRaidItemsId = inventory["questRaidItems"].ToString();
-            var questStashItemsId = inventory["questStashItems"].ToString();
-            var sortingTableId = inventory["sortingTable"].ToString();
-            var stashId = inventory["stash"].ToString();
+            //var equipmentId = inventory["equipment"].ToString();
+            //var fastPanelId = inventory["fastPanel"].ToString();
+            //var hideoutAreaStashesId = inventory["hideoutAreaStashes"].ToString();
+            //var questRaidItemsId = inventory["questRaidItems"].ToString();
+            //var questStashItemsId = inventory["questStashItems"].ToString();
+            //var sortingTableId = inventory["sortingTable"].ToString();
+            //var stashId = inventory["stash"].ToString();
 
-            Dictionary<string, string> remappedIds = new();
-            Dictionary<string, string> allRemappedIds = new();
+            //Dictionary<string, string> remappedIds = new();
+            //Dictionary<string, string> allRemappedIds = new();
 
-            remappedIds.Clear();
-            Dictionary<string, int> IdCounts = new();
+            //remappedIds.Clear();
+            //Dictionary<string, int> IdCounts = new();
 
 
-            foreach (var item in inventory["items"])
-            {
-                if (item["_id"].ToString() == equipmentId)
-                    continue;
+            //foreach (var item in inventory["items"])
+            //{
+            //    if (item["_id"].ToString() == equipmentId)
+            //        continue;
 
-                if (item["_id"].ToString() == fastPanelId)
-                    continue;
+            //    if (item["_id"].ToString() == fastPanelId)
+            //        continue;
 
-                if (item["_id"].ToString() == hideoutAreaStashesId)
-                    continue;
+            //    if (item["_id"].ToString() == hideoutAreaStashesId)
+            //        continue;
 
-                if (item["_id"].ToString() == questRaidItemsId)
-                    continue;
+            //    if (item["_id"].ToString() == questRaidItemsId)
+            //        continue;
 
-                if (item["_id"].ToString() == questStashItemsId)
-                    continue;
+            //    if (item["_id"].ToString() == questStashItemsId)
+            //        continue;
 
-                if (item["_id"].ToString() == sortingTableId)
-                    continue;
+            //    if (item["_id"].ToString() == sortingTableId)
+            //        continue;
 
-                if (item["_id"].ToString() == stashId)
-                    continue;
+            //    if (item["_id"].ToString() == stashId)
+            //        continue;
 
-                var oldId = item["_id"].ToString();
-                var newId = MongoID.Generate();
-                if (!remappedIds.ContainsKey(oldId))
-                {
-                    remappedIds.Add(oldId, newId);
-                    item["_id"] = newId;
-                }
-            }
+            //    var oldId = item["_id"].ToString();
+            //    var newId = MongoID.Generate();
+            //    if (!remappedIds.ContainsKey(oldId))
+            //    {
+            //        remappedIds.Add(oldId, newId);
+            //        item["_id"] = newId;
+            //    }
+            //}
 
-            foreach (var item in inventory["items"])
-            {
-                var jO = item as JObject;
-                if (jO.ContainsKey("parentId"))
-                {
-                    if (remappedIds.ContainsKey(jO["parentId"].ToString()))
-                        jO["parentId"] = remappedIds[jO["parentId"].ToString()];
+            //foreach (var item in inventory["items"])
+            //{
+            //    var jO = item as JObject;
+            //    if (jO.ContainsKey("parentId"))
+            //    {
+            //        if (remappedIds.ContainsKey(jO["parentId"].ToString()))
+            //            jO["parentId"] = remappedIds[jO["parentId"].ToString()];
 
-                }
-            }
+            //    }
+            //}
 
 
         }
@@ -353,57 +329,5 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
         //    return result;
         //}
 
-        public class ProfileModel : DynamicObject
-        {
-            [JsonProperty("info")]
-            public Dictionary<string, dynamic> Info = new();
-
-            public int AccountId => int.Parse(Info["aid"].ToString());
-
-            [JsonProperty("characters")]
-            public JObject Characters { get; set; } = new JObject();
-
-            [JsonProperty("suits")]
-            public HashSet<string> Suits { get; set; } = new()
-            {
-                "5cde9ec17d6c8b04723cf479",
-                "5cde9e957d6c8b0474535da7",
-            };
-
-            [JsonProperty("weaponbuilds")]
-            public JObject WeaponBuilds { get; set; } = new();
-
-            [JsonProperty("dialogues")]
-            public JObject Dialogues { get; set; } = new();
-
-            [JsonProperty("insurance")]
-            public JArray Insurance { get; set; } = new();
-
-            [JsonProperty("aki")]
-            public JObject Aki { get; set; } = new();
-
-            [JsonProperty("spt")]
-            public JObject Spt { get; set; } = new();
-
-            [JsonProperty("vitality")]
-            public JObject Vitality { get; set; } = new();
-
-            [JsonProperty("inraid")]
-            public JObject InRaid { get; set; } = new();
-
-            [JsonProperty("traderPurchases")]
-            public JObject TraderPurchases { get; set; } = new();
-
-            [JsonProperty("userbuilds")]
-            public JObject UserBuilds { get; set; } = new();
-
-            [JsonProperty("achievements")]
-            public JObject Achievements { get; set; } = new();
-
-            //public class ProfileCharacterModel
-            //{
-
-            //}
-        }
     }
 }

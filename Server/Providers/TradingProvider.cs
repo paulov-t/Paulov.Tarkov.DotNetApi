@@ -167,8 +167,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             var profile = saveProvider.LoadProfile(profileId);
             //var pmcProfile = saveProvider.GetPmcProfile(profileId);
 
-            var pmcProfile = profile.Characters["pmc"];
-            var pmcTradersInfo = profile.Characters["pmc"]["TradersInfo"];
+            var pmcProfile = saveProvider.GetAccountProfileMode(profileId).Characters.PMC;
+            var pmcTradersInfo = pmcProfile.TradersInfo;
             var tradersInfo = saveProvider.GetPmcProfileTradersInfo(profileId);
             var myTraderLevel = tradersInfo.ContainsKey(traderId) ? tradersInfo[traderId].LoyaltyLevel : 1;
 
