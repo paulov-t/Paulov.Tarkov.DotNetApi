@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
+using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -17,11 +18,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/customization/storage")]
         [HttpPost]
-        public async void Storage(int? retry, bool? debug)
+        public IActionResult Storage(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadCustomization(out var items);
+            DatabaseProvider.TryLoadDatabaseFile("database/templates/customisationStorage.json", out string file);
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(new object[0], Request, Response);
+            return new BSGSuccessBodyResult(file);
         }
     }
 }
