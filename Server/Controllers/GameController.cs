@@ -5,7 +5,6 @@ using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels.Survey;
-using System.Text.Json;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -56,48 +55,49 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [Route("client/game/config")]
         [Route("client/game/configuration")]
         [HttpPost]
-        public async void GameConfig(int? retry, bool? debug)
+        public async void GameConfig(int? retry)
         {
             var r = Request;
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            DatabaseProvider.TryLoadLocales(out var locales, out var localesDict, out var languages);
+            string protocol = Request.Protocol.ToString();
+            string ip = Request.Host.ToString();
+            string backendUrl = $"https://{ip}/";
 
-#pragma warning disable SYSLIB0014 // Type or member is obsolete
-            string externalIP = Request.Host.ToString(); // Program.publicIp;
-            string port = "6969";
-
-            string resolvedIp = $"{externalIP}:{port}";
-#pragma warning restore SYSLIB0014 // Type or member is obsolete
-
-            var sessionId = SessionId;
+            var sessionId = "";
+#if !DEBUG
+            sessionId = SessionId;
             if (string.IsNullOrEmpty(sessionId))
             {
                 Response.StatusCode = 412; // Precondition
                 return;
             }
+#endif
 
             var profile = saveProvider.LoadProfile(sessionId);
-            var pmcProfile = saveProvider.GetPmcProfile(sessionId);
-            int aid = int.Parse(profile.Info["aid"].ToString());
-            HttpContext.Session.SetInt32("AccountId", aid);
+            if (profile != null)
+            {
+                int aid = int.Parse(profile.Info["aid"].ToString());
+                HttpContext.Session.SetInt32("AccountId", aid);
+            }
 
             var config = new Dictionary<string, object>()
             {
-                { "languages", languages }
-                , { "ndaFree", true }
-                , { "reportAvailable", false }
-                , { "twitchEventMember", false }
+                { "queued", false }
+                , { "banTime", -1 }
+                , { "hash", "" }
                 , { "lang", "en" }
-                , { "aid", profile.AccountId }
+                , { "aid", profile?.AccountId }
+                , { "token", profile?.AccountId }
                 , { "taxonomy", 6 }
                 , { "activeProfileId", $"{SessionId}" }
-                , { "backend",
-                    new { Lobby = resolvedIp, Trading = resolvedIp, Messaging = resolvedIp, Main = resolvedIp, Ragfair = resolvedIp }
-                }
-                , { "useProtobuf", false }
+                , { "purchasedGames", new Dictionary<string, bool>(){ { "eft", true }, { "arena", true } } }
                 , { "utc_time", DateTime.UtcNow.Ticks / 1000 }
                 , { "totalInGame", 1 }
+                , { "isGameSynced", true }
+                , { "backend",
+                    new { Lobby = backendUrl, Trading = backendUrl, Messaging = backendUrl, Main = backendUrl, Ragfair = backendUrl }
+                }
             };
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(config, Request, Response);
@@ -119,35 +119,44 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/globals")]
         [HttpPost]
-        public async void Globals(int? retry, bool? debug)
+        public IActionResult Globals()
         {
             // TODO: Detect which Globals to load
-            if (DatabaseProvider.TryLoadDatabaseFile("globals.json", out JsonDocument document))
+            if (DatabaseProvider.TryLoadDatabaseFile("globals.json", out JObject items))
             {
-                //if (!items.ContainsKey("LocationInfection"))
-                //items.Add("LocationInfection", new { });
+                if (!items.ContainsKey("LocationInfection"))
+                    items.Add("LocationInfection", new JObject() { });
 
-                //if (!items.ContainsKey("time"))
-                //    items.Add("time", DateTime.Now.Ticks / 1000);
+                if (!items.ContainsKey("time"))
+                    items.Add("time", DateTime.Now.Ticks / 1000);
 
-                await HttpBodyConverters.CompressIntoResponseBodyBSG(document.RootElement.GetRawText(), Request, Response);
+                //await HttpBodyConverters.CompressIntoResponseBodyBSG(document.RootElement.GetRawText(), Request, Response);
+
+                var rawText = items.ToJson();
+
+                return new BSGSuccessBodyResult(rawText);
             }
             else
+            {
                 Response.StatusCode = 500;
+                return new JsonResult("FUCKED");
+
+            }
             //if (DatabaseProvider.TryLoadGlobalsArena(out var items))
             //    await HttpBodyConverters.CompressIntoResponseBodyBSG(items, Request, Response);
+
         }
 
 
 
         [Route("client/settings")]
         [HttpPost]
-        public async void Settings(int? retry, bool? debug)
+        public IActionResult Settings(int? retry, bool? debug)
         {
             DatabaseProvider.TryLoadDatabaseFile("settings.json", out Dictionary<string, object> items);
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(items, Request, Response);
-
+            var rawText = items.ToJson();
+            return new BSGSuccessBodyResult(rawText);
         }
 
         [Route("client/game/profile/list")]
@@ -184,15 +193,15 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/game/profile/nickname/reserved")]
         [HttpPost]
-        public async void NicknameReserved(int? retry, bool? debug)
+        public async void NicknameReserved()
         {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG("\"StayInTarkov\"", Request, Response);
+            await HttpBodyConverters.CompressIntoResponseBodyBSG("\"Paulov\"", Request, Response);
 
         }
 
         [Route("client/game/profile/nickname/validate")]
         [HttpPost]
-        public async void NicknameValidate(int? retry, bool? debug)
+        public async void NicknameValidate()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
@@ -215,33 +224,28 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/game/keepalive")]
         [HttpPost]
-        public async void KeepAlive(int? retry, bool? debug)
+        public IActionResult KeepAlive()
         {
             JObject obj = new();
             obj.TryAdd("msg", "OK");
-
             obj.TryAdd("utc_time", DateTime.UtcNow.Ticks / 1000);
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(obj, Request, Response);
+
+            return new BSGSuccessBodyResult(obj);
 
         }
         [Route("client/account/customization")]
         [HttpPost]
-        public async void AccountCustomization(int? retry, bool? debug)
+        public IActionResult AccountCustomization(int? retry, bool? debug)
         {
             DatabaseProvider.TryLoadDatabaseFile("templates/character.json", out string items);
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(items, Request, Response);
-
+            return new BSGSuccessBodyResult(items);
         }
-
 
 
         [Route("client/game/profile/select")]
         [HttpPost]
-        public async void ProfileSelect(
-            [FromQuery] int? retry
-        , [FromQuery] bool? debug
-           )
+        public async Task<IActionResult> ProfileSelect()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
@@ -258,8 +262,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 response.Add("notifier", new JObject());
                 response.Add("notifierServer", new JObject());
             }
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(response), Request, Response);
             requestBody = null;
+            return new BSGSuccessBodyResult(JsonConvert.SerializeObject(response));
         }
 
         [Route("client/profile/status")]
@@ -740,15 +744,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
+            string protocol = Request.Protocol.ToString();
+            string ip = Request.Host.ToString();
 
-            //string protocol = "http://";
-            // TODO: Add Public IP workarounds from SIT
-            string externalIP = "192.168.0.35"; // Program.publicIp;
-            string port = "6969";
+            var indexOfSlash3 = Request.ToString().IndexOf('/', 7);
+            string backendUrl = $"https://{ip}/";
 
-            string resolvedIp = $"{externalIP}:{port}";
             await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
-                new Dictionary<string, object>() { { "gameMode", "regular" }, { "backendUrl", resolvedIp } }
+                new Dictionary<string, object>() { { "gameMode", "pve" }, { "backendUrl", ip } }
                 , Request, Response);
 
         }
