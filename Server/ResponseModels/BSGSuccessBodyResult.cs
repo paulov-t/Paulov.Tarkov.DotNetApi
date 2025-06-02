@@ -51,7 +51,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.ResponseModels
 
             var responseText = "";
 
-            if (BodyValue is Array)
+            if (BodyValue != null && (BodyValue is Array || BodyValue.GetType().FullName.Contains("List`1")))
             {
                 var data = BodyValue != null ? BodyValue?.ToJson() : null;
                 responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
