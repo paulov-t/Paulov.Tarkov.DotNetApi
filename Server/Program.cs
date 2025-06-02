@@ -1,9 +1,7 @@
 using Newtonsoft.Json.Linq;
-using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
+using System.IO.Compression;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Text;
@@ -18,16 +16,17 @@ namespace SIT.WebServer
             var assemblyMods = new List<Assembly>();
             // Create Mods Directory
             Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "Mods"));
+            // Create Directories
+            Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "user"));
+            Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "user", "profiles"));
+            Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "v8", "mods"));
+
             // Load Mods
             foreach (var file in Directory.EnumerateFiles(Path.Combine(AppContext.BaseDirectory, "Mods")).Select(x => new FileInfo(x)))
             {
                 if (file.Extension == ".dll")
                     assemblyMods.Add(Assembly.LoadFile(file.FullName));
             }
-            // Create Directories
-            Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "user"));
-            Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "user", "profiles"));
-            Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "v8", "mods"));
 
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddRequestDecompression(options =>
@@ -61,8 +60,6 @@ namespace SIT.WebServer
 
             var app = builder.Build();
 
-
-
             //app.UseRequestDecompression();
             // Configure the HTTP request pipeline.
             //if (app.Environment.IsDevelopment())
@@ -70,9 +67,30 @@ namespace SIT.WebServer
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            //app.UseWebSockets(new WebSocketOptions() { KeepAliveInterval = new TimeSpan(0, 0, 1) });
             app.UseWebSockets();
-            //app.UseMiddleware<RequestZlibMiddleware>();
+
+            app.Use(async (context, next) =>
+            {
+                await next(context);
+
+                if (context.Request.Path.ToString().StartsWith("/files/"))
+                {
+                    var stream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("files.zip");
+                    var fileAssetZipArchive = new ZipArchive(stream);
+                    var path = context.Request.Path.ToString().Replace("/files/", "");
+                    var fileEntry = fileAssetZipArchive.GetEntry(path);
+
+                    if (fileEntry != null)
+                    {
+                        using var fileEntryStream = fileEntry.Open();
+                        using var ms = new MemoryStream();
+                        await fileEntryStream.CopyToAsync(ms);
+                        context.Response.StatusCode = 200;
+                        await context.Response.Body.WriteAsync(new ReadOnlyMemory<byte>(ms.ToArray()));
+                    }
+                }
+
+            });
 
             app.Use(async (context, next) =>
             {
@@ -137,11 +155,7 @@ namespace SIT.WebServer
 
                 await next(context);
             });
-            //app.Use(async (context, next) =>
-            //{
-            //    GCHelpers.ClearGarbage(true);
-            //    await next(context);
-            //});
+
             app.UseMiddleware<RequestLoggingMiddleware>();
 
             app.UseAuthorization();
@@ -182,138 +196,7 @@ namespace SIT.WebServer
             }
         }
 
-        public class RequestZlibMiddleware
-        {
-            private readonly RequestDelegate _next;
 
-            public RequestZlibMiddleware(RequestDelegate next)
-            {
-                _next = next;
-            }
-
-            public async Task InvokeAsync(HttpContext context)
-            {
-                var startTime = DateTime.Now;
-
-                var requestBody = await HttpBodyConverters.DecompressRequestBodyToBytes(context.Request);
-                //context.Request.Body = new MemoryStream(requestBody);
-
-                await _next(context);
-            }
-        }
-
-        private static async Task Echo(WebSocket webSocket)
-        {
-            var buffer = new byte[1024 * 4];
-            var receiveResult = await webSocket.ReceiveAsync(
-                new ArraySegment<byte>(buffer), CancellationToken.None);
-
-            while (!receiveResult.CloseStatus.HasValue)
-            {
-                await webSocket.SendAsync(
-                    new ArraySegment<byte>(buffer, 0, receiveResult.Count),
-                    receiveResult.MessageType,
-                    receiveResult.EndOfMessage,
-                    CancellationToken.None);
-
-                receiveResult = await webSocket.ReceiveAsync(
-                    new ArraySegment<byte>(buffer), CancellationToken.None);
-            }
-
-            await webSocket.CloseAsync(
-                receiveResult.CloseStatus.Value,
-                receiveResult.CloseStatusDescription,
-                CancellationToken.None);
-        }
-
-        /**
-      * The IPAddresses method obtains the selected server IP address information.
-      * It then displays the type of address family supported by the server and its
-      * IP address in standard and byte format.
-      **/
-        private static IPAddress GetIpAddress(string server, string ipAddress)
-        {
-            try
-            {
-                System.Text.ASCIIEncoding ASCII = new();
-
-                // Get server related information.
-                IPHostEntry heserver = Dns.GetHostEntry(server);
-
-                // Loop on the AddressList
-                foreach (IPAddress curAdd in heserver.AddressList)
-                {
-
-
-                    // Display the type of address family supported by the server. If the
-                    // server is IPv6-enabled this value is: InterNetworkV6. If the server
-                    // is also IPv4-enabled there will be an additional value of InterNetwork.
-                    Debug.WriteLine("AddressFamily: " + curAdd.AddressFamily.ToString());
-
-                    // Display the ScopeId property in case of IPV6 addresses.
-                    if (curAdd.AddressFamily.ToString() == ProtocolFamily.InterNetworkV6.ToString())
-                        Debug.WriteLine("Scope Id: " + curAdd.ScopeId.ToString());
-
-                    // Display the server IP address in the standard format. In
-                    // IPv4 the format will be dotted-quad notation, in IPv6 it will be
-                    // in in colon-hexadecimal notation.
-                    Debug.WriteLine("Address: " + curAdd.ToString());
-
-                    if (curAdd.ToString() == ipAddress)
-                    {
-                        return curAdd;
-                    }
-
-                    // Display the server IP address in byte format.
-                    Console.Write("AddressBytes: ");
-
-                    Byte[] bytes = curAdd.GetAddressBytes();
-                    for (int i = 0; i < bytes.Length; i++)
-                    {
-                        Console.Write(bytes[i]);
-                    }
-
-                    Debug.WriteLine("\r\n");
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("[DoResolve] Exception: " + e.ToString());
-            }
-
-            return null;
-        }
-
-        // This IPAddressAdditionalInfo displays additional server address information.
-        private static void IPAddressAdditionalInfo()
-        {
-            try
-            {
-                // Display the flags that show if the server supports IPv4 or IPv6
-                // address schemas.
-                Debug.WriteLine("\r\nSupportsIPv4: " + Socket.OSSupportsIPv4);
-                Debug.WriteLine("SupportsIPv6: " + Socket.OSSupportsIPv6);
-
-                if (Socket.OSSupportsIPv6)
-                {
-                    // Display the server Any address. This IP address indicates that the server
-                    // should listen for client activity on all network interfaces.
-                    Debug.WriteLine("\r\nIPv6Any: " + IPAddress.IPv6Any.ToString());
-
-                    // Display the server loopback address.
-                    Debug.WriteLine("IPv6Loopback: " + IPAddress.IPv6Loopback.ToString());
-
-                    // Used during autoconfiguration first phase.
-                    Debug.WriteLine("IPv6None: " + IPAddress.IPv6None.ToString());
-
-                    Debug.WriteLine("IsLoopback(IPv6Loopback): " + IPAddress.IsLoopback(IPAddress.IPv6Loopback));
-                }
-                Debug.WriteLine("IsLoopback(Loopback): " + IPAddress.IsLoopback(IPAddress.Loopback));
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine("[IPAddresses] Exception: " + e.ToString());
-            }
-        }
     }
+
 }
