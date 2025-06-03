@@ -1,5 +1,8 @@
+using Comfort.Common;
+using EFT.HealthSystem;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
+using Paulov.Tarkov.WebServer.DOTNET.Services;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.WebSockets;
@@ -169,9 +172,16 @@ namespace SIT.WebServer
 
             app.MapControllers();
 
-            app.Run();
+            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            // test the singleton
+            var Temperature = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
 
             SaveProvider saveProvider = new();
+
+            app.Run();
+
+
+
         }
 
         public class RequestLoggingMiddleware

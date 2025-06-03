@@ -1,15 +1,31 @@
-﻿using Newtonsoft.Json;
+﻿using EFT;
+using Newtonsoft.Json;
 using Paulov.Tarkov.WebServer.DOTNET.Models;
-using MongoID = Paulov.Tarkov.WebServer.DOTNET.BSG.MongoID;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Providers
 {
+    /// <summary>
+    /// Provides functionality for managing user profiles, including creation, retrieval, and persistence.
+    /// </summary>
+    /// <remarks>The <see cref="SaveProvider"/> class is responsible for handling user account profiles,
+    /// including operations such as creating new accounts, saving profiles to disk, loading profiles from disk, and
+    /// retrieving specific profile details. Profiles are stored in memory and serialized to JSON files located in the
+    /// application's user profile directory.  This class supports operations for both PMC (Player Main Character) and
+    /// Scav profiles, as well as profile modes and inventory management.</remarks>
     public class SaveProvider
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public static Random Randomizer { get; } = new Random();
 
+        /// <summary>
+        /// 
+        /// </summary>
         public SaveProvider()
         {
+            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
+
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             var profileFiles = Directory.GetFiles(userProfileDirectory);
             foreach (var profileFilePath in profileFiles)
@@ -22,7 +38,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
                 if (fileText == null)
                     continue;
 
-                var model = JsonConvert.DeserializeObject<Account>(fileText);
+                var model = JsonConvert.DeserializeObject<Account>(fileText, jsonSettings);
                 Profiles.Add(fileInfo.Name.Replace(".json", ""), model);
             }
         }
@@ -63,7 +79,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             Directory.CreateDirectory(userProfileDirectory);
             var filePath = Path.Combine(userProfileDirectory, $"{sessionId}.json");
-            File.WriteAllText(filePath, JsonConvert.SerializeObject(Profiles[sessionId], Formatting.Indented));
+
+            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
+
+            var serializedProfile = JsonConvert.SerializeObject(Profiles[sessionId], Formatting.Indented, jsonSettings);
+
+            File.WriteAllText(filePath, serializedProfile);
         }
 
         public Account LoadProfile(string sessionId)

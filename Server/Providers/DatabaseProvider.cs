@@ -1,24 +1,41 @@
-﻿using FMT.FileTools;
+﻿using EFT;
+using FMT.FileTools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Paulov.Tarkov.WebServer.DOTNET.BSG;
 using SIT.Arena;
 using System.IO.Compression;
 using System.Text.Json;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Providers
 {
+    /// <summary>
+    /// Provides methods and properties for accessing and managing database assets, including loading localized data,
+    /// templates, and other resources from embedded or external sources.
+    /// </summary>
+    /// <remarks>The <see cref="DatabaseProvider"/> class is designed to facilitate interaction with
+    /// database-related assets, such as JSON files and embedded resources. It includes functionality for loading and
+    /// parsing data, converting paths, and handling localization files. Many methods in this class use streams or
+    /// archives to access embedded resources. <para> This class is static and cannot be instantiated. It provides
+    /// utility methods for working with database files and templates, including support for JSON deserialization and
+    /// resource extraction. </para></remarks>
     public class DatabaseProvider
     {
-        public static string DatabaseAssetPath { get { return Path.Combine(AppContext.BaseDirectory, "assets", "database"); } }
-        //public static string DatabaseAssetPath { get { return Path.Combine(AppContext.BaseDirectory, "assets", "database.zip"); } }
+        /// <summary>
+        /// 
+        /// </summary>
+        public static string DatabaseAssetPath { get { return Path.Combine(AppContext.BaseDirectory, "data", "database"); } }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public static Stream DatabaseAssetStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip"); } }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public static ZipArchive DatabaseAssetZipArchive { get { return new ZipArchive(DatabaseAssetStream); } }
 
-        //public static Dictionary<string, object> Database { get; } = new Dictionary<string, object>();
-        //JsonSerializerOptions CachedOptions = new JsonSerializerOptions { WriteIndented = false };
-        static Newtonsoft.Json.JsonSerializer CachedSerializer;
+        public static Newtonsoft.Json.JsonSerializer CachedSerializer;
         static JsonDocumentOptions CachedJsonDocumentOptions = new()
         {
             AllowTrailingCommas = false,
@@ -37,27 +54,30 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
             };
+
+            //var tarkovAssembly = Assembly.LoadFrom(typeof(TarkovApplication).Assembly.Location);
+
+            //var converters = (JsonConverter[])tarkovAssembly.GetTypes().First(x => x.GetProperties().Any(p => p.Name == "Converters")).GetProperty("Converters").GetValue(null);
+            //foreach (var converter in converters)
+            //    CachedSerializer.Converters.Add(converter);
+
             CachedSerializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-
         }
 
-        private static T StreamFileToType<T>(string path)
-        {
-            if (typeof(T) == typeof(JObject))
-            {
-            }
-
-            using (var readerLanguagesJson = new StreamReader(path))
-            {
-                using (var readerLanguagesJsonTR = new JsonTextReader(readerLanguagesJson))
-                {
-                    return CachedSerializer.Deserialize<T>(readerLanguagesJsonTR);
-                }
-            }
-            //return System.Text.Json.JsonDocument.Parse(File.ReadAllText(path)).Deserialize<T>();
-        }
-
-
+        /// <summary>
+        /// Attempts to load locale data, including global and menu-specific locales, for all available languages.
+        /// </summary>
+        /// <remarks>This method attempts to load locale data from a database archive. If the database
+        /// archive is unavailable or the required files are missing, the method returns <see langword="false"/>. The
+        /// locale data is organized into global and menu-specific locales for each language.</remarks>
+        /// <param name="locales">When this method returns, contains a <see cref="JObject"/> representing the loaded locale data, if the
+        /// operation succeeds; otherwise, an empty <see cref="JObject"/>.</param>
+        /// <param name="localesDict">When this method returns, contains a <see cref="JObject"/> mapping locale keys (e.g., "global_en",
+        /// "menu_en") to their corresponding locale data, if the operation succeeds; otherwise, an empty <see
+        /// cref="JObject"/>.</param>
+        /// <param name="languages">When this method returns, contains a <see cref="JObject"/> representing the available languages, if the
+        /// operation succeeds; otherwise, an empty <see cref="JObject"/>.</param>
+        /// <returns><see langword="true"/> if the locale data is successfully loaded; otherwise, <see langword="false"/>.</returns>
         public static bool TryLoadLocales(
             out JObject locales
             , out JObject localesDict

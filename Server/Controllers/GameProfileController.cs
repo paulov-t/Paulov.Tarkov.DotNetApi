@@ -8,6 +8,7 @@ using Paulov.Tarkov.WebServer.DOTNET.Models;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 using Paulov.Tarkov.WebServer.DOTNET.Services;
+using System.Text;
 
 namespace Paulov.Tarkov.Web.Api.Controllers
 {
@@ -92,6 +93,29 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 return new BSGErrorBodyResult(500, "");
             }
 
+            var blankStat = new GClass2020()
+            {
+                CarriedQuestItems = new List<MongoID>(),
+                DamageHistory = new GClass2016() { LethalDamagePart = EBodyPart.Head, BodyParts = new Dictionary<EBodyPart, GClass2015>() },
+                DroppedItems = new List<GClass1985>(),
+                ExperienceBonusMult = 0,
+                FoundInRaidItems = new List<GClass1986>(),
+                LastPlayerState = null,
+                SessionCounters = new GClass2019(),
+                OverallCounters = new GClass2019(),
+                SessionExperienceMult = 0,
+                SurvivorClass = ProfileStats.ESurvivorClass.Unknown,
+                TotalInGameTime = 0,
+                TotalSessionExperience = 0,
+                Victims = new List<GClass2001>()
+            };
+            var blankStatGroup = new GClass2021()
+            {
+                Eft = blankStat.Clone()
+                ,
+                Arena = blankStat.Clone()
+            };
+
             var template = profileTemplates[(string)profile.Edition][requestBody["side"].ToString().ToLower()]["character"];
             template["Customization"]["Head"] = requestBody["headId"].ToString();
             template["_id"] = sessionId;
@@ -101,29 +125,36 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             template["Info"]["LowerNickname"] = requestBody["nickname"].ToString().ToLower();
             template["Info"]["RegistrationDate"] = new Random().Next(100000, 500000);// (long)Math.Floor((decimal)DateTime.Now.Ticks / 1000);
             template["Info"]["Voice"] = customizationTemplates[requestBody["voiceId"].ToString()]["_name"];
-            template["Stats"] = JToken.FromObject(new GClass2021()
-            {
-                Eft = new GClass2020()
-                {
-
-                }
-                ,
-                Arena = new GClass2020()
-                {
-
-                }
-            });
+            template["Stats"] = JToken.FromObject(blankStatGroup);
             template["WishList"] = JToken.FromObject(new Dictionary<MongoID, byte>());
             // Get Template Profile
-            var pmcData = template.ToObject<AccountProfileCharacter>();
+            var pmcData = template.ToObject<AccountProfileCharacter>(DatabaseProvider.CachedSerializer);
             if (pmcData == null)
             {
                 Response.StatusCode = 500;
                 return new BSGErrorBodyResult(500, "");
             }
 
+            pmcData.Info.MemberCategory = EMemberCategory.Default;
+            pmcData.Info.SelectedMemberCategory = EMemberCategory.Default;
+
             profile.CurrentMode = gameMode;
+            // Create scav
+            var scavTemplateResource = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("scav.json");
+            using var msScavTemplate = new MemoryStream();
+            scavTemplateResource.CopyTo(msScavTemplate);
+            var bytesOfScavTemplateResource = msScavTemplate.ToArray();
+            var scavTemplateText = Encoding.UTF8.GetString(bytesOfScavTemplateResource);
+            var scavTemplate = JObject.Parse(scavTemplateText)["scav"];
+            scavTemplate["Inventory"] = template["Inventory"].DeepClone();
+            scavTemplate["Stats"] = JToken.FromObject(blankStatGroup);
+            var scavData = scavTemplate.ToObject<AccountProfileCharacter>(DatabaseProvider.CachedSerializer);
+            scavData.Id = MongoID.Generate();
+            pmcData.PetId = scavData.Id;
+
+            // assign the profiles
             saveProvider.GetAccountProfileMode(sessionId).Characters.PMC = pmcData;
+            saveProvider.GetAccountProfileMode(sessionId).Characters.Scav = scavData;
 
             saveProvider.CleanIdsOfInventory(profile);
             saveProvider.SaveProfile(sessionId, profile);
@@ -182,6 +213,37 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
             return new BSGSuccessBodyResult(chatMembers.ToArray());
 
+        }
+
+        [Route("client/game/profile/list")]
+        [HttpPost]
+        public IActionResult ProfileList(int? retry, bool? debug)
+        {
+            var gameMode = HttpContext.Session != null && HttpContext.Session.GetString("GameMode") != null ? HttpContext.Session.GetString("GameMode") : "pve";
+
+            var sessionId = SessionId;
+            var profile = saveProvider.LoadProfile(SessionId);
+            if (profile == null)
+            {
+#if DEBUG
+                sessionId = saveProvider.GetProfiles().Keys.First();
+                // if we are running from Swagger and havent "logged in". just get this here
+                profile = saveProvider.LoadProfile(sessionId);
+#else
+                Response.StatusCode = 500;
+                return new BSGErrorBodyResult(500, "Profile has not been loaded!");
+#endif
+            }
+
+            List<AccountProfileCharacter> list = new();
+            var pmcProfile = saveProvider.GetPmcProfile(sessionId);
+            if (pmcProfile != null)
+                list.Add(pmcProfile);
+            var scavProfile = saveProvider.GetScavProfile(sessionId);
+            if (scavProfile != null)
+                list.Add(scavProfile);
+
+            return new BSGSuccessBodyResult(list);
         }
     }
 }

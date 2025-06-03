@@ -19,10 +19,17 @@
 		<None Include="$(ProjectDir)assets\**" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Content Remove="data\scav.json" />
+	  <Content Remove="data\zombies.json" />
+	</ItemGroup>
+
 
 	<ItemGroup>
+	  <EmbeddedResource Include="data\scav.json" />
+	  <EmbeddedResource Include="data\zombies.json" />
 	  <EmbeddedResource Include="files\files.zip" />
-	  <EmbeddedResource Include="assets\database.zip" />
+	  <EmbeddedResource Include="data\database.zip" />
 	</ItemGroup>
 
 	<ItemGroup>

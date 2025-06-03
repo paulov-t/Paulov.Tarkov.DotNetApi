@@ -2,7 +2,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.Tarkov.WebServer.DOTNET.Models;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels.Survey;
@@ -148,8 +147,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
         }
 
-
-
         [Route("client/settings")]
         [HttpPost]
         public IActionResult Settings(int? retry, bool? debug)
@@ -158,30 +155,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             var rawText = items.ToJson();
             return new BSGSuccessBodyResult(rawText);
-        }
-
-        [Route("client/game/profile/list")]
-        [HttpPost]
-        public IActionResult ProfileList(int? retry, bool? debug)
-        {
-            var sessionId = SessionId;
-
-            var profile = saveProvider.LoadProfile(sessionId);
-            if (profile == null)
-            {
-                Response.StatusCode = 500;
-                return null;
-            }
-
-            List<AccountProfileCharacter> list = new();
-            var pmcProfile = saveProvider.GetPmcProfile(sessionId);
-            if (pmcProfile != null)
-                list.Add(pmcProfile);
-            var scavProfile = saveProvider.GetScavProfile(sessionId);
-            if (scavProfile != null)
-                list.Add(pmcProfile);
-
-            return new BSGSuccessBodyResult(list);
         }
 
         [Route("client/game/profile/nickname/reserved")]
@@ -348,11 +321,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/hideout/areas")]
         [HttpPost]
-        public async void HideoutAreas(int? retry, bool? debug)
+        public IActionResult HideoutAreas()
         {
             DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "areas.json"), out JArray jobj);
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(jobj), Request, Response);
+            return new BSGSuccessBodyResult(jobj);
 
         }
 
@@ -378,12 +351,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         }
 
-        [Route("client/hideout/production")]
         [Route("client/hideout/production/recipes")]
         [HttpPost]
         public async void HideoutProduction(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "production.json"), out JArray jobj);
+            //DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "production.json"), out JArray jobj);
+            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "production.json"), out JObject jobj);
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(jobj), Request, Response);
 
