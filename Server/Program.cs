@@ -78,6 +78,8 @@ namespace SIT.WebServer
             }
             app.UseWebSockets();
 
+
+            // The following handles the request for "files" from the Client
             app.Use(async (context, next) =>
             {
                 await next(context);
