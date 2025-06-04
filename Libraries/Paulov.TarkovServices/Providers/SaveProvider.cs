@@ -92,6 +92,9 @@ namespace Paulov.TarkovServices
             if (string.IsNullOrEmpty(sessionId))
                 return null;
 
+            if (!Profiles.ContainsKey(sessionId))
+                return null;
+
             var prof = Profiles[sessionId] as Account;
             //CleanIdsOfInventory(prof);
 

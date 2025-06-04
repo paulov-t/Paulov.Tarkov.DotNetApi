@@ -1,4 +1,5 @@
-﻿using FMT.FileTools;
+﻿using EFT;
+using FMT.FileTools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO.Compression;
@@ -55,11 +56,29 @@ namespace Paulov.TarkovServices
 
             //var tarkovAssembly = Assembly.LoadFrom(typeof(TarkovApplication).Assembly.Location);
 
+
             //var converters = (JsonConverter[])tarkovAssembly.GetTypes().First(x => x.GetProperties().Any(p => p.Name == "Converters")).GetProperty("Converters").GetValue(null);
             //foreach (var converter in converters)
             //    CachedSerializer.Converters.Add(converter);
 
-            CachedSerializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+            //CachedSerializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+        }
+
+        public DatabaseProvider()
+        {
+            if (!CachedSerializer.Converters.Any())
+            {
+                var tarkovTypes = typeof(TarkovApplication).Assembly.DefinedTypes;
+                var convertersType = tarkovTypes.FirstOrDefault(x => x.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).Any(p => p.Name == "Converters"));
+                if (convertersType != null)
+                {
+                    var converters = (JsonConverter[])convertersType.GetField("Converters", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).GetValue(null);
+                    // the GClass1669`1 converter is calling an ECall error because its using Unity Loggers...
+                    foreach (var converter in converters.Where(x => x.GetType().Name != "GClass1669`1"))
+                        CachedSerializer.Converters.Add(converter);
+                }
+                CachedSerializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+            }
         }
 
         /// <summary>

@@ -251,16 +251,19 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            var sessionId = "";
+            var sessionId = SessionId;
 #if !DEBUG
-            sessionId = SessionId;
             if (string.IsNullOrEmpty(sessionId))
             {
                 Response.StatusCode = 412; // Precondition
                 return;
             }
-#else 
-            sessionId = saveProvider.GetProfiles().First().Key;
+#else
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                sessionId = saveProvider.GetProfiles().First().Key;
+            }
+
 #endif
 
 

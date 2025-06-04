@@ -175,7 +175,7 @@ namespace SIT.WebServer
             var Temperature = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
 
             SaveProvider saveProvider = new();
-
+            DatabaseProvider databaseProvider = new DatabaseProvider();
             app.Run();
 
 

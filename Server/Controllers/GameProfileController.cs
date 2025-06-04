@@ -42,6 +42,8 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             }
         }
 
+
+
         /// <summary>
         /// Create a Profile
         /// </summary>
@@ -59,9 +61,15 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             if (profile == null)
             {
 #if DEBUG
-                sessionId = saveProvider.GetProfiles().Keys.First();
+                sessionId = saveProvider.GetProfiles().Any() ? saveProvider.GetProfiles().Keys.First() : MongoID.Generate(false);
                 // if we are running from Swagger and havent "logged in". just get this here
                 profile = saveProvider.LoadProfile(sessionId);
+
+                if (profile == null)
+                {
+                    sessionId = saveProvider.CreateAccount(new Dictionary<string, object>() { { "username", "Swagger" }, { "password", "Swagger" }, { "edition", "Edge Of Darkness" } });
+                    profile = saveProvider.LoadProfile(sessionId);
+                }
 #else
                 Response.StatusCode = 500;
                 return;
@@ -123,10 +131,12 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             template["savage"] = null;
             template["Info"]["Nickname"] = requestBody["nickname"].ToString();
             template["Info"]["LowerNickname"] = requestBody["nickname"].ToString().ToLower();
-            template["Info"]["RegistrationDate"] = new Random().Next(100000, 500000);// (long)Math.Floor((decimal)DateTime.Now.Ticks / 1000);
+            template["Info"]["RegistrationDate"] = new Random().Next(100000, 500000);
             template["Info"]["Voice"] = customizationTemplates[requestBody["voiceId"].ToString()]["_name"];
             template["Stats"] = JToken.FromObject(blankStatGroup);
             template["WishList"] = JToken.FromObject(new Dictionary<MongoID, byte>());
+            template["Hideout"]["Seed"] = "";
+            var hideoutCheck = template["Hideout"];
             // Get Template Profile
             var pmcData = template.ToObject<AccountProfileCharacter>(DatabaseProvider.CachedSerializer);
             if (pmcData == null)
@@ -139,7 +149,8 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             pmcData.Info.SelectedMemberCategory = EMemberCategory.Default;
 
             profile.CurrentMode = gameMode;
-            // Create scav
+
+            // Create scav -------------------------------------------------------------------------------------------
             var scavTemplateResource = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("scav.json");
             using var msScavTemplate = new MemoryStream();
             scavTemplateResource.CopyTo(msScavTemplate);
@@ -152,7 +163,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             scavData.Id = MongoID.Generate();
             pmcData.PetId = scavData.Id;
 
-            // assign the profiles
+            // Assign the profiles -----------------------------------------------------------------------------------
             saveProvider.GetAccountProfileMode(sessionId).Characters.PMC = pmcData;
             saveProvider.GetAccountProfileMode(sessionId).Characters.Scav = scavData;
 
@@ -244,6 +255,31 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 list.Add(scavProfile);
 
             return new BSGSuccessBodyResult(list);
+        }
+    }
+
+
+    public static class ExtendForSeedText
+    {
+        private static readonly int[] int_0 = new int[23]
+        {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+            0, 0, 0, 0, 0, 0, 0, 10, 11, 12,
+            13, 14, 15
+        };
+
+        public static byte[] FromHexString(this string hex)
+        {
+            byte[] array = new byte[hex.Length / 2];
+            int num = 0;
+            int num2 = 0;
+            while (num2 < hex.Length)
+            {
+                array[num] = (byte)((int_0[char.ToUpper(hex[num2]) - 48] << 4) | int_0[char.ToUpper(hex[num2 + 1]) - 48]);
+                num2 += 2;
+                num++;
+            }
+            return array;
         }
     }
 }

@@ -91,4 +91,13 @@
 	  <ProjectReference Include="..\Libraries\Paulov.TarkovServices\Paulov.TarkovServices.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="References\Assembly-CSharp-firstpass.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="References\Assembly-CSharp.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>
