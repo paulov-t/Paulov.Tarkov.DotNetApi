@@ -34,17 +34,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/locale/{language}")]
         [HttpPost]
-        public void Locale([FromRoute] string language, int? retry, bool? debug)
+        public async Task<IActionResult> Locale([FromRoute] string language, int? retry, bool? debug)
         {
             DatabaseProvider.TryLoadLocaleGlobalEn(out string globalEn);
 
-            HttpBodyConverters.CompressIntoResponseBodyBSG(
-                globalEn
-                , Request
-                , Response).Wait();
-
-            globalEn = null;
-
+            return new BSGSuccessBodyResult(globalEn);
         }
     }
 }

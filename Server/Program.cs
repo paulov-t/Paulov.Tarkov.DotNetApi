@@ -69,14 +69,13 @@ namespace SIT.WebServer
 
             var app = builder.Build();
 
-            //app.UseRequestDecompression();
             // Configure the HTTP request pipeline.
             //if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            app.UseWebSockets();
+
 
 
             // The following handles the request for "files" from the Client
@@ -103,69 +102,66 @@ namespace SIT.WebServer
 
             });
 
+
+            app.UseWebSockets(new WebSocketOptions()
+            {
+                KeepAliveInterval = TimeSpan.FromMinutes(2)
+            });
+
+            // ----------------------------------------------------------------------------------------------------------------------------------------------------
+            // Handle the WebSocket request
+            // You can find useful information on WebSockets in .NET here https://learn.microsoft.com/en-us/aspnet/core/fundamentals/websockets?view=aspnetcore-9.0
             app.Use(async (context, next) =>
             {
-                JObject defaultNotificationPing = new();
-                defaultNotificationPing.Add("type", "PING");
-                defaultNotificationPing.Add("eventId", "ping");
-
-                if (context.Request.Path.ToString().StartsWith("/notifierServer/getwebsocket"))
+                if (!context.WebSockets.IsWebSocketRequest)
                 {
-                    var sessionId = context.Request.Path.ToString().Replace("/notifierServer/getwebsocket/", "");
-                    if (!context.WebSockets.IsWebSocketRequest)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                        await next(context);
-                        return;
-                    }
-                    var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                    if (webSocket == null)
-                    {
-                        return;
-                    }
-
-                    if (!WebSockets.ContainsKey(sessionId))
-                        WebSockets.Add(sessionId, webSocket);
-
-                    if (webSocket.State != WebSocketState.Open)
-                        return;
-
-                    await webSocket.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(defaultNotificationPing.ToJson())), System.Net.WebSockets.WebSocketMessageType.Binary, false, CancellationToken.None);
-
-                    var buf = new byte[1024];
-                    await webSocket.ReceiveAsync(new ArraySegment<byte>(buf), CancellationToken.None);
-
-                    try
-                    {
-                        _ = Task.Run(async () =>
-                        {
-                            while (true)
-                            {
-                                foreach (var ws in WebSockets.Values)
-                                {
-                                    //{ type: NotificationEventType.PING, eventId: "ping" };
-
-                                    var buf = new byte[1024];
-                                    if (ws.State == WebSocketState.Open)
-                                    {
-                                        await ws.ReceiveAsync(new ArraySegment<byte>(buf), CancellationToken.None);
-                                        await ws.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(defaultNotificationPing.ToJson())), System.Net.WebSockets.WebSocketMessageType.Binary, false, CancellationToken.None);
-                                    }
-                                }
-                                await Task.Delay(1000);
-                            }
-                        });
-
-                    }
-                    catch
-                    {
-
-                    }
+                    await next(context);
                     return;
                 }
 
-                await next(context);
+                var path = context.Request.Path.ToString();
+                var lastIndexOfSlash = path.LastIndexOf('/');
+                var sessionId = path.Substring(lastIndexOfSlash + 1);
+                if (string.IsNullOrEmpty(sessionId))
+                {
+                    await next(context);
+                    return;
+                }
+
+                JObject defaultNotificationPing = new();
+                defaultNotificationPing.Add("type", "Ping");
+                defaultNotificationPing.Add("eventId", "ping");
+
+#if DEBUG
+                Debug.WriteLine($"WebSocket: request received for {sessionId}");
+#endif
+
+                var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                if (webSocket == null)
+                    return;
+
+#if DEBUG
+                Debug.WriteLine($"WebSocket: request accepted for {sessionId}");
+#endif
+
+                if (!WebSockets.ContainsKey(sessionId))
+                    WebSockets.Add(sessionId, webSocket);
+
+                if (webSocket.State != WebSocketState.Open)
+                    return;
+
+#if DEBUG
+                Debug.WriteLine($"WebSocket: sending default ping notification to {sessionId}");
+#endif
+
+                await webSocket.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(defaultNotificationPing.ToJson())), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+
+                var socketFinishedTcs = new TaskCompletionSource<object>();
+                // TODO: Handle receive of information and handle it in a background Task
+                await socketFinishedTcs.Task;
+
             });
+            // <-- End of Handle WebSocket
 
             app.UseMiddleware<RequestLoggingMiddleware>();
 
@@ -197,6 +193,12 @@ namespace SIT.WebServer
 
             public async Task InvokeAsync(HttpContext context)
             {
+                if (context.WebSockets.IsWebSocketRequest)
+                {
+                    await _next(context);
+                    return;
+                }
+
                 var startTime = DateTime.Now;
 
                 var logMessage = $"REQ {context.Request.Method} {context.Request.Path}";

@@ -1,19 +1,26 @@
-﻿namespace Paulov.Tarkov.WebServer.DOTNET.Providers
+﻿using Newtonsoft.Json.Linq;
+
+namespace Paulov.Tarkov.WebServer.DOTNET.Providers
 {
     public class NotifierProvider
     {
-        public Dictionary<string, object> CreateNotifierPacket(string SessionId)
+        public JObject CreateNotifierPacket(HttpRequest request, HttpResponse response, string sessionId)
         {
-            string protocol = "http://";
-            string externalIP = "localhost";
-            string port = "6969";
-            string resolvedIpHttp = $"{protocol}{externalIP}:{port}";
-            Dictionary<string, object> packet = new();
-            packet.Add("server", resolvedIpHttp);
-            packet.Add("channel_id", SessionId);
-            packet.Add("url", $"{resolvedIpHttp}/notifierServer/get/{SessionId}");
-            packet.Add("notifierServer", $"{resolvedIpHttp}/notifierServer/get/{SessionId}");
-            packet.Add("ws", $"ws://{externalIP}:{port}/notifierServer/getwebsocket/{SessionId}");
+            var host = request.Host.ToString();
+
+            var wsUrl = $"wss://{host}/{sessionId}";
+            // Note: This is a bit of a hack to deal with "localhost" not supporting Secure Web Sockets due to authentication issues
+            //var unsupportedHostnames = new string[] {
+            //        "localhost",
+            //        "127.0.0.1"
+            //};
+            //if (unsupportedHostnames.IndexOf(host) != -1)
+            //    wsUrl = $"ws://{host}/{sessionId}";
+
+            JObject packet = new();
+            packet.Add("server", host);
+            packet.Add("channel_id", sessionId);
+            packet.Add("ws", wsUrl);
             return packet;
         }
     }

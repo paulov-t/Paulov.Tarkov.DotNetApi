@@ -216,16 +216,30 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
         }
 
 
+        //public static bool TryLoadTemplateFile(
+        // in string templateFile,
+        // out Dictionary<string, object> templates)
+        //{
+        //    bool result = false;
+
+        //    var filePath = Path.Combine("templates", templateFile);
+        //    var document = GetJsonDocument(filePath);
+        //    result = document != null;
+        //    templates = JsonConvert.DeserializeObject<Dictionary<string, object>>(document.RootElement.GetRawText());
+
+        //    return result;
+        //}
+
         public static bool TryLoadTemplateFile(
          in string templateFile,
-         out Dictionary<string, object> templates)
+         out JObject templates)
         {
             bool result = false;
 
             var filePath = Path.Combine("templates", templateFile);
             var document = GetJsonDocument(filePath);
             result = document != null;
-            templates = JsonConvert.DeserializeObject<Dictionary<string, object>>(document.RootElement.GetRawText());
+            templates = JObject.Parse(document.RootElement.GetRawText());
 
             return result;
         }
@@ -238,21 +252,19 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
         /// <param name="page">Used for Swagger tests - page</param>
         /// <returns></returns>
         public static bool TryLoadItemTemplates(
-
-            //out Dictionary<string, object> templates,
             out string templatesRaw,
             in int? count = null,
             in int? page = null
             )
         {
-            var templates = new Dictionary<string, object>();
+            var templates = new JObject();
             TryLoadTemplateFile("items.json", out templates);
             templatesRaw = JsonConvert.SerializeObject(templates);
             return true;
         }
 
         public static bool TryLoadCustomization(
-          out Dictionary<string, object> customization)
+          out JObject customization)
         {
             return TryLoadTemplateFile("customization.json", out customization);
         }
@@ -345,6 +357,26 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             weather = new();
             return true;
         }
+
+        public static bool TryLoadTraders(
+        out JObject traders)
+        {
+            traders = new JObject();
+
+            var entries = DatabaseAssetZipArchive.Entries.Where(x => x.FullName.StartsWith("database/traders/"));
+            foreach (var entry in entries)
+            {
+                var entryName = entry.FullName.Replace("database/traders/", "").Replace("/base.json", "");
+                if (entry.Name == "base.json")
+                {
+                    traders.Add(entryName, JToken.Parse(GetJsonDocument(entry.FullName).RootElement.GetRawText()));
+                }
+            }
+
+            return true;
+        }
+
+
     }
 
 }

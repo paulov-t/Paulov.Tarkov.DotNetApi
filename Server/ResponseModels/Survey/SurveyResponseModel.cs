@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.ResponseModels.Survey
 {
@@ -6,7 +7,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.ResponseModels.Survey
     {
         // Token: 0x040097D3 RID: 38867
         [JsonProperty("locale")]
-        public Dictionary<string, Dictionary<string, string>> localization;
+        public JObject localization;
 
         // Token: 0x040097D4 RID: 38868
         [JsonProperty("survey")]

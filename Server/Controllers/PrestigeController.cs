@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 
@@ -21,9 +20,9 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
         [Route("client/prestige/obtain")]
         [HttpPost]
-        public async void Obtain(int? retry, bool? debug)
+        public async Task<IActionResult> Obtain(int? retry, bool? debug)
         {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(new { }, Request, Response);
+            return new BSGSuccessBodyResult(new { });
         }
     }
 }

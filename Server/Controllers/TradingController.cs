@@ -1,11 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Providers;
+using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class TradingController : ControllerBase
     {
+        private SaveProvider saveProvider { get; } = new SaveProvider();
+
         private string SessionId
         {
             get
@@ -25,21 +29,31 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/trading/api/traderSettings")]
         [HttpPost]
-        public async void TraderSettings(int? retry, bool? debug)
+        public async Task<IActionResult> TraderSettings(int? retry)
         {
-            //if (TradingProvider.TryLoadTraders(out var items))
-            //{
-            //    var listOfTraders = items.Values;
-            //    await HttpBodyConverters.CompressIntoResponseBodyBSG(listOfTraders, Request, Response);
-            //}
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(new object[0], Request, Response);
+            DatabaseProvider.TryLoadTraders(out JObject traders);
 
+            JArray arrayResponse = new JArray();
+            foreach (var key in traders)
+            {
+                arrayResponse.Add(key.Value);
+            }
+
+            return new BSGSuccessBodyResult(arrayResponse);
         }
 
         [Route("/client/trading/api/getTraderAssort/{traderId}")]
         [HttpPost]
-        public async void GetTraderAssort(int? retry, bool? debug, string traderId)
+        public async Task<IActionResult> GetTraderAssort(int? retry, bool? debug, string traderId)
         {
+            var sessionId = SessionId;
+#if DEBUG
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                sessionId = saveProvider.GetProfiles().Keys.First();
+            }
+#endif
+
             var tradingProvider = new TradingProvider();
 
             EFT.TraderAssortment traderAssortment = new();
@@ -49,12 +63,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             if (traderId == "ragfair")
             {
-                await HttpBodyConverters.CompressIntoResponseBodyBSG(traderAssortment, Request, Response);
-                return;
+                return new BSGSuccessBodyResult(traderAssortment);
             }
 
-            var traderAssortmentForPlayer = tradingProvider.GetTraderAssortmentById(traderId, SessionId);
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(traderAssortmentForPlayer, Request, Response);
+            var traderAssortmentForPlayer = tradingProvider.GetTraderAssortmentById(traderId, sessionId);
+            return new BSGSuccessBodyResult(traderAssortmentForPlayer);
         }
     }
 }
