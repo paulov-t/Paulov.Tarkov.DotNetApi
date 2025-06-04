@@ -286,22 +286,37 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             return result;
         }
 
+        /// <summary>
+        /// Attempts to load location base data from the database archive.
+        /// </summary>
+        /// <remarks>This method scans the database archive for entries under the "database/locations/"
+        /// directory and attempts  to load location base data from files named "base.json". Only entries with valid
+        /// names are processed. If a file does not contain valid location data, it is skipped.</remarks>
+        /// <param name="locations">When the method returns, contains a dictionary where the keys are location names and the values are  the
+        /// corresponding location data objects. If no location data is found, the dictionary will be empty.</param>
+        /// <returns><see langword="true"/> if one or more location bases were successfully loaded; otherwise, <see
+        /// langword="false"/>.</returns>
         public static bool TryLoadLocationBases(
         out Dictionary<string, object> locations)
         {
             Dictionary<string, object> locationsRaw = new();
-            foreach (var dir in Directory.GetDirectories(Path.Combine(DatabaseAssetPath, "locations")).Select(x => new DirectoryInfo(x)))
+
+            var locationEntries = DatabaseAssetZipArchive.Entries.Where(x => x.FullName.StartsWith("database/locations/")).ToArray();
+            foreach (var entry in locationEntries.Where(x => !string.IsNullOrEmpty(x.Name)))
             {
-                locationsRaw.Add(dir.Name, new LocationSettingsClass.Location());
-                foreach (var f in Directory.GetFiles(dir.FullName)
-                    .Where(x => x.EndsWith("base.json"))
-                    .Select(x => new FileInfo(x)))
+                if (entry.Name == "base.json")
                 {
+                    TryLoadDatabaseFile(entry.FullName, out JObject dbFile);
+                    if (dbFile.ContainsKey("locations"))
+                        continue;
+
+                    string name = entry.FullName
+                        .Replace("database/locations/", "")
+                        .Replace("/base.json", "");
+
                     try
                     {
-                        string relativePath = f.FullName.Replace(DatabaseProvider.DatabaseAssetPath, "");
-                        DatabaseProvider.TryLoadDatabaseFile(relativePath, out Dictionary<string, object> model);
-                        var ob = locationsRaw[dir.Name] = model;
+                        locationsRaw.Add(name, dbFile);
                     }
                     catch
                     {
@@ -312,6 +327,16 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
 
             locations = locationsRaw;
             return locations.Count > 0;
+        }
+
+        public static bool TryLoadLocationPaths(out JToken paths)
+        {
+            paths = null;
+            if (!TryLoadDatabaseFile("locations/base.json", out var @base))
+                return false;
+
+            paths = @base["paths"];
+            return true;
         }
 
         public static bool TryLoadWeather(

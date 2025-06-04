@@ -277,10 +277,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/locations")]
         [HttpPost]
-        public async Task<IActionResult> Locations(
-          [FromQuery] int? retry
-      , [FromQuery] bool? debug
-         )
+        public async Task<IActionResult> Locations()
         {
             if (!DatabaseProvider.TryLoadLocationBases(out var locationJsons))
             {
@@ -288,12 +285,17 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGResult(null);
             }
 
-            Dictionary<string, object> response = new();
-            response.Add("locations", locationJsons);
+            if (!DatabaseProvider.TryLoadLocationPaths(out var paths))
+            {
+                Response.StatusCode = 500;
+                return new BSGResult(null);
+            }
 
-            //await HttpBodyConverters.CompressIntoResponseBodyBSG(response, Request, Response);
+            JObject j = new JObject();
+            j.Add("locations", JToken.FromObject(locationJsons));
+            j.Add("paths", paths);
 
-            return new BSGSuccessBodyResult(response);
+            return new BSGSuccessBodyResult(j);
 
         }
 
