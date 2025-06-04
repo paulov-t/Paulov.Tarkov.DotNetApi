@@ -1,8 +1,8 @@
 using Comfort.Common;
 using EFT.HealthSystem;
 using Newtonsoft.Json.Linq;
-using Paulov.Tarkov.WebServer.DOTNET.Providers;
 using Paulov.Tarkov.WebServer.DOTNET.Services;
+using Paulov.TarkovServices;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.WebSockets;
@@ -34,14 +34,26 @@ namespace SIT.WebServer
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddRequestDecompression(options =>
             {
-                options.DecompressionProviders.Add("zlibdecompressionprovider", new ZLibDecompressionProvider());
+                //options.DecompressionProviders.Add("zlibdecompressionprovider", new ZLibDecompressionProvider());
             });
 
+            var mvc = builder.Services.AddMvc().AddSessionStateTempDataProvider();
+
+            // ---------------------------------------------------------------
+            // Add Assembly Mods which use MVC Controllers to the MVC handler
+            foreach (var assemblyMod in assemblyMods)
+            {
+                if (assemblyMod.GetTypes().Any(x => x.BaseType?.Name.Contains("Controller") == true))
+                {
+                    mvc.AddApplicationPart(assemblyMod);
+                }
+            }
+            //
+            // ---------------------------------------------------------------
 
             // Add services to the container.
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            //builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo());
@@ -52,19 +64,7 @@ namespace SIT.WebServer
 
 
             builder.Services.AddDistributedMemoryCache();
-            var mvc = builder.Services.AddMvc().AddSessionStateTempDataProvider();
 
-            // ---------------------------------------------------------------
-            // Add Assembly Mods which use MVC Controllers to the MVC handler
-            foreach (var assemblyMod in assemblyMods)
-            {
-                if (assemblyMod.GetTypes().Any(x => x.BaseType?.Name == "Controller"))
-                {
-                    mvc.AddApplicationPart(assemblyMod);
-                }
-            }
-            //
-            // ---------------------------------------------------------------
             builder.Services.AddSession();
 
             var app = builder.Build();

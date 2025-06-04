@@ -1,6 +1,6 @@
 ﻿using ChatShared;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Models
+namespace Paulov.TarkovModels
 {
     public class Dialogue
     {

@@ -1,6 +1,6 @@
 ﻿using Comfort.Common;
 using Newtonsoft.Json.Linq;
-using Paulov.Tarkov.WebServer.DOTNET.Providers;
+using Paulov.TarkovServices;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Services
 {

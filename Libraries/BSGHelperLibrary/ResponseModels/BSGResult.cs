@@ -2,8 +2,11 @@
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading.Tasks;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.ResponseModels
+namespace BSGHelperLibrary.ResponseModels
 {
     public class BSGResult : ActionResult, IStatusCodeActionResult
     {

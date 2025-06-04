@@ -1,13 +1,13 @@
-﻿using ChatShared;
+﻿using BSGHelperLibrary.ResponseModels;
+using ChatShared;
 using EFT;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.Tarkov.WebServer.DOTNET.Models;
-using Paulov.Tarkov.WebServer.DOTNET.Providers;
-using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 using Paulov.Tarkov.WebServer.DOTNET.Services;
+using Paulov.TarkovModels;
+using Paulov.TarkovServices;
 using System.Text;
 
 namespace Paulov.Tarkov.Web.Api.Controllers

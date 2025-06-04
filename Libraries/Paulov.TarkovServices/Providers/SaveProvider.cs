@@ -1,8 +1,8 @@
 ﻿using EFT;
 using Newtonsoft.Json;
-using Paulov.Tarkov.WebServer.DOTNET.Models;
+using Paulov.TarkovModels;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Providers
+namespace Paulov.TarkovServices
 {
     /// <summary>
     /// Provides functionality for managing user profiles, including creation, retrieval, and persistence.

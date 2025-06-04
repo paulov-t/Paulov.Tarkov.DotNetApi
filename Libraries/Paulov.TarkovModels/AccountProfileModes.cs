@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Models
+namespace Paulov.TarkovModels
 {
     public class AccountProfileModes
     {

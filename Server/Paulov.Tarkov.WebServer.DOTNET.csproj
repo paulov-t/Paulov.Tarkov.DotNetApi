@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FMT.FileTools" Version="2025.6.1.13001" />
+    <PackageReference Include="FMT.FileTools" Version="2025.6.3.17001" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.14" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
@@ -75,12 +75,20 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="Models\" />
 	  <Folder Include="Mods\" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\BSGHelperLibrary\BSGHelperLibrary.csproj" />
-	  <ProjectReference Include="..\Mods\Arena\Arena.csproj" />
+	  <None Include="..\Mods\Paulov.Launcher.Support\bin\Debug\net8.0\Paulov.Launcher.Support.dll" Link="Mods\Paulov.Launcher.Support.dll">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Libraries\BSGHelperLibrary\BSGHelperLibrary.csproj" />
+	  <ProjectReference Include="..\Libraries\Paulov.TarkovModels\Paulov.TarkovModels.csproj" />
+	  <ProjectReference Include="..\Libraries\Paulov.TarkovServices\Paulov.TarkovServices.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -1,7 +1,7 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Models
+namespace Paulov.TarkovModels
 {
     public class Account
     {

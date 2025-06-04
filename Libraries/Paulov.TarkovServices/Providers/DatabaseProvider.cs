@@ -1,12 +1,10 @@
-﻿using EFT;
-using FMT.FileTools;
+﻿using FMT.FileTools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SIT.Arena;
 using System.IO.Compression;
 using System.Text.Json;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Providers
+namespace Paulov.TarkovServices
 {
     /// <summary>
     /// Provides methods and properties for accessing and managing database assets, including loading localized data,
@@ -276,27 +274,27 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             //return TryLoadDatabaseFile("globalsArena.json", out globals);
         }
 
-        public static bool TryLoadGlobalsArena(
-         out Dictionary<string, object> globals)
-        {
-            var result = TryLoadDatabaseFile("globals.json", out globals);
+        //public static bool TryLoadGlobalsArena(
+        // out Dictionary<string, object> globals)
+        //{
+        //    var result = TryLoadDatabaseFile("globals.json", out globals);
 
-            if (TryLoadDatabaseFile("globalsArena.json", out Dictionary<string, object> globalsArena))
-                globals.Add("GlobalsArena", globalsArena);
+        //    if (TryLoadDatabaseFile("globalsArena.json", out Dictionary<string, object> globalsArena))
+        //        globals.Add("GlobalsArena", globalsArena);
 
 
-            if (!globals.ContainsKey("GameModes"))
-            {
-                globals.Add("GameModes",
-                    new Dictionary<string, object>()
-                    {
-                    { new MongoID(true), new ArenaGameModeSettings() {
-                    } }
-                    }
-                    );
-            }
-            return result;
-        }
+        //    if (!globals.ContainsKey("GameModes"))
+        //    {
+        //        globals.Add("GameModes",
+        //            new Dictionary<string, object>()
+        //            {
+        //            { new MongoID(true), new ArenaGameModeSettings() {
+        //            } }
+        //            }
+        //            );
+        //    }
+        //    return result;
+        //}
 
         /// <summary>
         /// Attempts to load location base data from the database archive.

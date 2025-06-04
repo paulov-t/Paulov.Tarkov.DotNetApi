@@ -1,6 +1,7 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Linq;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Providers
+namespace Paulov.TarkovServices
 {
     public class NotifierProvider
     {

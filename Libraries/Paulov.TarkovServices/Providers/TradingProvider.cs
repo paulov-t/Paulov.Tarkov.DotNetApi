@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text.Json;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Providers
+namespace Paulov.TarkovServices
 {
     public class TradingProvider
     {
@@ -34,7 +34,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             return traderByTraderId.Count > 0;
         }
 
-        internal Dictionary<string, int> GetStaticPrices()
+        public Dictionary<string, int> GetStaticPrices()
         {
             if (StaticPrices.Count > 0)
                 return StaticPrices;
@@ -90,7 +90,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Providers
             return null;
         }
 
-        internal EFT.TraderAssortment GetTraderAssortmentById(string traderId, string profileId)
+        public EFT.TraderAssortment GetTraderAssortmentById(string traderId, string profileId)
         {
             var assortJsonPath = Path.Combine("traders", traderId, "assort.json");
             DatabaseProvider.TryLoadDatabaseFile(assortJsonPath, out JsonDocument assort);

@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BSGHelperLibrary.ResponseModels;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using Paulov.Tarkov.WebServer.DOTNET.ResponseModels;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
