@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BSGHelperLibrary\BSGHelperLibrary.csproj" />
+    <ProjectReference Include="..\..\Libraries\BSGHelperLibrary\BSGHelperLibrary.csproj" />
+    <ProjectReference Include="..\..\Libraries\Paulov.TarkovModels\Paulov.TarkovModels.csproj" />
+    <ProjectReference Include="..\..\Libraries\Paulov.TarkovServices\Paulov.TarkovServices.csproj" />
   </ItemGroup>
 
 </Project>

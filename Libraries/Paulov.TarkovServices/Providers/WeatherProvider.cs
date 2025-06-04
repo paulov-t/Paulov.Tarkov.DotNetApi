@@ -1,4 +1,4 @@
-﻿namespace Paulov.Tarkov.WebServer.DOTNET.Providers
+﻿namespace Paulov.TarkovServices
 {
     public class WeatherProvider
     {

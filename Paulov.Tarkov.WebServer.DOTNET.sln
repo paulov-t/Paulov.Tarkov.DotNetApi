@@ -16,15 +16,23 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFT.Vanilla", "Mods\EFT.Vanilla\EFT.Vanilla.csproj", "{557E9812-536E-48A8-9C69-F4FD125BC882}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paulov.TarkovVanillaSupport", "Mods\Paulov.TarkovVanillaSupport\Paulov.TarkovVanillaSupport.csproj", "{557E9812-536E-48A8-9C69-F4FD125BC882}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFT.Multiplayer", "Mods\EFT.Multiplayer\EFT.Multiplayer.csproj", "{BA120EAE-CC52-4B89-B71E-8911F2D7E844}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paulov.TarkovMultiplayerSupport", "Mods\Paulov.TarkovMultiplayerSupport\Paulov.TarkovMultiplayerSupport.csproj", "{BA120EAE-CC52-4B89-B71E-8911F2D7E844}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BSGHelperLibrary", "BSGHelperLibrary\BSGHelperLibrary.csproj", "{56E337DF-55F3-4011-BA7E-9E1251D122AF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BSGHelperLibrary", "Libraries\BSGHelperLibrary\BSGHelperLibrary.csproj", "{56E337DF-55F3-4011-BA7E-9E1251D122AF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Arena", "Mods\Arena\Arena.csproj", "{A5131F86-1A80-4F4E-8A21-8C1FB183CF2A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paulov.ArenaSupport", "Mods\Paulov.ArenaSupport\Paulov.ArenaSupport.csproj", "{A5131F86-1A80-4F4E-8A21-8C1FB183CF2A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paulov.Launcher.Support", "Mods\Paulov.Launcher.Support\Paulov.Launcher.Support.csproj", "{C50CBFE2-3193-4479-98F6-51536306B4CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paulov.TarkovServices", "Libraries\Paulov.TarkovServices\Paulov.TarkovServices.csproj", "{6661B972-BCDD-4542-BBD2-CC4B19CC0973}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paulov.TarkovModels", "Libraries\Paulov.TarkovModels\Paulov.TarkovModels.csproj", "{F605862A-E078-4EA5-A341-8B39A53C4FFA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Mods", "Mods", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{A4AFE25F-25D2-4B3A-83B0-829ED8124416}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,9 +64,26 @@ Global
 		{C50CBFE2-3193-4479-98F6-51536306B4CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C50CBFE2-3193-4479-98F6-51536306B4CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C50CBFE2-3193-4479-98F6-51536306B4CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6661B972-BCDD-4542-BBD2-CC4B19CC0973}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6661B972-BCDD-4542-BBD2-CC4B19CC0973}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6661B972-BCDD-4542-BBD2-CC4B19CC0973}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6661B972-BCDD-4542-BBD2-CC4B19CC0973}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F605862A-E078-4EA5-A341-8B39A53C4FFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F605862A-E078-4EA5-A341-8B39A53C4FFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F605862A-E078-4EA5-A341-8B39A53C4FFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F605862A-E078-4EA5-A341-8B39A53C4FFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{557E9812-536E-48A8-9C69-F4FD125BC882} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{BA120EAE-CC52-4B89-B71E-8911F2D7E844} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{56E337DF-55F3-4011-BA7E-9E1251D122AF} = {A4AFE25F-25D2-4B3A-83B0-829ED8124416}
+		{A5131F86-1A80-4F4E-8A21-8C1FB183CF2A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{C50CBFE2-3193-4479-98F6-51536306B4CF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{6661B972-BCDD-4542-BBD2-CC4B19CC0973} = {A4AFE25F-25D2-4B3A-83B0-829ED8124416}
+		{F605862A-E078-4EA5-A341-8B39A53C4FFA} = {A4AFE25F-25D2-4B3A-83B0-829ED8124416}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {737AF2BC-FC0D-4050-A210-C9988C76D71F}

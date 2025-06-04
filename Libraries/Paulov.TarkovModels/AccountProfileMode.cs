@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Models
+namespace Paulov.TarkovModels
 {
     /// <summary>
     /// Represents the configuration and settings for an account profile, including associated characters, social

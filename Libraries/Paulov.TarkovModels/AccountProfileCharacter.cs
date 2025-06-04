@@ -1,4 +1,4 @@
-﻿namespace Paulov.Tarkov.WebServer.DOTNET.Models
+﻿namespace Paulov.TarkovModels
 {
     /// <summary>
     /// TODO: Using this would be the preferred way, rather than reinventing the wheel

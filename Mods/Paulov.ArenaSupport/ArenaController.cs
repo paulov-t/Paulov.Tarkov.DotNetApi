@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using BSGHelperLibrary.ResponseModels;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 
@@ -14,9 +15,9 @@ namespace SIT.Arena
         [Route("/client/leaderboard")]
         [HttpGet]
         [HttpPost]
-        public async void ClientLeaderboard(int? retry, bool? debug)
+        public async Task<IActionResult> ClientLeaderboard(int? retry, bool? debug)
         {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(""), Request, Response);
+            return new BSGSuccessBodyResult("{}");
         }
 
         [Route("client/arena/server/list")]

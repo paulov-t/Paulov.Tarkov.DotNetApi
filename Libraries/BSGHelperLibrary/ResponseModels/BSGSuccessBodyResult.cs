@@ -1,26 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿#nullable enable
+
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
+using System;
+using System.Threading.Tasks;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.ResponseModels
+namespace BSGHelperLibrary.ResponseModels
 {
-    /// <summary>
-    /// Represents an HTTP response that formats a specified body value as JSON, typically used to return error-related
-    /// data.
-    /// </summary>
-    /// <remarks>This class provides functionality for formatting the response body in a consistent JSON
-    /// structure, including error codes and messages. It supports customization of the HTTP status code, content type,
-    /// and serializer settings.</remarks>
-    public class BSGErrorBodyResult : ActionResult, IStatusCodeActionResult
+    public class BSGSuccessBodyResult : ActionResult, IStatusCodeActionResult
     {
         /// <summary>
         /// Creates a new <see cref="BSGSuccessBodyResult"/> with the given <paramref name="bodyValue"/>.
         /// </summary>
         /// <param name="bodyValue">The value to format as JSON.</param>
-        public BSGErrorBodyResult(int errorCode, string errorMessage)
+        public BSGSuccessBodyResult(object? bodyValue)
         {
-            ErrorCode = errorCode;
-            ErrorMessage = errorMessage;
+            BodyValue = bodyValue;
         }
 
         /// <summary>
@@ -46,23 +42,39 @@ namespace Paulov.Tarkov.WebServer.DOTNET.ResponseModels
         public int? StatusCode { get; set; } = 200;
 
         /// <summary>
-        /// Gets or sets the error code associated with the current operation.
+        /// Gets or sets the value to be formatted.
         /// </summary>
-        public int ErrorCode { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string ErrorMessage { get; set; }
+        public object? BodyValue { get; set; }
 
         /// <inheritdoc />
         public override Task ExecuteResultAsync(ActionContext context)
         {
             ArgumentNullException.ThrowIfNull(context);
 
-            var responseText = "{ \"err\": " + ErrorCode + ", \"errmsg\": \"" + ErrorMessage + "\", \"data\": null }";
+            var responseText = "";
+
+            if (BodyValue != null)
+            {
+                if ((BodyValue is Array || BodyValue.GetType().FullName.Contains("List`1")))
+                {
+                    var data = BodyValue != null ? BodyValue?.ToJson() : null;
+                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                }
+                else if (BodyValue is string && !BodyValue.ToString().StartsWith("{") && !BodyValue.ToString().StartsWith("["))
+                {
+                    var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
+                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": \"" + data + "\" }";
+                }
+                else
+                {
+                    var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
+                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                }
+            }
 
             return HttpBodyConverters.CompressStringIntoResponseBody(responseText, context.HttpContext.Request, context.HttpContext.Response);
         }
     }
 }
+
+#nullable disable
