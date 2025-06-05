@@ -1,5 +1,4 @@
 ﻿using EFT;
-using FMT.FileTools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO.Compression;
@@ -27,7 +26,15 @@ namespace Paulov.TarkovServices
         /// <summary>
         /// 
         /// </summary>
-        public static Stream DatabaseAssetStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip"); } }
+        //public static Stream DatabaseAssetStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip"); } }
+        public static Stream DatabaseAssetStream
+        {
+            get
+            {
+                var fs = new FileStream(Path.Combine(AppContext.BaseDirectory, "data", "database.zip"), FileMode.Open, FileAccess.Read);
+                return fs;
+            }
+        }
 
         /// <summary>
         /// 

@@ -24,12 +24,23 @@
 	  <Content Remove="data\zombies.json" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Remove="data\database.zip" />
+	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="data\scav.json" />
+	  <Content Include="data\database.zip">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <EmbeddedResource Include="data\scav.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </EmbeddedResource>
 	  <EmbeddedResource Include="data\zombies.json" />
 	  <EmbeddedResource Include="files\files.zip" />
-	  <EmbeddedResource Include="data\database.zip" />
 	</ItemGroup>
 
 	<ItemGroup>
