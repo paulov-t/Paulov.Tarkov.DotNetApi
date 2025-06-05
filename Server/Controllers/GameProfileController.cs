@@ -72,7 +72,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 }
 #else
                 Response.StatusCode = 500;
-                return;
+                return new BSGErrorBodyResult(500, "No Session Found!");
 #endif
             }
 

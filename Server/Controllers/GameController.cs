@@ -256,7 +256,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (string.IsNullOrEmpty(sessionId))
             {
                 Response.StatusCode = 412; // Precondition
-                return;
+                return new BSGErrorBodyResult(412, "No Session Found!");
             }
 #else
             if (string.IsNullOrEmpty(sessionId))
