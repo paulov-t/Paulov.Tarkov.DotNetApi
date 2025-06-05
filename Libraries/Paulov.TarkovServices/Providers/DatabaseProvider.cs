@@ -22,7 +22,7 @@ namespace Paulov.TarkovServices
         /// <summary>
         /// 
         /// </summary>
-        public static string DatabaseAssetPath { get { return Path.Combine(AppContext.BaseDirectory, "data", "database"); } }
+        //public static string DatabaseAssetPath { get { return Path.Combine(AppContext.BaseDirectory, "data", "database"); } }
 
         /// <summary>
         /// 

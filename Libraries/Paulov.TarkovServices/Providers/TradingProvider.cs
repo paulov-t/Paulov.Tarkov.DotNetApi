@@ -11,8 +11,8 @@ namespace Paulov.TarkovServices
 
         public static Dictionary<string, int> StaticPrices = new();
 
-        public static string DatabaseAssetPath => DatabaseProvider.DatabaseAssetPath;
-        public static string TradersAssetPath => Path.Combine(DatabaseProvider.DatabaseAssetPath, "traders");
+        //public static string DatabaseAssetPath => DatabaseProvider.DatabaseAssetPath;
+        //public static string TradersAssetPath => Path.Combine(DatabaseProvider.DatabaseAssetPath, "traders");
 
         static TradingProvider()
         {
