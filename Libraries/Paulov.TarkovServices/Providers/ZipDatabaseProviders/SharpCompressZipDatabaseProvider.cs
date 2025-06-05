@@ -1,9 +1,10 @@
 ﻿using FMT.FileTools;
+using Paulov.TarkovServices.Models;
 using SharpCompress.Readers;
 
-namespace Paulov.TarkovServices.Providers
+namespace Paulov.TarkovServices.Providers.ZipDatabaseProviders
 {
-    public class ZipDatabaseProvider
+    public sealed class SharpCompressZipDatabaseProvider : IDatabaseProvider
     {
         public static Stream DatabaseAssetStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip"); } }
 
@@ -16,7 +17,7 @@ namespace Paulov.TarkovServices.Providers
             }
         }
 
-        public ZipDatabaseProvider()
+        public SharpCompressZipDatabaseProvider()
         {
 
         }
@@ -34,35 +35,22 @@ namespace Paulov.TarkovServices.Providers
                         var fullname = reader.Entry?.Key != null ? reader.Entry.Key : "/";
                         var lastIndexOfSlash = fullname != null ? fullname.LastIndexOf('/') : 0;
                         var name = fullname != null ? fullname.Substring(lastIndexOfSlash + 1) : "";
-                        entries.Add(new EntryModel(name, fullname));
+                        entries.Add(new EntryModel(name, fullname, this));
                     }
                 }
                 return entries;
             }
         }
-    }
 
-    public class EntryModel
-    {
-        public string Name { get; set; }
-
-        public string FullName { get; set; }
-
-        public EntryModel(string name, string fullname)
+        public Stream Open(string entryName)
         {
-            Name = name;
-            FullName = fullname;
-        }
-
-        public Stream Open()
-        {
-            var reader = ZipDatabaseProvider.DatabaseAssetZipReader;
+            var reader = DatabaseAssetZipReader;
             while (reader.MoveToNextEntry())
             {
                 if (!reader.Entry.IsDirectory)
                 {
                     var fullname = reader.Entry?.Key != null ? reader.Entry.Key : "/";
-                    if (fullname == FullName)
+                    if (fullname == entryName)
                     {
                         return reader.OpenEntryStream();
                     }
@@ -70,10 +58,7 @@ namespace Paulov.TarkovServices.Providers
             }
             return null;
         }
-
-        public override string ToString()
-        {
-            return FullName;
-        }
     }
+
+
 }

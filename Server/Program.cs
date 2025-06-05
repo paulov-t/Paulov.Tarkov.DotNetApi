@@ -69,38 +69,11 @@ namespace SIT.WebServer
 
             var app = builder.Build();
 
-
-
-            //app.Use(async (context, next) =>
-            //{
-            //    if (context.Request.Path.ToString().StartsWith("/files/"))
-            //    {
-            //        await next();
-            //        return;
-            //    }
-
-            //    if (context.Request.Path.ToString().StartsWith("/swagger/"))
-            //    {
-            //        await next();
-            //        return;
-            //    }
-
-            //    if (context.Request.Path.ToString().Equals("/"))
-            //    {
-            //        await next();
-            //        return;
-            //    }
-
+            // Load the Globals
             GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
             // test the singleton
             _ = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
-
             SaveProvider saveProvider = new();
-
-            //    await next();
-
-
-            //});
 
 
             // The following handles the request for "files" from the Client
