@@ -3,6 +3,8 @@ using FMT.FileTools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO.Compression;
+//using SharpCompress.Archives.Zip;
+//using SharpCompress.Readers.Zip;
 using System.Text.Json;
 
 namespace Paulov.TarkovServices
@@ -28,9 +30,11 @@ namespace Paulov.TarkovServices
         /// 
         /// </summary>
         public static ZipArchive DatabaseAssetZipArchive
+        //public static ZipReader DatabaseAssetZipArchive
         {
             get
             {
+                //return ZipReader.Open(DatabaseAssetStream);
                 return new ZipArchive(DatabaseAssetStream, ZipArchiveMode.Read, false, System.Text.Encoding.ASCII);
             }
         }
@@ -150,7 +154,8 @@ namespace Paulov.TarkovServices
         {
             var filePath = ConvertPath(databaseFilePath);
 
-            using var zipArchive = new System.IO.Compression.ZipArchive(DatabaseAssetStream);
+            //using var zipArchive = DatabaseAssetZipArchive;
+            var zipArchive = DatabaseAssetZipArchive;
             var zipEntry = zipArchive.Entries.First(x => x.FullName == filePath);
 
             using var ms = new MemoryStream();
