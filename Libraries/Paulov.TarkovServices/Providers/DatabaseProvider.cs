@@ -2,9 +2,9 @@
 using FMT.FileTools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.IO.Compression;
-//using SharpCompress.Archives.Zip;
-//using SharpCompress.Readers.Zip;
+using Paulov.TarkovServices.Providers;
+
+//using System.IO.Compression;
 using System.Text.Json;
 
 namespace Paulov.TarkovServices
@@ -29,15 +29,18 @@ namespace Paulov.TarkovServices
         /// <summary>
         /// 
         /// </summary>
-        public static ZipArchive DatabaseAssetZipArchive
-        //public static ZipReader DatabaseAssetZipArchive
-        {
-            get
-            {
-                //return ZipReader.Open(DatabaseAssetStream);
-                return new ZipArchive(DatabaseAssetStream, ZipArchiveMode.Read, false, System.Text.Encoding.ASCII);
-            }
-        }
+        //public static ZipArchive DatabaseAssetZipArchive
+        //public static IReader DatabaseAssetZipArchive
+        //{
+        //    get
+        //    {
+        //        var reader = ReaderFactory.Open(DatabaseAssetStream);
+        //        return reader;
+
+        //        //return ZipReader.Open(DatabaseAssetStream);
+        //        //return new ZipArchive(DatabaseAssetStream, ZipArchiveMode.Read, false, System.Text.Encoding.ASCII);
+        //    }
+        //}
 
         public static Newtonsoft.Json.JsonSerializer CachedSerializer;
         static JsonDocumentOptions CachedJsonDocumentOptions = new()
@@ -100,7 +103,7 @@ namespace Paulov.TarkovServices
             localesDict = new();
             languages = new();
 
-            var db = DatabaseAssetZipArchive;
+            var db = new ZipDatabaseProvider();
             if (db == null)
                 return false;
 
@@ -137,7 +140,7 @@ namespace Paulov.TarkovServices
             out JObject languages)
         {
             languages = new();
-            var db = DatabaseAssetZipArchive;
+            var db = new ZipDatabaseProvider();
             if (db == null)
                 return false;
 
@@ -154,9 +157,7 @@ namespace Paulov.TarkovServices
         {
             var filePath = ConvertPath(databaseFilePath);
 
-            //using var zipArchive = DatabaseAssetZipArchive;
-            var zipArchive = DatabaseAssetZipArchive;
-            var zipEntry = zipArchive.Entries.First(x => x.FullName == filePath);
+            var zipEntry = new ZipDatabaseProvider().Entries.First(x => x.FullName == filePath);
 
             using var ms = new MemoryStream();
             using var stream = zipEntry.Open();
@@ -324,7 +325,7 @@ namespace Paulov.TarkovServices
         {
             Dictionary<string, object> locationsRaw = new();
 
-            var locationEntries = DatabaseAssetZipArchive.Entries.Where(x => x.FullName.StartsWith("database/locations/")).ToArray();
+            var locationEntries = new ZipDatabaseProvider().Entries.Where(x => x.FullName.StartsWith("database/locations/")).ToArray();
             foreach (var entry in locationEntries.Where(x => !string.IsNullOrEmpty(x.Name)))
             {
                 if (entry.Name == "base.json")
@@ -374,7 +375,7 @@ namespace Paulov.TarkovServices
         {
             traders = new JObject();
 
-            var entries = DatabaseAssetZipArchive.Entries.Where(x => x.FullName.StartsWith("database/traders/"));
+            var entries = new ZipDatabaseProvider().Entries.Where(x => x.FullName.StartsWith("database/traders/"));
             foreach (var entry in entries)
             {
                 var entryName = entry.FullName.Replace("database/traders/", "").Replace("/base.json", "");

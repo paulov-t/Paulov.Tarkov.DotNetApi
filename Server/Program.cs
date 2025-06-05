@@ -71,36 +71,36 @@ namespace SIT.WebServer
 
 
 
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Path.ToString().StartsWith("/files/"))
-                {
-                    await next();
-                    return;
-                }
+            //app.Use(async (context, next) =>
+            //{
+            //    if (context.Request.Path.ToString().StartsWith("/files/"))
+            //    {
+            //        await next();
+            //        return;
+            //    }
 
-                if (context.Request.Path.ToString().StartsWith("/swagger/"))
-                {
-                    await next();
-                    return;
-                }
+            //    if (context.Request.Path.ToString().StartsWith("/swagger/"))
+            //    {
+            //        await next();
+            //        return;
+            //    }
 
-                if (context.Request.Path.ToString().Equals("/"))
-                {
-                    await next();
-                    return;
-                }
+            //    if (context.Request.Path.ToString().Equals("/"))
+            //    {
+            //        await next();
+            //        return;
+            //    }
 
-                GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
-                // test the singleton
-                _ = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
+            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            // test the singleton
+            _ = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
 
-                SaveProvider saveProvider = new();
+            SaveProvider saveProvider = new();
 
-                await next();
+            //    await next();
 
 
-            });
+            //});
 
 
             // The following handles the request for "files" from the Client

@@ -1,6 +1,7 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Paulov.TarkovServices.Providers;
 using System.Text.Json;
 
 namespace Paulov.TarkovServices
@@ -24,7 +25,7 @@ namespace Paulov.TarkovServices
         {
 
             traderByTraderId = new Dictionary<string, object>();
-            foreach (var traderDirectory in DatabaseProvider.DatabaseAssetZipArchive.Entries.Where(x => x.FullName.StartsWith("traders")))
+            foreach (var traderDirectory in new ZipDatabaseProvider().Entries.Where(x => x.FullName.StartsWith("traders")))
             {
                 if (traderDirectory.Name.Contains("ragfair"))
                     continue;
