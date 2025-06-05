@@ -69,22 +69,33 @@ namespace SIT.WebServer
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            //if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+
 
             app.Use(async (context, next) =>
             {
+                if (context.Request.Path.ToString().StartsWith("/files/"))
+                {
+                    await next();
+                    return;
+                }
+
+                if (context.Request.Path.ToString().StartsWith("/swagger/"))
+                {
+                    await next();
+                    return;
+                }
+
+                if (context.Request.Path.ToString().Equals("/"))
+                {
+                    await next();
+                    return;
+                }
 
                 GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
                 // test the singleton
-                var Temperature = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
+                _ = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
 
                 SaveProvider saveProvider = new();
-                DatabaseProvider databaseProvider = new();
 
                 await next();
 
@@ -178,6 +189,13 @@ namespace SIT.WebServer
             // <-- End of Handle WebSocket
 
             app.UseMiddleware<RequestLoggingMiddleware>();
+
+            // Configure the HTTP request pipeline.
+            //if (app.Environment.IsDevelopment())
+            //{
+            app.UseSwagger();
+            app.UseSwaggerUI();
+            //}
 
             app.UseAuthorization();
             app.UseSession(new SessionOptions() { IdleTimeout = new TimeSpan(1, 1, 1, 1) });

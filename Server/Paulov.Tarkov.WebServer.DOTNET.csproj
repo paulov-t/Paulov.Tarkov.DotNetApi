@@ -29,9 +29,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Content Include="data\database.zip">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
+	  <EmbeddedResource Include="data\database.zip">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </EmbeddedResource>
 	</ItemGroup>
 
 

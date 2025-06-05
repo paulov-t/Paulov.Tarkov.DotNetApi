@@ -1,4 +1,5 @@
 ﻿using EFT;
+using FMT.FileTools;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO.Compression;
@@ -21,25 +22,18 @@ namespace Paulov.TarkovServices
         /// <summary>
         /// 
         /// </summary>
-        //public static string DatabaseAssetPath { get { return Path.Combine(AppContext.BaseDirectory, "data", "database"); } }
+        public static Stream DatabaseAssetStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip"); } }
 
         /// <summary>
         /// 
         /// </summary>
-        //public static Stream DatabaseAssetStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip"); } }
-        public static Stream DatabaseAssetStream
+        public static ZipArchive DatabaseAssetZipArchive
         {
             get
             {
-                var fs = new FileStream(Path.Combine(AppContext.BaseDirectory, "data", "database.zip"), FileMode.Open, FileAccess.Read);
-                return fs;
+                return new ZipArchive(DatabaseAssetStream, ZipArchiveMode.Read, false, System.Text.Encoding.ASCII);
             }
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public static ZipArchive DatabaseAssetZipArchive { get { return new ZipArchive(DatabaseAssetStream); } }
 
         public static Newtonsoft.Json.JsonSerializer CachedSerializer;
         static JsonDocumentOptions CachedJsonDocumentOptions = new()
@@ -61,18 +55,6 @@ namespace Paulov.TarkovServices
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
             };
 
-            //var tarkovAssembly = Assembly.LoadFrom(typeof(TarkovApplication).Assembly.Location);
-
-
-            //var converters = (JsonConverter[])tarkovAssembly.GetTypes().First(x => x.GetProperties().Any(p => p.Name == "Converters")).GetProperty("Converters").GetValue(null);
-            //foreach (var converter in converters)
-            //    CachedSerializer.Converters.Add(converter);
-
-            //CachedSerializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-        }
-
-        public DatabaseProvider()
-        {
             if (!CachedSerializer.Converters.Any())
             {
                 var tarkovTypes = typeof(TarkovApplication).Assembly.DefinedTypes;
