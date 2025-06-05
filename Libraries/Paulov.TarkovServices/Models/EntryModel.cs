@@ -1,4 +1,4 @@
-﻿using Paulov.TarkovServices.Providers;
+﻿using Paulov.TarkovServices.Providers.Interfaces;
 
 namespace Paulov.TarkovServices.Models
 {
@@ -31,7 +31,7 @@ namespace Paulov.TarkovServices.Models
             //        }
             //    }
             //}
-            return Provider.Open(FullName);
+            return Provider.GetEntryStream(FullName);
         }
 
         public override string ToString()

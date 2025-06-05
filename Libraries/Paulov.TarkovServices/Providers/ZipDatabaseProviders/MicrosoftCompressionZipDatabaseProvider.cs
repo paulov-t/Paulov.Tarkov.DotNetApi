@@ -1,6 +1,10 @@
 ﻿using FMT.FileTools;
+using Newtonsoft.Json;
 using Paulov.TarkovServices.Models;
+using Paulov.TarkovServices.Providers.Interfaces;
+using System.Data;
 using System.IO.Compression;
+using System.Text;
 
 namespace Paulov.TarkovServices.Providers.ZipDatabaseProviders
 {
@@ -16,7 +20,36 @@ namespace Paulov.TarkovServices.Providers.ZipDatabaseProviders
             }
         }
 
-        public Stream Open(string entryName)
+        public void Connect(string connectionString)
+        {
+        }
+
+        public void Disconnect()
+        {
+        }
+
+        public void ExecuteCommand(string query)
+        {
+        }
+
+        public DataTable GetData(string query)
+        {
+            var entryStream = GetEntryStream(query);
+            var ms = new MemoryStream();
+            entryStream.CopyTo(ms);
+
+            var json = Encoding.UTF8.GetString(ms.ToArray());
+
+            DataTable? dataTable = new();
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return dataTable;
+            }
+            dataTable = JsonConvert.DeserializeObject<DataTable>(json);
+            return dataTable;
+        }
+
+        public Stream GetEntryStream(string entryName)
         {
             return ZipArchive.Entries.First(x => x.FullName == entryName).Open();
         }

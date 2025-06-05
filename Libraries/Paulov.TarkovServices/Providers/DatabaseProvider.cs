@@ -1,7 +1,7 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Paulov.TarkovServices.Providers;
+using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.ZipDatabaseProviders;
 
 
@@ -45,7 +45,6 @@ namespace Paulov.TarkovServices
 
         public static IDatabaseProvider GetDatabaseProvider()
         {
-            //return new SharpCompressZipDatabaseProvider();
             return new MicrosoftCompressionZipDatabaseProvider();
         }
 
