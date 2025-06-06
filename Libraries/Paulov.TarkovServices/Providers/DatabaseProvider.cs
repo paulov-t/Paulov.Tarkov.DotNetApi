@@ -327,9 +327,9 @@ namespace Paulov.TarkovServices
         /// <returns><see langword="true"/> if one or more location bases were successfully loaded; otherwise, <see
         /// langword="false"/>.</returns>
         public static bool TryLoadLocationBases(
-        out Dictionary<string, object> locations)
+        out JObject locations)
         {
-            Dictionary<string, object> locationsRaw = new();
+            JObject locationsRaw = new();
 
             var locationEntries = GetDatabaseProvider().Entries.Where(x => x.FullName.StartsWith("database/locations/")).ToArray();
             foreach (var entry in locationEntries.Where(x => !string.IsNullOrEmpty(x.Name)))
@@ -346,7 +346,7 @@ namespace Paulov.TarkovServices
 
                     try
                     {
-                        locationsRaw.Add(name, dbFile);
+                        locationsRaw.Add(dbFile["_Id"].ToString(), dbFile);
                     }
                     catch
                     {

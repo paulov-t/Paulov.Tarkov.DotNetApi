@@ -284,33 +284,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             return new BSGSuccessBodyResult(response);
         }
 
-        /// <summary>
-        /// Provides an object of locations (base) and paths between each location
-        /// </summary>
-        /// <returns></returns>
-        [Route("client/locations")]
-        [HttpPost]
-        public async Task<IActionResult> Locations()
-        {
-            if (!DatabaseProvider.TryLoadLocationBases(out var locationJsons))
-            {
-                Response.StatusCode = 500;
-                return new BSGResult(null);
-            }
 
-            if (!DatabaseProvider.TryLoadLocationPaths(out var paths))
-            {
-                Response.StatusCode = 500;
-                return new BSGResult(null);
-            }
-
-            JObject j = new JObject();
-            j.Add("locations", JToken.FromObject(locationJsons));
-            j.Add("paths", paths);
-
-            return new BSGSuccessBodyResult(j);
-
-        }
 
         [Route("client/weather")]
         [HttpPost]

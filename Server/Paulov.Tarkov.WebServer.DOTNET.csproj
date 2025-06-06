@@ -22,7 +22,6 @@
 
 	<ItemGroup>
 	  <Content Remove="data\scav.json" />
-	  <Content Remove="data\zombies.json" />
 	</ItemGroup>
 
 	<ItemGroup>
