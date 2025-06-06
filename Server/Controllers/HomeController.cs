@@ -72,5 +72,16 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             return View();
         }
+
+        /// <summary>
+        /// Handles HTTP GET requests to retrieve the live-players view.
+        /// </summary>
+        /// <returns>An <see cref="IActionResult"/> representing the rendered items view.</returns>
+        [Route("/live-players")]
+        [HttpGet]
+        public IActionResult LivePlayers()
+        {
+            return View();
+        }
     }
 }
