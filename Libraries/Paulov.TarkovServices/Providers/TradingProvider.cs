@@ -1,6 +1,7 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Text;
 using System.Text.Json;
 
 namespace Paulov.TarkovServices
@@ -24,12 +25,21 @@ namespace Paulov.TarkovServices
         {
 
             traderByTraderId = new Dictionary<string, object>();
-            foreach (var traderDirectory in DatabaseProvider.GetDatabaseProvider().Entries.Where(x => x.FullName.StartsWith("traders")))
+            var entries = DatabaseProvider.GetDatabaseProvider().Entries.Where(x => x.FullName.StartsWith("database/traders")).ToArray();
+            foreach (var traderDirectory in entries)
             {
                 if (traderDirectory.Name.Contains("ragfair"))
                     continue;
 
-                traderByTraderId.Add(traderDirectory.Name, JObject.Parse(File.ReadAllText(Path.Combine(traderDirectory.FullName, "base.json"))));
+                var entryStream = traderDirectory.Open();
+                var ms = new MemoryStream();
+                entryStream.CopyTo(ms);
+                string json = Encoding.UTF8.GetString(ms.ToArray());
+
+                if (!traderDirectory.Name.Equals("base.json"))
+                    continue;
+
+                traderByTraderId.Add(traderDirectory.FullName, JObject.Parse(json));
             }
             return traderByTraderId.Count > 0;
         }

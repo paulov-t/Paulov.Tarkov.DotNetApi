@@ -69,5 +69,27 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var traderAssortmentForPlayer = tradingProvider.GetTraderAssortmentById(traderId, sessionId);
             return new BSGSuccessBodyResult(traderAssortmentForPlayer);
         }
+
+        [Route("/client/trading/api/getTraders")]
+        [HttpPost]
+        public async Task<IActionResult> GetTraders()
+        {
+            var sessionId = SessionId;
+
+            var tradingProvider = new TradingProvider();
+            TradingProvider.TryLoadTraders(out var traders);
+
+            List<dynamic> result = new List<dynamic>();
+            foreach (var i in traders)
+            {
+                result.Add(new
+                {
+                    traderId = ((dynamic)i.Value)._id,
+                    name = ((dynamic)i.Value).nickname
+                });
+            }
+            return new BSGSuccessBodyResult(result);
+
+        }
     }
 }

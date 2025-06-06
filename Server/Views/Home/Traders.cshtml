@@ -1,0 +1,37 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel='stylesheet' href="//cdn.datatables.net/2.2.1/css/dataTables.dataTables.min.css" />
+<div class="container">
+    <h1>Traders</h1>
+    <div>
+        <table id="myTable">
+            <thead>
+                <tr>
+                    <th>Trader Id</th>
+                    <th>Name</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+
+<!-- Add JQUERY -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="//cdn.datatables.net/2.2.1/js/dataTables.min.js"></script>
+<script>
+    // let table = new DataTable('#myTable');
+    $('#myTable').DataTable({
+        "ajax": {
+          "url": '/client/trading/api/getTraders/',
+          "type": "POST"
+        },
+        columns: [
+          { data: 'traderId' },
+          { data: 'name' },
+        ]
+    });
+
+</script>

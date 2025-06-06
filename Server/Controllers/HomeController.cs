@@ -61,5 +61,16 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             ViewBag.ServerMode = this.configuration["ServerMode"].ToString();
             return View();
         }
+
+        /// <summary>
+        /// Handles HTTP GET requests to retrieve the traders view.
+        /// </summary>
+        /// <returns>An <see cref="IActionResult"/> representing the rendered items view.</returns>
+        [Route("/traders")]
+        [HttpGet]
+        public IActionResult Traders()
+        {
+            return View();
+        }
     }
 }
