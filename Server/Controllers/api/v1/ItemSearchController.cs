@@ -1,5 +1,6 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
+using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
@@ -8,8 +9,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
     {
         [Route("/itemSearch/getItemEnglishNameAndTpl/")]
         [HttpPost]
-        public IActionResult Items()
+        public async Task<IActionResult> Items()
         {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            var start = requestBody.ContainsKey("start") ? int.Parse(requestBody["start"].ToString()) : 0;
+            var length = requestBody.ContainsKey("start") ? int.Parse(requestBody["length"].ToString()) : int.MaxValue;
+
             DatabaseProvider.TryLoadDatabaseFile("locales/global/en.json", out Dictionary<string, dynamic> languageLocaleData);
             DatabaseProvider.TryLoadDatabaseFile("templates/items.json", out Dictionary<string, dynamic> templatesItemData);
             DatabaseProvider.TryLoadDatabaseFile("templates/prices.json", out Dictionary<string, dynamic> templatesPricesData);
@@ -26,6 +31,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             const string ammoParentId = "5485a8684bdc2da71d8b4567";
             string[] ammoIdsToIgnore = { "5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1" };
 
+            var index = 0;
             List<dynamic> result = new List<dynamic>();
             foreach (var itemId in templatesItemData.Keys)
             {
@@ -82,14 +88,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     priceRatio = Math.Ceiling((double)priceRatio);
                 }
 
+                index++;
+                if (index > length * (start + 1))
+                    break;
+
                 result.Add(new
                 {
                     itemId = itemId,
                     langItem = langItem,
-                    caliber = item._props.Caliber,
-                    armorDamage = item._props.ArmorDamage,
-                    penetration = item._props.PenetrationPower,
-                    damage = item._props.Damage,
                     rating = rating,
                     parentId = item._parent,
                     parentIdLang = parentIdLang,
