@@ -82,6 +82,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
                 return null;
             }
         }
+
         public static async Task<Dictionary<string, object>> DecompressRequestBodyToDictionary(HttpRequest request)
         {
             if (!request.Body.CanSeek)
@@ -92,26 +93,45 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
             var body = await reader.ReadToEndAsync().ConfigureAwait(false);
             request.Body.Position = 0;
 
-            // This is the only way to handle Zlib versus Standard Json calls
-            try
+            // If we are Unity / Tarkov
+            if (
+                (request.Headers.ContainsKey("Content-Encoding") && request.Headers["Content-Encoding"] == "deflate")
+                || (request.Headers.ContainsKey("user-agent") && request.Headers["user-agent"].ToString().StartsWith("Unity"))
+                )
             {
-                using ZLibStream zLibStream = new(request.Body, CompressionMode.Decompress);
-                byte[] buffer = new byte[4096];
-                await zLibStream.ReadAsync(buffer, 0, buffer.Length);
-                var str = Encoding.UTF8.GetString(buffer);
-                var resultDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(str);
-                if (resultDict != null)
-                    return resultDict;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                Debug.WriteLine(ex.ToString());
+                // This is the only way to handle Zlib versus Standard Json calls
+                try
+                {
+                    using ZLibStream zLibStream = new(request.Body, CompressionMode.Decompress);
+                    byte[] buffer = new byte[4096];
+                    await zLibStream.ReadAsync(buffer, 0, buffer.Length);
+                    var str = Encoding.UTF8.GetString(buffer);
+                    var resultDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(str);
+                    if (resultDict != null)
+                        return resultDict;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    Debug.WriteLine(ex.ToString());
+                }
             }
 
 
             if (body.StartsWith('{') || body.StartsWith('['))
                 return JsonConvert.DeserializeObject<Dictionary<string, object>>(body);
+
+            if (body.Contains('&'))
+            {
+                Dictionary<string, object> dictSplitItems = new Dictionary<string, object>();
+                var splitBody = body.Split('&');
+                foreach (var splitItem in splitBody)
+                {
+                    if (splitItem.Split('=').Length > 1)
+                        dictSplitItems.Add(splitItem.Split('=')[0], splitItem.Split('=')[1]);
+                }
+                return dictSplitItems;
+            }
 
             return null;
 
@@ -240,6 +260,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
                 await response.BodyWriter.WriteAsync(new ReadOnlyMemory<byte>(bytes));
                 bytes = null;
             }
+
+            GC.Collect();
             stringToConvert = null;
         }
 
