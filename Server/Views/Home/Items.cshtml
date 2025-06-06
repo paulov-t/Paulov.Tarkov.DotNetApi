@@ -1,0 +1,45 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link rel='stylesheet' href="//cdn.datatables.net/2.2.1/css/dataTables.dataTables.min.css" />
+<div class="container">
+    <h1>Items</h1>
+    <div>
+        <table id="myTable">
+            <thead>
+                <tr>
+                    <th>Template Id</th>
+                    <th>Name</th>
+                    <th>Parent Id</th>
+                    <th>Parent Name</th>
+                    <th>Price</th>
+                    <th>Rating</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+
+<!-- Add JQUERY -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="//cdn.datatables.net/2.2.1/js/dataTables.min.js"></script>
+<script>
+    // let table = new DataTable('#myTable');
+    $('#myTable').DataTable({
+        "ajax": {
+          "url": '/itemSearch/getItemEnglishNameAndTpl/',
+          "type": "POST"
+        },
+        columns: [
+          { data: 'itemId' },
+          { data: 'langItem' },
+          { data: 'parentId' },
+          { data: 'parentIdLang' },
+          { data: 'price' },
+          { data: 'priceRatio' }
+        ]
+    });
+
+</script>

@@ -394,6 +394,21 @@ namespace Paulov.TarkovServices
             return true;
         }
 
+        public static int GetTemplateItemPrice(string templateId)
+        {
+            DatabaseProvider.TryLoadDatabaseFile("templates/prices.json", out JObject templatesPricesData);
+            if (templatesPricesData.ContainsKey(templateId))
+            {
+                var resultPriceString = templatesPricesData[templateId].ToString();
+                if (int.TryParse(resultPriceString, out int resultPrice))
+                {
+                    return resultPrice;
+                }
+            }
+
+            return 1;
+        }
+
 
     }
 
