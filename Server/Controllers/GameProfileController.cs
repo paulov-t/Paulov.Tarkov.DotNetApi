@@ -8,6 +8,7 @@ using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Services;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Providers.Interfaces;
 using System.Text;
 
 namespace Paulov.Tarkov.Web.Api.Controllers
@@ -22,8 +23,11 @@ namespace Paulov.Tarkov.Web.Api.Controllers
     [Produces("application/json")]
     public class GameProfileController : ControllerBase
     {
-
-        private SaveProvider saveProvider { get; } = new SaveProvider();
+        private SaveProvider _saveProvider;
+        public GameProfileController(ISaveProvider saveProvider)
+        {
+            _saveProvider = saveProvider as SaveProvider;
+        }
 
         private string SessionId
         {
@@ -42,7 +46,42 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             }
         }
 
+        [Route("client/profile/status")]
+        [HttpPost]
+        public async Task<IActionResult> ProfileStatus()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
+            var sessionId = SessionId;
+#if !DEBUG
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                Response.StatusCode = 412; // Precondition
+                return new BSGErrorBodyResult(412, "No Session Found!");
+            }
+#else
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                sessionId = _saveProvider.GetProfiles().First().Key;
+            }
+
+#endif
+            var profile = _saveProvider.LoadProfile(sessionId);
+            var mode = _saveProvider.GetAccountProfileMode(sessionId);
+
+            JObject response = new();
+            response.Add("maxPveCountExceeded", false);
+            JArray responseProfiles = new();
+            ProfileStatusClass profileScav = new() { status = EFT.EProfileStatus.Free };
+            profileScav.profileid = mode.Characters.Scav.Id;
+            ProfileStatusClass profilePmc = new() { status = EFT.EProfileStatus.Free };
+            profilePmc.profileid = mode.Characters.PMC.Id;
+            responseProfiles.Add(JObject.FromObject(profileScav));
+            responseProfiles.Add(JObject.FromObject(profilePmc));
+            response.Add("profiles", responseProfiles);
+
+            return new BSGSuccessBodyResult(response);
+        }
 
         /// <summary>
         /// Create a Profile
@@ -57,18 +96,18 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             var gameMode = HttpContext.Session != null && HttpContext.Session.GetString("GameMode") != null ? HttpContext.Session.GetString("GameMode") : "pve";
 
             var sessionId = SessionId;
-            var profile = saveProvider.LoadProfile(SessionId);
+            var profile = _saveProvider.LoadProfile(SessionId);
             if (profile == null)
             {
 #if DEBUG
-                sessionId = saveProvider.GetProfiles().Any() ? saveProvider.GetProfiles().Keys.First() : MongoID.Generate(false);
+                sessionId = _saveProvider.GetProfiles().Any() ? _saveProvider.GetProfiles().Keys.First() : MongoID.Generate(false);
                 // if we are running from Swagger and havent "logged in". just get this here
-                profile = saveProvider.LoadProfile(sessionId);
+                profile = _saveProvider.LoadProfile(sessionId);
 
                 if (profile == null)
                 {
-                    sessionId = saveProvider.CreateAccount(new Dictionary<string, object>() { { "username", "Swagger" }, { "password", "Swagger" }, { "edition", "Edge Of Darkness" } });
-                    profile = saveProvider.LoadProfile(sessionId);
+                    sessionId = _saveProvider.CreateAccount(new Dictionary<string, object>() { { "username", "Swagger" }, { "password", "Swagger" }, { "edition", "Edge Of Darkness" } });
+                    profile = _saveProvider.LoadProfile(sessionId);
                 }
 #else
                 Response.StatusCode = 500;
@@ -148,7 +187,8 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             pmcData.Info.MemberCategory = EMemberCategory.Default;
             pmcData.Info.SelectedMemberCategory = EMemberCategory.Default;
 
-            profile.CurrentMode = gameMode;
+            if (gameMode != null)
+                profile.CurrentMode = gameMode;
 
             // Create scav -------------------------------------------------------------------------------------------
             var scavTemplateResource = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("scav.json");
@@ -164,11 +204,11 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             pmcData.PetId = scavData.Id;
 
             // Assign the profiles -----------------------------------------------------------------------------------
-            saveProvider.GetAccountProfileMode(sessionId).Characters.PMC = pmcData;
-            saveProvider.GetAccountProfileMode(sessionId).Characters.Scav = scavData;
+            _saveProvider.GetAccountProfileMode(sessionId).Characters.PMC = pmcData;
+            _saveProvider.GetAccountProfileMode(sessionId).Characters.Scav = scavData;
 
-            saveProvider.CleanIdsOfInventory(profile);
-            saveProvider.SaveProfile(sessionId, profile);
+            _saveProvider.CleanIdsOfInventory(profile);
+            _saveProvider.SaveProfile(sessionId, profile);
 
             requestBody = null;
 
@@ -182,20 +222,19 @@ namespace Paulov.Tarkov.Web.Api.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            var profile = saveProvider.LoadProfile(SessionId);
+            var profile = _saveProvider.LoadProfile(SessionId);
             if (profile == null)
             {
                 Response.StatusCode = 500;
                 return new NotFoundResult();
             }
 
-            var allProfiles = saveProvider
-                .GetProfiles();
+            var allProfiles = _saveProvider.GetProfiles();
 
             List<Dictionary<string, object>> chatMembers = new();
             foreach (var p in allProfiles)
             {
-                var pmc = saveProvider.GetPmcProfile(p.Key);
+                var pmc = _saveProvider.GetPmcProfile(p.Key);
                 var info = new UpdatableChatMember.UpdatableChatMemberInfo();
                 info.Nickname = pmc.Info.Nickname;// pmc["Info"]["Nickname"].ToString();
                 info.Side = EFT.EChatMemberSide.Usec;
@@ -233,13 +272,13 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             var gameMode = HttpContext.Session != null && HttpContext.Session.GetString("GameMode") != null ? HttpContext.Session.GetString("GameMode") : "pve";
 
             var sessionId = SessionId;
-            var profile = saveProvider.LoadProfile(SessionId);
+            var profile = _saveProvider.LoadProfile(SessionId);
             if (profile == null)
             {
 #if DEBUG
-                sessionId = saveProvider.GetProfiles().Keys.First();
+                sessionId = _saveProvider.GetProfiles().Keys.First();
                 // if we are running from Swagger and havent "logged in". just get this here
-                profile = saveProvider.LoadProfile(sessionId);
+                profile = _saveProvider.LoadProfile(sessionId);
 #else
                 Response.StatusCode = 500;
                 return new BSGErrorBodyResult(500, "Profile has not been loaded!");
@@ -247,10 +286,10 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             }
 
             List<AccountProfileCharacter> list = new();
-            var pmcProfile = saveProvider.GetPmcProfile(sessionId);
+            var pmcProfile = _saveProvider.GetPmcProfile(sessionId);
             if (pmcProfile != null)
                 list.Add(pmcProfile);
-            var scavProfile = saveProvider.GetScavProfile(sessionId);
+            var scavProfile = _saveProvider.GetScavProfile(sessionId);
             if (scavProfile != null)
                 list.Add(scavProfile);
 

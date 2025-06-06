@@ -1,6 +1,7 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Paulov.TarkovModels;
+using Paulov.TarkovServices.Providers.Interfaces;
 
 namespace Paulov.TarkovServices
 {
@@ -12,7 +13,7 @@ namespace Paulov.TarkovServices
     /// retrieving specific profile details. Profiles are stored in memory and serialized to JSON files located in the
     /// application's user profile directory.  This class supports operations for both PMC (Player Main Character) and
     /// Scav profiles, as well as profile modes and inventory management.</remarks>
-    public class SaveProvider
+    public class SaveProvider : ISaveProvider
     {
         /// <summary>
         /// 
@@ -28,6 +29,8 @@ namespace Paulov.TarkovServices
 
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             var profileFiles = Directory.GetFiles(userProfileDirectory);
+
+            var profilesToDelete = new List<string>();
             foreach (var profileFilePath in profileFiles)
             {
                 var fileInfo = new FileInfo(profileFilePath);
@@ -38,8 +41,20 @@ namespace Paulov.TarkovServices
                 if (fileText == null)
                     continue;
 
-                var model = JsonConvert.DeserializeObject<Account>(fileText, jsonSettings);
-                Profiles.Add(fileInfo.Name.Replace(".json", ""), model);
+                try
+                {
+                    var model = JsonConvert.DeserializeObject<Account>(fileText, jsonSettings);
+                    Profiles.Add(fileInfo.Name.Replace(".json", ""), model);
+                }
+                catch
+                {
+                    profilesToDelete.Add(profileFilePath);
+                }
+            }
+
+            foreach (var item in profilesToDelete)
+            {
+                File.Delete(item);
             }
         }
 
@@ -101,26 +116,31 @@ namespace Paulov.TarkovServices
             return prof;
         }
 
-        public AccountProfileMode GetAccountProfileMode(string sessionId)
+        public AccountProfileMode GetAccountProfileMode(Account account)
         {
-            var prof = Profiles[sessionId] as Account;
-            if (prof == null)
-                return null;
-
-            if (prof.Modes == null)
-                prof.Modes = new AccountProfileModes();
-
-            switch (prof.CurrentMode)
+            switch (account.CurrentMode.ToLower())
             {
                 case "regular":
-                    return prof.Modes.Regular;
+                    return account.Modes.Regular;
                 case "pve":
-                    return prof.Modes.PVE;
+                    return account.Modes.PVE;
                 case "arena":
-                    return prof.Modes.Arena;
+                    return account.Modes.Arena;
             }
 
             return null;
+        }
+
+        public AccountProfileMode GetAccountProfileMode(string sessionId)
+        {
+            var account = Profiles[sessionId] as Account;
+            if (account == null)
+                return null;
+
+            if (account.Modes == null)
+                account.Modes = new AccountProfileModes();
+
+            return GetAccountProfileMode(account);
         }
 
         public AccountProfileCharacter GetPmcProfile(string sessionId)

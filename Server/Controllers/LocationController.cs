@@ -2,11 +2,18 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Providers.Interfaces;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class LocationController : ControllerBase
     {
+        private SaveProvider _saveProvider;
+        public LocationController(ISaveProvider saveProvider)
+        {
+            _saveProvider = saveProvider as SaveProvider;
+        }
+
         /// <summary>
         /// Provides an object of locations (base) and paths between each location
         /// </summary>

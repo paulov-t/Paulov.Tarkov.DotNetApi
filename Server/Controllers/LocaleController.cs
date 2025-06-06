@@ -3,12 +3,17 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Providers.Interfaces;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class LocaleController : ControllerBase
     {
-        private SaveProvider saveProvider { get; } = new SaveProvider();
+        private SaveProvider _saveProvider;
+        public LocaleController(ISaveProvider saveProvider)
+        {
+            _saveProvider = saveProvider as SaveProvider;
+        }
 
         [Route("client/menu/locale/{language}")]
         [HttpPost]

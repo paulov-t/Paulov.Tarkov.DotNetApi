@@ -2,13 +2,20 @@
 using Microsoft.AspNetCore.Mvc;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Providers.Interfaces;
 using System.Text;
 
 namespace Paulov.Launcher.Support
 {
     public class LauncherSupportController : ControllerBase
     {
-        private SaveProvider saveProvider { get; } = new SaveProvider();
+        //private SaveProvider saveProvider { get; } = new SaveProvider();
+
+        private SaveProvider _saveProvider;
+        public LauncherSupportController(ISaveProvider saveProvider)
+        {
+            _saveProvider = saveProvider as SaveProvider;
+        }
 
         /// <summary>
         /// Handles user login requests by validating the provided username and managing session cookies.
@@ -49,12 +56,12 @@ namespace Paulov.Launcher.Support
                 Response.Cookies.Delete("PHPSESSID");
             }
 
-            if (saveProvider.ProfileExists(resolvedUserName, out var sessionId))
+            if (_saveProvider.ProfileExists(resolvedUserName, out var sessionId))
             {
                 Response.Cookies.Append("PHPSESSID", sessionId);
 
                 HttpContext.Session.Set("SessionId", Encoding.UTF8.GetBytes(sessionId));
-                var profile = saveProvider.LoadProfile(sessionId);
+                var profile = _saveProvider.LoadProfile(sessionId);
                 //int aid = int.Parse(profile.AccountId);
                 //HttpContext.Session.SetInt32("AccountId", aid);
 
@@ -74,7 +81,7 @@ namespace Paulov.Launcher.Support
         public async Task<IActionResult> Register()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
-            var sessionId = saveProvider.CreateAccount(requestBody);
+            var sessionId = _saveProvider.CreateAccount(requestBody);
             if (sessionId == null)
                 return new BSGSuccessBodyResult("FAILED");
 

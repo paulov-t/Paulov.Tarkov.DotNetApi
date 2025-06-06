@@ -3,6 +3,7 @@ using EFT.HealthSystem;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Services;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Providers.Interfaces;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.WebSockets;
@@ -66,6 +67,8 @@ namespace SIT.WebServer
             builder.Services.AddDistributedMemoryCache();
 
             builder.Services.AddSession();
+
+            builder.Services.AddSingleton<ISaveProvider>(new SaveProvider());
 
             var app = builder.Build();
 

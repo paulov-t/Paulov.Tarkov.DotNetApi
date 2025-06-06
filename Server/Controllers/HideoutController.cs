@@ -2,11 +2,18 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Providers.Interfaces;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class HideoutController : Controller
     {
+        private SaveProvider _saveProvider;
+        public HideoutController(ISaveProvider saveProvider)
+        {
+            _saveProvider = saveProvider as SaveProvider;
+        }
+
         [Route("client/hideout/areas")]
         [HttpPost]
         public IActionResult HideoutAreas()

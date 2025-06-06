@@ -3,12 +3,17 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Providers.Interfaces;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class TradingController : ControllerBase
     {
-        private SaveProvider saveProvider { get; } = new SaveProvider();
+        private readonly SaveProvider _saveProvider;
+        public TradingController(ISaveProvider saveProvider)
+        {
+            _saveProvider = saveProvider as SaveProvider;
+        }
 
         private string SessionId
         {
@@ -50,7 +55,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 #if DEBUG
             if (string.IsNullOrEmpty(sessionId))
             {
-                sessionId = saveProvider.GetProfiles().Keys.First();
+                sessionId = _saveProvider.GetProfiles().Keys.First();
             }
 #endif
 

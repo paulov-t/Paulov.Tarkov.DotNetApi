@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Services;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Providers.Interfaces;
 using System.Diagnostics;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
@@ -14,7 +15,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
     public class GameController : ControllerBase
     {
         private TradingProvider tradingProvider { get; } = new TradingProvider();
-        private SaveProvider saveProvider { get; } = new SaveProvider();
+
+        private SaveProvider _saveProvider;
+        public GameController(ISaveProvider saveProvider)
+        {
+            _saveProvider = saveProvider as SaveProvider;
+        }
 
         private string SessionId
         {
@@ -75,10 +81,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return;
             }
 #else
-            sessionId = saveProvider.GetProfiles().First().Key;
+            sessionId = _saveProvider.GetProfiles().First().Key;
 #endif
 
-            var profile = saveProvider.LoadProfile(sessionId);
+            var profile = _saveProvider.LoadProfile(sessionId);
 
             var config = new Dictionary<string, object>()
             {
@@ -162,9 +168,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var sessionId = SessionId;
 #if DEBUG
             if (string.IsNullOrEmpty(sessionId))
-                sessionId = saveProvider.GetProfiles().Keys.First();
+                sessionId = _saveProvider.GetProfiles().Keys.First();
 #endif
-            var name = saveProvider.GetProfiles()[sessionId].Username;
+            var name = _saveProvider.GetProfiles()[sessionId].Username;
 
             return new BSGSuccessBodyResult(name);
 
@@ -245,44 +251,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             return new BSGSuccessBodyResult(JsonConvert.SerializeObject(response));
         }
 
-        [Route("client/profile/status")]
-        [HttpPost]
-        public async Task<IActionResult> ProfileStatus()
-        {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            var sessionId = SessionId;
-#if !DEBUG
-            if (string.IsNullOrEmpty(sessionId))
-            {
-                Response.StatusCode = 412; // Precondition
-                return new BSGErrorBodyResult(412, "No Session Found!");
-            }
-#else
-            if (string.IsNullOrEmpty(sessionId))
-            {
-                sessionId = saveProvider.GetProfiles().First().Key;
-            }
-
-#endif
-
-
-            var profile = saveProvider.LoadProfile(sessionId);
-            var mode = saveProvider.GetAccountProfileMode(sessionId);
-
-            JObject response = new();
-            response.Add("maxPveCountExceeded", false);
-            JArray responseProfiles = new();
-            ProfileStatusClass profileScav = new() { status = EFT.EProfileStatus.Free };
-            profileScav.profileid = mode.Characters.Scav.Id;
-            ProfileStatusClass profilePmc = new() { status = EFT.EProfileStatus.Free };
-            profilePmc.profileid = mode.Characters.PMC.Id;
-            responseProfiles.Add(JObject.FromObject(profileScav));
-            responseProfiles.Add(JObject.FromObject(profilePmc));
-            response.Add("profiles", responseProfiles);
-
-            return new BSGSuccessBodyResult(response);
-        }
 
 
 
@@ -675,6 +644,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 mode = "pve";
 
             HttpContext.Session.SetString("GameMode", mode);
+
+            _saveProvider.GetProfiles();
+            var account = _saveProvider.LoadProfile(SessionId);
+            account.CurrentMode = mode;
+            _saveProvider.SaveProfile(SessionId, account);
 
             await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
                 new Dictionary<string, object>() { { "gameMode", mode }, { "backendUrl", ip } }
