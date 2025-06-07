@@ -102,5 +102,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             DatabaseProvider.TryLoadDatabaseFile("match/metrics.json", out JObject dbFile);
             return new BSGSuccessBodyResult(dbFile);
         }
+
+        [Route("client/match/group/exit_from_menu")]
+        [HttpPost]
+        public async Task<IActionResult> ExitFromMenu()
+        {
+            return new BSGSuccessBodyResult(new { });
+        }
     }
 }
