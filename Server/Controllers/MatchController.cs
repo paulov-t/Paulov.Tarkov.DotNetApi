@@ -74,7 +74,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             locationSettings.Add("serverId", MongoID.Generate(false).ToString());
             locationSettings.Add("locationLoot", location);
             locationSettings.Add("profile", new JObject() { });
-            locationSettings.Add("serverSettings", new JObject() { });
+
+            DatabaseProvider.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
+            //serverSettings.Add("TraderServerSettings", JToken.FromObject(new TraderServerSettings()));
+            //serverSettings.Add("BTRServerSettings", JToken.FromObject(new BTRServerSettings()));
+            locationSettings.Add("serverSettings", serverSettings);
             locationSettings.Add("transition", new JObject() { });
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
@@ -89,6 +93,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         public async Task<IActionResult> MatchLocalEnd()
         {
             return new BSGSuccessBodyResult(new { });
+        }
+
+        [Route("client/getMetricsConfig")]
+        [HttpPost]
+        public async Task<IActionResult> GetMetricsConfig()
+        {
+            DatabaseProvider.TryLoadDatabaseFile("match/metrics.json", out JObject dbFile);
+            return new BSGSuccessBodyResult(dbFile);
         }
     }
 }
