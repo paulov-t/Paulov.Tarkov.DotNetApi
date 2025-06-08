@@ -165,7 +165,8 @@ namespace SIT.WebServer
 
             //MVC building
             IMvcBuilder mvcBuilder = services.AddMvc().AddSessionStateTempDataProvider();
-            DirectoryInfo modAssemblyDirectory = new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "Mods"));
+            const string modAssemblyFolderName = "Mods";
+            DirectoryInfo modAssemblyDirectory = new(Path.Combine(AppContext.BaseDirectory, modAssemblyFolderName));
             IEnumerable<Assembly> modAssemblies =
                 modAssemblyDirectory.EnumerateFiles("*.dll").Select(x => Assembly.LoadFile(x.FullName));
             //TODO: Clean up loop body
