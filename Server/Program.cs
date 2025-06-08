@@ -170,11 +170,11 @@ namespace SIT.WebServer
             DirectoryInfo modAssemblyDirectory = new(Path.Combine(AppContext.BaseDirectory, modAssemblyFolderName));
             IEnumerable<Assembly> modAssemblies =
                 modAssemblyDirectory.EnumerateFiles("*.dll").Select(x => Assembly.LoadFile(x.FullName));
-            Parallel.ForEach(modAssemblies, assembly =>
+            foreach (Assembly assembly in modAssemblies)
             {
                 if(!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase)))) return;
                 mvcBuilder.AddApplicationPart(assembly);
-            });
+            }
 
             //Services
             services.AddControllers();
