@@ -48,10 +48,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (!requestBody.ContainsKey("location"))
                 return new BSGErrorBodyResult(500, "expected location in request body");
 
+            // Load all Location Bases
             DatabaseProvider.TryLoadLocationBases(out JObject locationsJO);
 
+            // Match Location Base to requested location by Location Id
+            // Todo: This needs refining
             var locationStringLower = requestBody["location"].ToString().ToLower();
-            //var location = new LocationSettingsClass.Location { };
             JToken location = null;
             foreach (var locationJO in locationsJO)
             {
@@ -62,24 +64,32 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 }
             }
 
+            // Generate the loot for the Location
             location["Loot"] = JToken.FromObject(Array.Empty<string>());
 
-            var locationLocalSettings = new LocalSettings();
-            //locationLocalSettings.serverId = MongoID.Generate(false);
-            //locationLocalSettings.locationLoot = location;
-            //locationLocalSettings.profileInsurance = new() { };
-            //locationLocalSettings.settings = new() { };
-            //locationLocalSettings.transitionSettings = new() { };
-            JObject locationSettings = new JObject();
-            locationSettings.Add("serverId", MongoID.Generate(false).ToString());
-            locationSettings.Add("locationLoot", location);
-            locationSettings.Add("profile", new JObject() { });
+#if DEBUG
+            // Paulov: I have left this here just as a reference
+            _ = new LocalSettings();
+#endif
 
+            // Generate the result required by the Client
+            var serverId = MongoID.Generate(false).ToString();
+            JObject locationSettings = new JObject();
+            locationSettings.Add("serverId", serverId);
+            locationSettings.Add("locationLoot", location);
+            //locationSettings.Add("profile", new JObject() { { "insuredItems", new JArray() } });
+            locationSettings.Add("profile", new JObject() { });
             DatabaseProvider.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
-            //serverSettings.Add("TraderServerSettings", JToken.FromObject(new TraderServerSettings()));
-            //serverSettings.Add("BTRServerSettings", JToken.FromObject(new BTRServerSettings()));
             locationSettings.Add("serverSettings", serverSettings);
-            locationSettings.Add("transition", new JObject() { });
+            locationSettings.Add("transitionType", "None");
+            locationSettings.Add("transition", new JObject()
+            {
+                { "transitionType", (int)ELocationTransition.None },
+                { "transitionRaidId", MongoID.Generate(false).ToString() },
+                { "transitionCount", 0  },
+                { "visitedLocations", new JArray() },
+            }
+            );
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
