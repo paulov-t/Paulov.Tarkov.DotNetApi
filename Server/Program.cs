@@ -1,3 +1,4 @@
+using System.Collections;
 using Comfort.Common;
 using EFT.HealthSystem;
 using Newtonsoft.Json.Linq;
@@ -9,6 +10,8 @@ using System.IO.Compression;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace SIT.WebServer
 {
@@ -33,42 +36,7 @@ namespace SIT.WebServer
             }
 
             var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddRequestDecompression(options =>
-            {
-                //options.DecompressionProviders.Add("zlibdecompressionprovider", new ZLibDecompressionProvider());
-            });
-
-            var mvc = builder.Services.AddMvc().AddSessionStateTempDataProvider();
-
-            // ---------------------------------------------------------------
-            // Add Assembly Mods which use MVC Controllers to the MVC handler
-            foreach (var assemblyMod in assemblyMods)
-            {
-                if (assemblyMod.GetTypes().Any(x => x.BaseType?.Name.Contains("Controller") == true))
-                {
-                    mvc.AddApplicationPart(assemblyMod);
-                }
-            }
-            //
-            // ---------------------------------------------------------------
-
-            // Add services to the container.
-            builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo());
-
-                var filePath = Path.Combine(System.AppContext.BaseDirectory, "Paulov.Tarkov.WebServer.DOTNET.xml");
-                c.IncludeXmlComments(filePath);
-            });
-
-
-            builder.Services.AddDistributedMemoryCache();
-
-            builder.Services.AddSession();
-
-            builder.Services.AddSingleton<ISaveProvider>(new SaveProvider());
+            ConfigureServices(builder.Services);
 
             var app = builder.Build();
 
@@ -180,9 +148,53 @@ namespace SIT.WebServer
 
 
             app.Run();
+        }
 
+        /// <summary>
+        /// Configures the <see cref="IServiceCollection"/> provided for use in the application
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> instance to configure</param>
+        private static void ConfigureServices(IServiceCollection services)
+        {
+            /*
+            services.AddRequestDecompression(options =>
+            {
+                options.DecompressionProviders.Add("zlibdecompressionprovider", new ZLibDecompressionProvider());
+            });
+            */
 
+            //MVC building
+            IMvcBuilder mvcBuilder = services.AddMvc().AddSessionStateTempDataProvider();
+            DirectoryInfo modAssemblyDirectory = new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "Mods"));
+            IEnumerable<Assembly> modAssemblies =
+                modAssemblyDirectory.EnumerateFiles("*.dll").Select(x => Assembly.LoadFile(x.FullName));
+            //TODO: Clean up loop body
+            Parallel.ForEach(modAssemblies, assembly =>
+            {
+                if(!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase)) || x.IsSubclassOf(typeof(Controller)))) return;
+                mvcBuilder.AddApplicationPart(assembly);
+            });
 
+            //Services
+            services.AddControllers();
+            services
+                .AddSwaggerGen(ConfigureSwaggerGen)
+                .AddDistributedMemoryCache()
+                .AddSession()
+                .AddSingleton<ISaveProvider, SaveProvider>();
+        }
+
+        /// <summary>
+        /// Configures Swagger API documentation genmeration 
+        /// </summary>
+        /// <param name="options">The <see cref="SwaggerGenOptions"/> to be configured</param>
+        private static void ConfigureSwaggerGen(SwaggerGenOptions options)
+        {
+            const string swaggerDocVersion = "v1";
+            const string swaggerCommentDocName = "Paulov.Tarkov.WebServer.DOTNET.xml";
+            
+            options.SwaggerDoc(swaggerDocVersion, new Microsoft.OpenApi.Models.OpenApiInfo());
+            options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, swaggerCommentDocName));
         }
 
         /// <summary>
