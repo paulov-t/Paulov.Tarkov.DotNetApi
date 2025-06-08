@@ -23,14 +23,18 @@ public class FileRequestController([FromKeyedServices("fileAssets")] ZipArchive 
     [HttpGet]
     public Task<IActionResult> ServeFile(string path)
     {
-        ZipArchiveEntry archiveEntry = zipArchive.GetEntry(path);
-        if(archiveEntry == null) return Task.FromResult<IActionResult>(NotFound());
-
-        if (!_contentTypeProvider.TryGetContentType(archiveEntry.Name, out string contentType))
+        //TODO: Look for ways to not need this. Without this lock, if two threads access the archive it throws exceptions
+        lock (zipArchive)
         {
-            contentType = "application/octet-stream";
-        }
+            ZipArchiveEntry archiveEntry = zipArchive.GetEntry(path);
+            if(archiveEntry == null) return Task.FromResult<IActionResult>(NotFound());
+
+            if (!_contentTypeProvider.TryGetContentType(archiveEntry.Name, out string contentType))
+            {
+                contentType = "application/octet-stream";
+            }
         
-        return Task.FromResult<IActionResult>(File(archiveEntry.Open(), contentType, archiveEntry.Name));
+            return Task.FromResult<IActionResult>(File(archiveEntry.Open(), contentType, archiveEntry.Name));   
+        }
     }
 }
