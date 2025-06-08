@@ -5,8 +5,6 @@
 
 ---
 
-<div align=center>
-
 ## About the Project
 This is a personal project to develop a .NET Web & Api against a real world example. In this case Escape from Tarkov server side endpoints.
 
