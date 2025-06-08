@@ -63,9 +63,7 @@ namespace SIT.WebServer
                 c.IncludeXmlComments(filePath);
             });
 
-
             builder.Services.AddDistributedMemoryCache();
-
             builder.Services.AddSession();
 
             builder.Services.AddSingleton<ISaveProvider>(new SaveProvider());
