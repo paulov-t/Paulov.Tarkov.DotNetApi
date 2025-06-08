@@ -682,14 +682,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/game/logout", Name = "Logout")]
         [HttpPost]
-        public async void Logout(int? retry, bool? debug)
+        public async Task<IActionResult> Logout(int? retry, bool? debug)
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(
-                new { }
-                , Request, Response);
-
+            return new BSGSuccessBodyResult(new { });
         }
 
 
@@ -710,5 +707,20 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         //     await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(result), Request, Response);
         // }
+
+
+        [Route("client/game/bot/generate")]
+        [HttpPost]
+        public async Task<IActionResult> BotGenerate()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            var resultArray = new JArray();
+            var conditions = requestBody["conditions"];
+            Debug.WriteLine(conditions.ToJson());
+
+
+            return new BSGSuccessBodyResult(resultArray);
+        }
     }
 }

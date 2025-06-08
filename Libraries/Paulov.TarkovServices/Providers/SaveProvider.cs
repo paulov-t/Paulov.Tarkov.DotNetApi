@@ -43,7 +43,8 @@ namespace Paulov.TarkovServices
 
                 try
                 {
-                    var model = JsonConvert.DeserializeObject<Account>(fileText, jsonSettings);
+                    var model = fileText.ParseJsonTo<Account>();
+                    //var model = JsonConvert.DeserializeObject<Account>(fileText, jsonSettings);
                     Profiles.Add(fileInfo.Name.Replace(".json", ""), model);
                 }
                 catch

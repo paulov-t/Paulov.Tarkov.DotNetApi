@@ -44,8 +44,11 @@ namespace SIT.WebServer
             GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
             // test the singleton
             _ = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
-            SaveProvider saveProvider = new();
 
+            // This must be done AFTER Loading Globals Singleton
+            builder.Services.AddSingleton<ISaveProvider>(new SaveProvider());
+
+            var app = builder.Build();
 
             // The following handles the request for "files" from the Client
             app.Use(async (context, next) =>
