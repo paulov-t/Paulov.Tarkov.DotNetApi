@@ -38,15 +38,6 @@ namespace SIT.WebServer
             var builder = WebApplication.CreateBuilder(args);
             ConfigureServices(builder.Services);
 
-            builder.Services.AddSingleton<ISaveProvider>(new SaveProvider());
-
-            builder.Services.AddKeyedSingleton("fileAssets", (_, _) =>
-            {
-                const string fileAssetArchiveResourceName = "files.zip";
-                Stream resourceStream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName(fileAssetArchiveResourceName);
-                return new ZipArchive(resourceStream);
-            });
-
             var app = builder.Build();
 
             // Load the Globals
@@ -165,7 +156,13 @@ namespace SIT.WebServer
                 .AddSwaggerGen(ConfigureSwaggerGen)
                 .AddDistributedMemoryCache()
                 .AddSession()
-                .AddSingleton<ISaveProvider, SaveProvider>();
+                .AddSingleton<ISaveProvider, SaveProvider>()
+                .AddKeyedSingleton("fileAssets", (_, _) =>
+                {
+                    const string fileAssetArchiveResourceName = "files.zip";
+                    Stream resourceStream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName(fileAssetArchiveResourceName);
+                    return new ZipArchive(resourceStream);
+                });
         }
 
         /// <summary>
