@@ -38,8 +38,6 @@ namespace SIT.WebServer
             var builder = WebApplication.CreateBuilder(args);
             ConfigureServices(builder.Services);
 
-            var app = builder.Build();
-
             // Load the Globals
             GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
             // test the singleton
