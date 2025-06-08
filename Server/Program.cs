@@ -70,6 +70,13 @@ namespace SIT.WebServer
 
             builder.Services.AddSingleton<ISaveProvider>(new SaveProvider());
 
+            builder.Services.AddKeyedSingleton("fileAssets", (_, _) =>
+            {
+                const string fileAssetArchiveResourceName = "files.zip";
+                Stream resourceStream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName(fileAssetArchiveResourceName);
+                return new ZipArchive(resourceStream);
+            });
+
             var app = builder.Build();
 
             // Load the Globals
@@ -77,32 +84,7 @@ namespace SIT.WebServer
             // test the singleton
             _ = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
             SaveProvider saveProvider = new();
-
-
-            // The following handles the request for "files" from the Client
-            app.Use(async (context, next) =>
-            {
-                await next(context);
-
-                if (context.Request.Path.ToString().StartsWith("/files/"))
-                {
-                    var stream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("files.zip");
-                    var fileAssetZipArchive = new ZipArchive(stream);
-                    var path = context.Request.Path.ToString().Replace("/files/", "");
-                    var fileEntry = fileAssetZipArchive.GetEntry(path);
-
-                    if (fileEntry != null)
-                    {
-                        using var fileEntryStream = fileEntry.Open();
-                        using var ms = new MemoryStream();
-                        await fileEntryStream.CopyToAsync(ms);
-                        context.Response.StatusCode = 200;
-                        await context.Response.Body.WriteAsync(new ReadOnlyMemory<byte>(ms.ToArray()));
-                    }
-                }
-
-            });
-
+            
 
             app.UseWebSockets(new WebSocketOptions()
             {
@@ -180,9 +162,6 @@ namespace SIT.WebServer
 
 
             app.Run();
-
-
-
         }
 
         /// <summary>
