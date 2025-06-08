@@ -38,7 +38,7 @@ Under development and can get to the main menu.
 
 ### Requirements
 
-This project has been built in [Visual Studio Community Edition]((https://visualstudio.microsoft.com/vs/community/) using [.NET 8](https://dotnet.microsoft.com/en-us/)
+This project has been built in [Visual Studio Community Edition](https://visualstudio.microsoft.com/vs/community/) using [.NET 8](https://dotnet.microsoft.com/en-us/)
 
 ## License
 
