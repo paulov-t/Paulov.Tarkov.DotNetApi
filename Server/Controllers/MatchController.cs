@@ -81,17 +81,18 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             locationSettings.Add("profile", new JObject() { });
             DatabaseProvider.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
             locationSettings.Add("serverSettings", serverSettings);
-            locationSettings.Add("transitionType", "None");
-            locationSettings.Add("transition", new JObject()
-            {
-                { "transitionType", (int)ELocationTransition.None },
-                { "transitionRaidId", MongoID.Generate(false).ToString() },
-                { "transitionCount", 0  },
-                { "visitedLocations", new JArray() },
-            }
-            );
+            //locationSettings.Add("transitionType", "None");
+            locationSettings.Add("transition", new JObject() { });
+            //locationSettings.Add("transition", new JObject()
+            //{
+            //    { "transitionType", (int)ELocationTransition.None },
+            //    { "transitionRaidId", MongoID.Generate(false).ToString() },
+            //    { "transitionCount", 0  },
+            //    { "visitedLocations", new JArray() },
+            //}
+            //);
 
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+            //GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
             //var r = new BSGSuccessBodyResult(JsonConvert.SerializeObject(locationLocalSettings, Formatting.Indented, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore }));
             var r = new BSGSuccessBodyResult(JsonConvert.SerializeObject(locationSettings, Formatting.Indented, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore }));

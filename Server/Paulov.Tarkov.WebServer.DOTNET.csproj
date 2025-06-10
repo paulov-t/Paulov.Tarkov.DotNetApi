@@ -51,6 +51,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Reference Include="AnimationSystem.Recording">
+	    <HintPath>References\AnimationSystem.Recording.dll</HintPath>
+	  </Reference>
+	  <Reference Include="AnimationSystem.Types">
+	    <HintPath>References\AnimationSystem.Types.dll</HintPath>
+	  </Reference>
 	  <Reference Include="Assembly-CSharp">
 	    <HintPath>References\Assembly-CSharp.dll</HintPath>
 	  </Reference>
