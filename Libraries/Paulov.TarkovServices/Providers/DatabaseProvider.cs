@@ -1,6 +1,7 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.ZipDatabaseProviders;
 
@@ -63,9 +64,11 @@ namespace Paulov.TarkovServices
 
         static DatabaseProvider()
         {
+            ITraceWriter traceWriter = new MemoryTraceWriter();
             CachedSerializer = new()
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                TraceWriter = traceWriter
             };
 
             if (!CachedSerializer.Converters.Any())
