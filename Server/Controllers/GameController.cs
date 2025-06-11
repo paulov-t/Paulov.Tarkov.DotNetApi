@@ -3,6 +3,7 @@ using JsonType;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Services;
 using Paulov.TarkovServices;
@@ -720,17 +721,27 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (!requestBody.ContainsKey("conditions"))
                 return new BSGSuccessBodyResult(resultArray);
 
-
             var conditions = requestBody["conditions"];
 
             var strConditions = conditions.ToJson();
+#if DEBUG
             Debug.WriteLine(strConditions.ToJson());
+#endif
 
             List<WaveInfoClass> list = JsonConvert.DeserializeObject<List<WaveInfoClass>>(strConditions);
 
             var bots = new BotGenerationService().GenerateBots(list);
-            var botsJson = JsonConvert.SerializeObject(bots, Formatting.Indented, new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters });
-            //var botsJson = JsonConvert.SerializeObject(bots, Formatting.Indented);
+
+            ITraceWriter traceWriter = new MemoryTraceWriter();
+
+            var botsJson = JsonConvert.SerializeObject(bots
+                , Formatting.Indented
+                , new JsonSerializerSettings() { TraceWriter = traceWriter, Converters = DatabaseProvider.CachedSerializer.Converters }
+                );
+
+#if DEBUG
+            Debug.WriteLine(traceWriter);
+#endif
 
             return new BSGSuccessBodyResult(botsJson);
         }
