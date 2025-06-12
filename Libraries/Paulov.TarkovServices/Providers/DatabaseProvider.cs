@@ -1,6 +1,7 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.ZipDatabaseProviders;
 
@@ -65,9 +66,11 @@ namespace Paulov.TarkovServices
 
         static DatabaseProvider()
         {
+            ITraceWriter traceWriter = new MemoryTraceWriter();
             CachedSerializer = new()
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                TraceWriter = traceWriter
             };
 
             if (!CachedSerializer.Converters.Any())
@@ -423,6 +426,27 @@ namespace Paulov.TarkovServices
             return true;
         }
 
+        /// <summary>
+        /// This uses a LOT of memory. Needs fixing.
+        /// </summary>
+        /// <param name="templateId"></param>
+        /// <returns></returns>
+        public static JObject GetTemplateItemById(string templateId)
+        {
+            TryLoadTemplateFile("items.json", out var templates);
+            var template = GetTemplateItemById(templates, templateId);
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
+            return template;
+        }
+
+        public static JObject GetTemplateItemById(JObject templates, string templateId)
+        {
+            var template = templates[templateId] as JObject;
+            return template;
+        }
+
         public static int GetTemplateItemPrice(string templateId)
         {
             DatabaseProvider.TryLoadDatabaseFile("templates/prices.json", out JObject templatesPricesData);
@@ -436,6 +460,22 @@ namespace Paulov.TarkovServices
             }
 
             return 1;
+        }
+
+        public static List<JObject> GetTemplateItemsAsArray()
+        {
+            TryLoadTemplateFile("items.json", out var templates);
+            return GetTemplateItemsAsArray(templates);
+        }
+
+        public static List<JObject> GetTemplateItemsAsArray(JObject templates)
+        {
+            List<JObject> templatesItems = new List<JObject>();
+            foreach (var template in templates)
+            {
+                templatesItems.Add((JObject)template.Value);
+            }
+            return templatesItems;
         }
 
 

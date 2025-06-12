@@ -51,6 +51,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Reference Include="AnimationSystem.Recording">
+	    <HintPath>References\AnimationSystem.Recording.dll</HintPath>
+	  </Reference>
+	  <Reference Include="AnimationSystem.Types">
+	    <HintPath>References\AnimationSystem.Types.dll</HintPath>
+	  </Reference>
 	  <Reference Include="Assembly-CSharp">
 	    <HintPath>References\Assembly-CSharp.dll</HintPath>
 	  </Reference>
@@ -113,6 +119,12 @@
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
 	  <None Update="References\Assembly-CSharp.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="References\Comfort.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="References\Comfort.Unity.dll">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>

@@ -13,6 +13,16 @@
         {
             return new EFT.Profile(this);
         }
+
+        public override string ToString()
+        {
+            if (Info != null)
+            {
+                return $"{Info.Nickname}:{Id}:{AccountId}:{Info.Settings.Role}";
+            }
+
+            return base.ToString();
+        }
     }
 
 
