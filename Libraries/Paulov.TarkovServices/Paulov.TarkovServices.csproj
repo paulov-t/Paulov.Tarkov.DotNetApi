@@ -21,73 +21,73 @@
       <HintPath>..\..\Server\References\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="bsg.componentace.compression.libs.zlib">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\bsg.componentace.compression.libs.zlib.dll</HintPath>
+      <HintPath>..\..\Server\References\bsg.componentace.compression.libs.zlib.dll</HintPath>
     </Reference>
     <Reference Include="Comfort">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\Comfort.dll</HintPath>
+      <HintPath>..\..\Server\References\Comfort.dll</HintPath>
     </Reference>
     <Reference Include="Comfort.Unity">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\Comfort.Unity.dll</HintPath>
+      <HintPath>..\..\Server\References\Comfort.Unity.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIElementsModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UIElementsModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UIElementsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UIModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UmbraModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UmbraModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UmbraModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityAnalyticsCommonModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityAnalyticsCommonModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityAnalyticsCommonModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityAnalyticsModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityAnalyticsModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityAnalyticsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityConnectModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityConnectModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityConnectModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityCurlModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityCurlModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityCurlModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityTestProtocolModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityTestProtocolModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityTestProtocolModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAssetBundleModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAudioModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityWebRequestModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityWebRequestModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestTextureModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestWWWModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VehiclesModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.VehiclesModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.VehiclesModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VFXModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.VFXModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.VFXModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VideoModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.VideoModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.VideoModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VirtualTexturingModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.VirtualTexturingModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.VirtualTexturingModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VRModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.VRModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.VRModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.WindModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.WindModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.WindModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.XRModule">
-      <HintPath>..\..\..\..\Paulov.Tarkov.Matchmaking\References\UnityEngine.XRModule.dll</HintPath>
+      <HintPath>..\..\Server\References\UnityEngine.XRModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 
