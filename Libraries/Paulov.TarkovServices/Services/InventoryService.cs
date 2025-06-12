@@ -12,6 +12,40 @@ namespace Paulov.TarkovServices.Services
 
         }
 
+        public void AddItemToInventory(AccountProfileCharacter profile, FlatItem item)
+        {
+            var items = GetInventoryItems(profile).ToList();
+
+            // Do a check to see if the code is attempting to add another item to the same equipment slot
+            var slotId = item.slotId;
+            if (!string.IsNullOrEmpty(slotId) && Enum.TryParse<EFT.InventoryLogic.EquipmentSlot>(slotId, out _) && items.Any(x => x.slotId == slotId))
+            {
+                throw new Exception($"Item already exists in Inventory in {slotId}");
+            }
+
+            items.Add(item);
+            SetInventoryItems(profile, items.ToArray());
+        }
+
+        public FlatItem AddTemplatedItemToSlot(AccountProfileCharacter profile, string templateId, string slotId, string parentId)
+        {
+            if (string.IsNullOrEmpty(templateId))
+                throw new ArgumentNullException(nameof(templateId));
+
+            if (string.IsNullOrEmpty(slotId))
+                throw new ArgumentNullException(nameof(slotId));
+
+            var resultingNewItem = new FlatItem()
+            {
+                _id = MongoID.Generate(false).ToString(),
+                _tpl = templateId,
+                slotId = slotId,
+                parentId = !string.IsNullOrEmpty(parentId) ? parentId : GetEquipmentId(profile)
+            };
+
+            return resultingNewItem;
+        }
+
         public IEnumerable<FlatItem> GetChildItemsOfItemId(AccountProfileCharacter profile, string itemId)
         {
             foreach (var item in GetInventoryItems(profile))

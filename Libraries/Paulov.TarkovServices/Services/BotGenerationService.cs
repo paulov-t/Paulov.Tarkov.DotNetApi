@@ -1,9 +1,11 @@
 ﻿using EFT;
+using EFT.InventoryLogic;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 using System.Text;
+using static EFT.InventoryLogic.Weapon;
 
 namespace Paulov.TarkovServices.Services
 {
@@ -123,13 +125,26 @@ namespace Paulov.TarkovServices.Services
             }
 
 
+            var botDatabaseDataInventory = botDatabaseData["inventory"];
+            var botDatabaseDataInventoryEquipment = botDatabaseDataInventory["equipment"];
+
+
             InventoryService.RemoveItemFromSlot(bot, "Headwear");
 
             InventoryService.RemoveItemFromSlot(bot, "FirstPrimaryWeapon");
+            var firstprimaryKeys = ((JObject)botDatabaseDataInventoryEquipment["FirstPrimaryWeapon"]).Properties().Select(p => p.Name).ToArray();
+            if (firstprimaryKeys.Length > 0)
+                AddRandomItemToSlot(bot, "FirstPrimaryWeapon", firstprimaryKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "SecondPrimaryWeapon");
+            var secondprimaryKeys = ((JObject)botDatabaseDataInventoryEquipment["SecondPrimaryWeapon"]).Properties().Select(p => p.Name).ToArray();
+            if (secondprimaryKeys.Length > 0)
+                AddRandomItemToSlot(bot, "SecondPrimaryWeapon", secondprimaryKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "Holster");
+            var holsterKeys = ((JObject)botDatabaseDataInventoryEquipment["Holster"]).Properties().Select(p => p.Name).ToArray();
+            if (holsterKeys.Length > 0)
+                AddRandomItemToSlot(bot, "Holster", holsterKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "pocket1");
 
@@ -146,6 +161,9 @@ namespace Paulov.TarkovServices.Services
             InventoryService.RemoveItemFromSlot(bot, "TacticalVest");
 
             InventoryService.RemoveItemFromSlot(bot, "Scabbard");
+            var scabbardKeys = ((JObject)botDatabaseData["inventory"]["equipment"]["Scabbard"]).Properties().Select(p => p.Name).ToArray();
+            if (scabbardKeys.Length > 0)
+                AddRandomItemToSlot(bot, "Scabbard", scabbardKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "ArmorVest");
 
@@ -168,6 +186,80 @@ namespace Paulov.TarkovServices.Services
             return bot;
         }
 
+        private void AddRandomItemToSlot(AccountProfileCharacter bot, string slotId, string[] randomTemplateItems)
+        {
+            if (randomTemplateItems == null)
+                throw new ArgumentNullException(nameof(randomTemplateItems));
+
+            if (randomTemplateItems.Length == 0)
+                throw new Exception($"{nameof(randomTemplateItems)}.Length is 0");
+
+            var randomId = randomTemplateItems.RandomElement();
+            //var presetItems = DatabaseService.getDatabase().getItemPresetArrayByEncyclopedia(randomId);
+
+            var weaponSlots = new EquipmentSlot[3] { EquipmentSlot.FirstPrimaryWeapon, EquipmentSlot.SecondPrimaryWeapon, EquipmentSlot.Holster };
+            var isWeapon = weaponSlots.Contains(Enum.Parse<EquipmentSlot>(slotId));
+            // If the item is not a weapon, add it to the inventory with all its mods normally
+            if (!isWeapon)
+            {
+                var newItem = InventoryService.AddTemplatedItemToSlot(bot, randomId, slotId, null);
+                InventoryService.AddItemToInventory(bot, newItem);
+                //allItems.push(newItem);
+                //if (presetItems.length > 0)
+                //{
+                //    const presetItem = presetItems[this.randomInteger(0, presetItems.length - 1)];
+                //    for (let i = 1; i < presetItem._items.length; i++)
+                //    {
+                //        const item = presetItem._items[i];
+                //        if (item)
+                //        {
+                //            item._id = generateMongoId();
+                //            item.parentId = newItem._id;
+                //            InventoryService.addItemToInventory(bot, item);
+                //            allItems.push(item);
+                //        }
+                //    }
+                //}
+                //return newItem;
+            }
+            else
+            {
+                DatabaseProvider.TryLoadGlobals(out var globals);
+                var itemPresets = ((JObject)globals["ItemPresets"]);
+                foreach (var itempreset in itemPresets.Children())
+                {
+                    var items = itempreset.Children()["_items"].ToList()[0].ToList();
+                    if (items.FindIndex(x => x["_tpl"].ToString() == randomId) != -1)
+                    {
+                        for (var i = 0; i < items.Count; i++)
+                        {
+                            var item = items[i].DeepClone().ToObject<GClass1354>();
+                            if (i == 0)
+                            {
+                                item.slotId = slotId;
+                                item.parentId = InventoryService.GetEquipmentId(bot);
+                                item.upd = new();
+                                JObject upd = new JObject();
+                                upd["Repairable"] = new JObject()
+                                {
+                                    { "Durability", bot.Info.Side != EPlayerSide.Savage ? Randomizer.Next(87, 94) : Randomizer.Next(50, 90) },
+                                    { "MaxDurability", bot.Info.Side != EPlayerSide.Savage ? Randomizer.Next(95, 99) : Randomizer.Next(91, 99) }
+                                };
+                                upd["FireMode"] = new JObject()
+                                {
+                                    { "FireMode", EFireMode.single.ToString() },
+                                };
+                                item.upd.JToken = upd;
+                            }
+
+                            InventoryService.AddItemToInventory(bot, item);
+                        }
+                        break;
+                    }
+                }
+            }
+
+        }
 
     }
 }

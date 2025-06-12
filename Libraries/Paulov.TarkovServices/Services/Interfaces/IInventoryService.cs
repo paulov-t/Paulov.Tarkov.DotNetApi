@@ -1,9 +1,14 @@
 ﻿using Paulov.TarkovModels;
+using FlatItem = GClass1354;
 
 namespace Paulov.TarkovServices.Services.Interfaces
 {
     public interface IInventoryService
     {
+
+        public void AddItemToInventory(AccountProfileCharacter profile, FlatItem item);
+
+        public FlatItem AddTemplatedItemToSlot(AccountProfileCharacter profile, string templateId, string slotId, string parentId);
 
         public IEnumerable<GClass1354> GetChildItemsOfItemId(AccountProfileCharacter profile, string itemId);
 
