@@ -142,33 +142,38 @@ namespace BSGHelperLibrary.ResponseModels
         /// </summary>
         public object? BodyValue { get; set; }
 
-        /// <inheritdoc />
-        public override Task ExecuteResultAsync(ActionContext context)
+        public string CreateResponseBody()
         {
-            ArgumentNullException.ThrowIfNull(context);
-
-            var responseText = "";
+            string responseBody = "";
 
             if (BodyValue != null)
             {
                 if ((BodyValue is Array || BodyValue.GetType().FullName.Contains("List`1")))
                 {
                     var data = BodyValue != null ? BodyValue?.ToJson() : null;
-                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                    responseBody = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
                 }
                 else if (BodyValue is string && !BodyValue.ToString().StartsWith("{") && !BodyValue.ToString().StartsWith("["))
                 {
                     var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
-                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": \"" + data + "\" }";
+                    responseBody = "{ \"err\": 0, \"errmsg\": null, \"data\": \"" + data + "\" }";
                 }
                 else
                 {
                     var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
-                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                    responseBody = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
                 }
             }
 
-            return HttpBodyConverters.CompressStringIntoResponseBody(responseText, context.HttpContext.Request, context.HttpContext.Response);
+            return responseBody;
+        }
+
+        /// <inheritdoc />
+        public override Task ExecuteResultAsync(ActionContext context)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+
+            return HttpBodyConverters.CompressStringIntoResponseBody(CreateResponseBody(), context.HttpContext.Request, context.HttpContext.Response);
         }
     }
 }
