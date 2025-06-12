@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace BSGHelperLibrary.ResponseModels
 {
@@ -50,29 +52,38 @@ namespace BSGHelperLibrary.ResponseModels
         public override Task ExecuteResultAsync(ActionContext context)
         {
             ArgumentNullException.ThrowIfNull(context);
-
-            var responseText = "";
+            
+            
+            string responseText = "";
+            JObject responseObject = new JObject()
+            {
+                ["err"] = 0,
+                ["errmsg"] = null
+            };
 
             if (BodyValue != null)
             {
-                if ((BodyValue is Array || BodyValue.GetType().FullName.Contains("List`1")))
+                Type bodyType = BodyValue.GetType();
+                if (bodyType.IsArray || (bodyType.IsGenericType && bodyType.GetGenericTypeDefinition() == typeof(List<>)))
                 {
-                    var data = BodyValue != null ? BodyValue?.ToJson() : null;
-                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                    responseObject["data"] = JArray.FromObject(BodyValue);
                 }
-                else if (BodyValue is string && !BodyValue.ToString().StartsWith("{") && !BodyValue.ToString().StartsWith("["))
+                else if (BodyValue is string bodyAsString)
                 {
-                    var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
-                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": \"" + data + "\" }";
-                }
-                else
-                {
-                    var data = BodyValue != null ? BodyValue?.ToString()?.Replace("\r", "").Replace("\n", "") : "";
-                    responseText = "{ \"err\": 0, \"errmsg\": null, \"data\": " + data + " }";
+                    bodyAsString = bodyAsString.Trim();
+                    if ((bodyAsString.StartsWith('{') && bodyAsString.EndsWith('}')) ||
+                        (bodyAsString.StartsWith('[') && bodyAsString.EndsWith(']')))
+                    {
+                        responseObject["data"] = JToken.Parse(bodyAsString);
+                    }
+                    else
+                    {
+                        responseObject["data"] = bodyAsString;
+                    }
                 }
             }
 
-            return HttpBodyConverters.CompressStringIntoResponseBody(responseText, context.HttpContext.Request, context.HttpContext.Response);
+            return HttpBodyConverters.CompressStringIntoResponseBody(responseObject.ToJson(), context.HttpContext.Request, context.HttpContext.Response);
         }
     }
 }

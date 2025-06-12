@@ -8,6 +8,8 @@ using Paulov.TarkovServices.Providers.ZipDatabaseProviders;
 
 //using System.IO.Compression;
 using System.Text.Json;
+using Paulov.TarkovServices.Models;
+using SharpCompress.Common.Zip;
 
 namespace Paulov.TarkovServices
 {
@@ -202,6 +204,33 @@ namespace Paulov.TarkovServices
 
             result = dbFile != null;
             return result;
+        }
+
+        public static IEnumerable<KeyValuePair<string, JObject>> LoadDatabaseFileAsEnumerable(string databaseFilePath)
+        {
+            string filePath = ConvertPath(databaseFilePath);
+
+            EntryModel entry = GetDatabaseProvider().Entries.FirstOrDefault(x => x.FullName == filePath);
+            if (entry == null) yield break;
+            
+            using Stream dbFileStream = entry.Open();
+            using StreamReader sr = new(dbFileStream);
+            using JsonTextReader reader = new(sr);
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonToken.PropertyName)
+                {
+                    string key = (string)reader.Value;
+                    reader.Read(); //Move the reader to the value
+                    JObject obj = JObject.Load(reader);
+                    yield return new KeyValuePair<string, JObject>(key, obj);
+                }
+                else if (reader.TokenType == JsonToken.EndObject)
+                {
+                    yield break;
+                }
+            }
         }
 
         public static bool TryLoadDatabaseFile(
