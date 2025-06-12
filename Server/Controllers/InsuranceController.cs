@@ -1,5 +1,6 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
@@ -14,8 +15,15 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (requestBody == null)
                 return new BSGErrorBodyResult(500, "");
 
+            var requestedTraders = requestBody["traders"] as JArray;
 
-            return new BSGSuccessBodyResult(new { });
+            JObject result = new JObject();
+            foreach (var t in requestedTraders)
+            {
+                result.Add(t.ToString(), new JObject());
+            }
+
+            return new BSGSuccessBodyResult(result);
         }
     }
 }

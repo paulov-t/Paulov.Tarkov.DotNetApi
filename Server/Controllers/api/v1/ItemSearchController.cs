@@ -1,7 +1,11 @@
-﻿using BSGHelperLibrary.ResponseModels;
+﻿using System.Collections;
+using System.Diagnostics;
+using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
+using Sirenix.Serialization;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
 {
@@ -11,154 +15,170 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
         [HttpPost]
         public async Task<IActionResult> Items()
         {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
-            var start = requestBody.ContainsKey("start") ? int.Parse(requestBody["start"].ToString()) : 0;
-            var length = requestBody.ContainsKey("start") ? int.Parse(requestBody["length"].ToString()) : int.MaxValue;
+            Dictionary<string, object> requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            int start = 0;
+            int length = int.MaxValue;
+
+            if (requestBody.TryGetValue("start", out object startValue))
+            {
+                start = int.Parse(startValue.ToString() ?? "0");
+                length = int.Parse(requestBody["length"].ToString() ?? int.MaxValue.ToString());
+            }
 
             DatabaseProvider.TryLoadDatabaseFile("locales/global/en.json", out Dictionary<string, dynamic> languageLocaleData);
-            DatabaseProvider.TryLoadDatabaseFile("templates/items.json", out Dictionary<string, dynamic> templatesItemData);
             DatabaseProvider.TryLoadDatabaseFile("templates/prices.json", out Dictionary<string, dynamic> templatesPricesData);
+            IEnumerable<KeyValuePair<string, JObject>> templatesItemEnumerable =
+                DatabaseProvider.LoadDatabaseFileAsEnumerable("templates/items.json");
 
-            int highestPrice = 0;
-            foreach (var itemId in templatesPricesData.Keys)
+            List<MinimalTemplateItem> minimalItems =
+                templatesItemEnumerable.Select(x => new MinimalTemplateItem(x.Value)).ToList();
+            int highestPrice = minimalItems.Select(x =>
             {
-                var item = templatesItemData[itemId];
-
-                if (templatesPricesData[itemId] > highestPrice)
-                    highestPrice = (int)templatesPricesData[itemId];
-            }
+                if(templatesPricesData.TryGetValue(x.ItemID, out dynamic price)) return (int)price;
+                return 0;
+            }).Max();
 
             const string ammoParentId = "5485a8684bdc2da71d8b4567";
             string[] ammoIdsToIgnore = { "5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1" };
+            
+            List<dynamic> results = new List<dynamic>();
 
-            var index = 0;
-            List<dynamic> result = new List<dynamic>();
-            foreach (var itemId in templatesItemData.Keys)
+            foreach (MinimalTemplateItem item in minimalItems)
             {
-                var item = templatesItemData[itemId];
-                var name = item._name;
+                //Localized name
+                string localizedItemName = item.ItemID;
+                if (languageLocaleData.TryGetValue($"{item.ItemID} Name", out var itemLongName))
+                {
+                    localizedItemName = (string)itemLongName;
+                }
+                else
+                {
+                    if (languageLocaleData.TryGetValue($"{item.ItemID} ShortName", out var itemShortName))
+                    {
+                        localizedItemName = (string)itemShortName;
+                    }
+                }
 
-                var langItem = languageLocaleData.ContainsKey($"{itemId} Name") ? languageLocaleData[$"{itemId} Name"] : null;
-                if (langItem == null)
-                    langItem = languageLocaleData.ContainsKey($"{itemId} ShortName") ? languageLocaleData[$"{itemId} ShortName"] : null;
-
-                if (langItem == null)
-                    langItem = item._name;
-
-                var parentIdLang = languageLocaleData.ContainsKey($"{item._parent} Name") ? languageLocaleData[$"{item._parent} Name"] : null;
-                if (parentIdLang == null)
-                    parentIdLang = "N/A";
-
-                var rating = 0;// Math.ceil((item.PaulovRating / highestRating) * 100);
-                var price = DatabaseProvider.GetTemplateItemPrice(itemId);
+                //Localized parent name
+                string localizedParentItemName = "N/A";
+                if (!string.IsNullOrEmpty(item.ParentID) &&
+                    languageLocaleData.TryGetValue($"{item.ParentID} Name", out var parentLongName))
+                {
+                    localizedParentItemName = (string)parentLongName;
+                }
+                
+                //Ratings
+                int rating = 0;
+                int price = (int)(templatesPricesData.GetValueOrDefault(item.ItemID) ?? 0);
                 double priceRatio = 0;
                 if (price > 0)
                 {
-                    var initialRatio = ((double)price / (double)highestPrice) * 100;
-                    priceRatio = Math.Round(initialRatio);
-                    priceRatio *= 3;
-                    if (item._props == null)
-                        continue;
+                    if (string.IsNullOrEmpty(item.PvERarity)) continue;
+                    
+                    double initialRatio = Math.Round((double)price / highestPrice * 100);
+                    priceRatio = initialRatio * 3;
+                    const double basePvERarityMultiplier = 2.5;
 
-                    if (item._props.RarityPvE == null)
-                        continue;
-
-                    switch (item._props.RarityPvE)
-                    {
-                        case "Superrare":
-                            priceRatio *= 3;
-                            break;
-                        case "Rare":
-                            priceRatio *= 2.75;
-                            break;
-                        // Common
-                        case "Common":
-                            priceRatio *= 2.5;
-                            break;
-                        // Not exist is loot table specific
-                        case "Not_exist":
-                            priceRatio *= 3;
-                            break;
-                        default:
-                            priceRatio *= 2.5;
-                            break;
-                    }
-                    priceRatio = Math.Min(priceRatio, 100);
-                    priceRatio = Math.Max(priceRatio, 1);
-                    priceRatio = Math.Ceiling((double)priceRatio);
+                    Enum.TryParse(item.PvERarity, true, out PvERarity rarity);
+                    
+                    priceRatio *= basePvERarityMultiplier + ((int)rarity * 0.25);
+                    priceRatio = Math.Max(Math.Min(priceRatio, 100), 1);
+                    priceRatio = Math.Ceiling(priceRatio);
                 }
 
-                index++;
-                if (index > length * (start + 1))
-                    break;
-
-                result.Add(new
+                if (results.Count > length * (start + 1)) break;
+                
+                results.Add(new
                 {
-                    itemId = itemId,
-                    langItem = langItem,
+                    itemId = item.ItemID,
+                    langItem = (dynamic)localizedItemName,
                     rating = rating,
-                    parentId = item._parent,
-                    parentIdLang = parentIdLang,
+                    parentId = (dynamic)item.ParentID,
+                    parentIdLang = (dynamic)localizedParentItemName,
                     price = price,
                     priceRatio = priceRatio
                 });
             }
-
-            return new BSGSuccessBodyResult(result);
+            
+            return new BSGSuccessBodyResult(results);
         }
 
 
         [Route("/itemSearch/getAmmo/")]
         [HttpPost]
-        public IActionResult Ammo()
+        public async Task<IActionResult> Ammo()
         {
             DatabaseProvider.TryLoadDatabaseFile("locales/global/en.json", out Dictionary<string, dynamic> languageLocaleData);
-            DatabaseProvider.TryLoadDatabaseFile("templates/items.json", out Dictionary<string, dynamic> templatesItemData);
-
+            //Loading in as a lazy enumerable means we can convert to a smaller object on the fly without a large allocation
+            IEnumerable<MinimalTemplateItem> templatesItemsMinimalEnumerable =
+                DatabaseProvider.LoadDatabaseFileAsEnumerable("templates/items.json")
+                    .Select(x => new MinimalTemplateItem(x.Value));
             const string ammoParentId = "5485a8684bdc2da71d8b4567";
-            string[] ammoIdsToIgnore = { "5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1" };
-
+            string[] ammoIdsToIgnore = ["5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1"];
+            
             List<dynamic> result = new List<dynamic>();
-            foreach (var itemId in templatesItemData.Keys)
+            await Parallel.ForEachAsync(templatesItemsMinimalEnumerable, (item, _) =>
             {
-                var item = templatesItemData[itemId];
-                var name = item._name;
+                if (!string.Equals(item.ParentID, ammoParentId)) return ValueTask.CompletedTask;
+                if (ammoIdsToIgnore.Contains(item.ItemID)) return ValueTask.CompletedTask;
+                if (!string.Equals(item.Props.AmmoType, "bullet")) return ValueTask.CompletedTask;
+                
+                //Localized name
+                string localizedItemName = item.ItemID;
+                if (languageLocaleData.TryGetValue($"{item.ItemID} Name", out var itemLongName))
+                {
+                    localizedItemName = (string)itemLongName;
+                }
+                else
+                {
+                    if (languageLocaleData.TryGetValue($"{item.ItemID} ShortName", out var itemShortName))
+                    {
+                        localizedItemName = (string)itemShortName;
+                    }
+                }
 
-                if (item._parent != "5485a8684bdc2da71d8b4567")
-                    continue;
-
-                if (ammoIdsToIgnore.IndexOf(itemId) != -1)
-                    continue;
-
-                if (item._props.ammoType != "bullet")
-                    continue;
-
-                var langItem = languageLocaleData.ContainsKey($"{itemId} Name") ? languageLocaleData[$"{itemId} Name"] : null;
-                if (langItem == null)
-                    langItem = languageLocaleData.ContainsKey($"{itemId} ShortName") ? languageLocaleData[$"{itemId} ShortName"] : null;
-
-                if (langItem == null)
-                    langItem = item._name;
-
-                var parentIdLang = languageLocaleData.ContainsKey($"{item._parent} Name") ? languageLocaleData[$"{item._parent} Name"] : null;
-                if (parentIdLang == null)
-                    parentIdLang = "N/A";
-
-                var rating = 0;// Math.ceil((item.PaulovRating / highestRating) * 100);
-
+                int rating = 0; // Math.ceil((item.PaulovRating / highestRating) * 100);
+                
                 result.Add(new
                 {
-                    itemId = itemId,
-                    langItem = langItem,
-                    caliber = item._props.Caliber,
-                    armorDamage = item._props.ArmorDamage,
-                    penetration = item._props.PenetrationPower,
-                    damage = item._props.Damage,
+                    itemId = item.ItemID,
+                    langItem = localizedItemName,
+                    caliber = item.Props.Caliber,
+                    armorDamage = item.Props.ArmorDamage,
+                    penetration = item.Props.PenetrationPower,
+                    damage = item.Props.Damage,
                     rating = rating
                 });
-            }
-
+                return ValueTask.CompletedTask;
+            });
             return new BSGSuccessBodyResult(result);
         }
+
+        private readonly struct MinimalTemplateItem(JObject templateItem)
+        {
+            public readonly string ItemID = templateItem.GetValue("_id")?.ToString() ?? string.Empty;
+            public readonly string ParentID = templateItem.GetValue("_parent")?.ToString() ?? string.Empty;
+            public readonly string PvERarity = templateItem.SelectToken("_props.RarityPvE")?.ToString() ?? string.Empty;
+            public readonly MinimalTemplateItemProps Props = new(templateItem.GetValue("_props"));
+        }
+
+        private readonly struct MinimalTemplateItemProps(JToken templateItemProps)
+        {
+            public readonly string Caliber = templateItemProps["Caliber"]?.ToString() ?? string.Empty;
+            public readonly string AmmoType = templateItemProps["ammoType"]?.ToString() ?? string.Empty;
+            public readonly int ArmorDamage = (int)(templateItemProps["ArmorDamage"] ?? 0);
+            public readonly int PenetrationPower = (int)(templateItemProps["PenetrationPower"] ?? 0);
+            public readonly int Damage = (int)(templateItemProps["Damage"] ?? 0);
+        }
+    }
+
+    enum PvERarity
+    {
+        Unknown = 0,
+        Common = 0,
+        Rare = 1,
+        Superrare = 2,
+        Not_exist = 2,
     }
 }

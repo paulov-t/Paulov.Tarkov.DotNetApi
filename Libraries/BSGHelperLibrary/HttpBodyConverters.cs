@@ -12,6 +12,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Primitives;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
 {
@@ -230,39 +231,31 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
         {
             if (!string.IsNullOrEmpty(stringToConvert))
             {
-                stringToConvert
-                    = stringToConvert
-                    .Replace("/[\f]/g", "")
-                    .Replace("/[\n]/g", "")
-                    .Replace("/[\r]/g", "")
-                    .Replace("/[\t]/g", "")
-                    .Replace("/[\\]/g", "")
-                    ;
+                stringToConvert = stringToConvert.Trim();
             }
 
             if (!response.Headers.IsReadOnly)
             {
                 // Must send application/json responses
-                if (!response.Headers.ContainsKey("content-type") || response.Headers["content-type"] != "application/json")
-                    response.Headers["content-type"] = "application/json";
+                if (!response.Headers.TryGetValue("content-type", out StringValues contentType) || !contentType.Equals("application/json"))
+                    response.Headers.ContentType = "application/json";
 
                 // If we are not Unity / Tarkov, then instruct client to deflate
-                if (request.Headers.ContainsKey("user-agent") && !request.Headers["user-agent"].ToString().StartsWith("Unity"))
-                    response.Headers["content-encoding"] = "deflate";
+                if (request.Headers.TryGetValue("user-agent", out StringValues userAgent) && !userAgent.ToString().StartsWith("Unity"))
+                    response.Headers.ContentEncoding = "deflate";
             }
             response.StatusCode = 200;
 
             // Zlib Compress the String
             if (!string.IsNullOrEmpty(stringToConvert))
             {
-                var bytes = SimpleZlib.CompressToBytes(stringToConvert, 6);
+                //TODO: Look at streaming this instead of waiting for the entire compression before sending our response
+                byte[] bytes = SimpleZlib.CompressToBytes(stringToConvert, 6);
                 response.Headers.ContentLength = bytes.Length;
                 await response.BodyWriter.WriteAsync(new ReadOnlyMemory<byte>(bytes));
-                bytes = null;
             }
 
             GC.Collect();
-            stringToConvert = null;
         }
 
         public static async Task CompressNullIntoResponseBodyBSG(HttpRequest request, HttpResponse response)

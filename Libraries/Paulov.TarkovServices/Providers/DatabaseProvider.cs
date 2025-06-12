@@ -1,12 +1,15 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.ZipDatabaseProviders;
 
 
 //using System.IO.Compression;
 using System.Text.Json;
+using Paulov.TarkovServices.Models;
+using SharpCompress.Common.Zip;
 
 namespace Paulov.TarkovServices
 {
@@ -63,9 +66,11 @@ namespace Paulov.TarkovServices
 
         static DatabaseProvider()
         {
+            ITraceWriter traceWriter = new MemoryTraceWriter();
             CachedSerializer = new()
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                TraceWriter = traceWriter
             };
 
             if (!CachedSerializer.Converters.Any())
@@ -199,6 +204,33 @@ namespace Paulov.TarkovServices
 
             result = dbFile != null;
             return result;
+        }
+
+        public static IEnumerable<KeyValuePair<string, JObject>> LoadDatabaseFileAsEnumerable(string databaseFilePath)
+        {
+            string filePath = ConvertPath(databaseFilePath);
+
+            EntryModel entry = GetDatabaseProvider().Entries.FirstOrDefault(x => x.FullName == filePath);
+            if (entry == null) yield break;
+            
+            using Stream dbFileStream = entry.Open();
+            using StreamReader sr = new(dbFileStream);
+            using JsonTextReader reader = new(sr);
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonToken.PropertyName)
+                {
+                    string key = (string)reader.Value;
+                    reader.Read(); //Move the reader to the value
+                    JObject obj = JObject.Load(reader);
+                    yield return new KeyValuePair<string, JObject>(key, obj);
+                }
+                else if (reader.TokenType == JsonToken.EndObject)
+                {
+                    yield break;
+                }
+            }
         }
 
         public static bool TryLoadDatabaseFile(
@@ -394,6 +426,27 @@ namespace Paulov.TarkovServices
             return true;
         }
 
+        /// <summary>
+        /// This uses a LOT of memory. Needs fixing.
+        /// </summary>
+        /// <param name="templateId"></param>
+        /// <returns></returns>
+        public static JObject GetTemplateItemById(string templateId)
+        {
+            TryLoadTemplateFile("items.json", out var templates);
+            var template = GetTemplateItemById(templates, templateId);
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
+            return template;
+        }
+
+        public static JObject GetTemplateItemById(JObject templates, string templateId)
+        {
+            var template = templates[templateId] as JObject;
+            return template;
+        }
+
         public static int GetTemplateItemPrice(string templateId)
         {
             DatabaseProvider.TryLoadDatabaseFile("templates/prices.json", out JObject templatesPricesData);
@@ -407,6 +460,22 @@ namespace Paulov.TarkovServices
             }
 
             return 1;
+        }
+
+        public static List<JObject> GetTemplateItemsAsArray()
+        {
+            TryLoadTemplateFile("items.json", out var templates);
+            return GetTemplateItemsAsArray(templates);
+        }
+
+        public static List<JObject> GetTemplateItemsAsArray(JObject templates)
+        {
+            List<JObject> templatesItems = new List<JObject>();
+            foreach (var template in templates)
+            {
+                templatesItems.Add((JObject)template.Value);
+            }
+            return templatesItems;
         }
 
 

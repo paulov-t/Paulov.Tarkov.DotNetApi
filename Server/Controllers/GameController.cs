@@ -3,10 +3,12 @@ using JsonType;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.Tarkov.WebServer.DOTNET.Services;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Services;
 using System.Diagnostics;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
@@ -17,9 +19,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private TradingProvider tradingProvider { get; } = new TradingProvider();
 
         private SaveProvider _saveProvider;
-        public GameController(ISaveProvider saveProvider)
+        private IConfiguration configuration;
+        public GameController(ISaveProvider saveProvider, IConfiguration configuration)
         {
-            _saveProvider = saveProvider as SaveProvider;
+            this._saveProvider = saveProvider as SaveProvider;
+            this.configuration = configuration;
         }
 
         private string SessionId
@@ -110,13 +114,22 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/items")]
         [HttpPost]
-        [HttpGet]
-        public async void TemplateItems(int? retry, bool? debug, int? count, int? page)
+        public async Task<IActionResult> TemplateItems(int? count, int? page)
         {
+
             if (DatabaseProvider.TryLoadItemTemplates(out var items, count, page))
-                await HttpBodyConverters.CompressIntoResponseBodyBSG(items, Request, Response);
-            else
-                Response.StatusCode = 500;
+            {
+                //var dict = items.ParseJsonTo<GClass1372>();
+                //var dict = JsonConvert.DeserializeObject<GClass1372>(items, new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters, ReferenceLoopHandling = ReferenceLoopHandling.Ignore,   });
+                //if (!Singleton<ItemFactoryClass>.Instantiated)
+                //{
+                //    Singleton<ItemFactoryClass>.Create(new ItemFactoryClass(dict));
+                //}
+
+                return new BSGSuccessBodyResult(items);
+            }
+
+            return new BSGErrorBodyResult(500, "");
 
         }
 
@@ -126,29 +139,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult Globals()
         {
-            // TODO: Detect which Globals to load
-            if (DatabaseProvider.TryLoadDatabaseFile("globals.json", out JObject items))
+            var globals = GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            if (configuration["ZOMBIES_ONLY"] != null)
             {
-                if (!items.ContainsKey("LocationInfection"))
-                    items.Add("LocationInfection", new JObject() { });
-
-                if (!items.ContainsKey("time"))
-                    items.Add("time", DateTime.Now.Ticks / 1000);
-
-                var rawText = items.ToJson();
-
-                //Singleton<BackendConfigSettingsClass>.Create(items["config"].ToObject<BackendConfigSettingsClass>());
-                //_ = Singleton<BackendConfigSettingsClass>.Instance;
-                GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
-
-                return new BSGSuccessBodyResult(rawText);
-            }
-            else
-            {
-                Response.StatusCode = 500;
-                return new JsonResult("BAD");
 
             }
+
+            return new BSGSuccessBodyResult(globals);
         }
 
         [Route("client/settings")]
@@ -281,6 +278,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             DatabaseProvider.TryLoadTemplateFile("handbook.json", out var templates);
 
             return new BSGSuccessBodyResult(templates);
+
+
 
 
         }
@@ -716,11 +715,35 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
             var resultArray = new JArray();
+            if (requestBody == null)
+                return new BSGSuccessBodyResult(resultArray);
+
+            if (!requestBody.ContainsKey("conditions"))
+                return new BSGSuccessBodyResult(resultArray);
+
             var conditions = requestBody["conditions"];
-            Debug.WriteLine(conditions.ToJson());
 
+            var strConditions = conditions.ToJson();
+#if DEBUG
+            Debug.WriteLine(strConditions.ToJson());
+#endif
 
-            return new BSGSuccessBodyResult(resultArray);
+            List<WaveInfoClass> list = JsonConvert.DeserializeObject<List<WaveInfoClass>>(strConditions);
+
+            var bots = new BotGenerationService().GenerateBots(list);
+
+            ITraceWriter traceWriter = new MemoryTraceWriter();
+
+            var botsJson = JsonConvert.SerializeObject(bots
+                , Formatting.Indented
+                , new JsonSerializerSettings() { TraceWriter = traceWriter, Converters = DatabaseProvider.CachedSerializer.Converters }
+                );
+
+#if DEBUG
+            Debug.WriteLine(traceWriter);
+#endif
+
+            return new BSGSuccessBodyResult(botsJson);
         }
     }
 }
