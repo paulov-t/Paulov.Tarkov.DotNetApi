@@ -1,6 +1,7 @@
 ﻿//using ComponentAce.Compression.Libs.zlib;
 using ComponentAce.Compression.Libs.zlib;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SIT.BSGHelperLibrary;
@@ -12,7 +13,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Primitives;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
 {
