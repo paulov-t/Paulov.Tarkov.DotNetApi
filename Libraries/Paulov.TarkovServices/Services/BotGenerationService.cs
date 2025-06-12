@@ -1,4 +1,5 @@
-﻿using EFT;
+﻿using Comfort.Common;
+using EFT;
 using EFT.InventoryLogic;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
@@ -6,6 +7,7 @@ using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 using System.Text;
 using static EFT.InventoryLogic.Weapon;
+using FlatItem = GClass1354;
 
 namespace Paulov.TarkovServices.Services
 {
@@ -16,6 +18,8 @@ namespace Paulov.TarkovServices.Services
         private Random Randomizer { get; set; } = new Random();
 
         public IInventoryService InventoryService { get; private set; }
+
+        private JObject _templates;
 
         public BotGenerationService()
         {
@@ -36,6 +40,8 @@ namespace Paulov.TarkovServices.Services
 
         public List<AccountProfileCharacter> GenerateBots(List<WaveInfoClass> conditions)
         {
+            DatabaseProvider.TryLoadTemplateFile("items.json", out _templates);
+
             List<AccountProfileCharacter> bots = new List<AccountProfileCharacter>();
 
             foreach (WaveInfoClass waveInfoClass in conditions)
@@ -45,6 +51,10 @@ namespace Paulov.TarkovServices.Services
                     bots.Add(GenerateBot(waveInfoClass));
                 }
             }
+
+            // nullify the templates and remove them from memory
+            _templates = null;
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
             return bots;
         }
@@ -81,12 +91,18 @@ namespace Paulov.TarkovServices.Services
 
             // Setup Bot Info Settings
             var experienceJson = botDatabaseData["experience"];
+            bot.Info.Settings.AggressorBonus = Math.Round(Randomizer.NextDouble(), 2);
             // The Bot difficulty is set from the request condition
             bot.Info.Settings.BotDifficulty = condition.Difficulty;
             // IMPORTANT, UseSimpleAnimator is used for bots like the Zombies
             bot.Info.Settings.UseSimpleAnimator = experienceJson["useSimpleAnimator"].ToString() != "" ? bool.Parse(experienceJson["useSimpleAnimator"].ToString()) : false;
             // The Bot role is set from the request condition
             bot.Info.Settings.Role = condition.Role;
+            var experienceRewardJson = botDatabaseData["experience"]["reward"];
+            if (experienceRewardJson["normal"] != null)
+            {
+                bot.Info.Settings.Experience = 275;
+            }
 
             // Generate the bot's Nickname
             var firstnames = botDatabaseData["firstName"].ToArray();
@@ -104,6 +120,17 @@ namespace Paulov.TarkovServices.Services
 
             bot.Info.SavageLockTime = 0;
 
+            if (bot.Info.Side != EPlayerSide.Savage)
+                bot.Info.TeamId = MongoID.Generate(false);
+
+            if (bot.Info.Side != EPlayerSide.Savage)
+                bot.Info.GroupId = MongoID.Generate(false);
+
+            if (bot.Info.Side != EPlayerSide.Savage)
+                bot.Info.PrestigeLevel = Randomizer.Next(0, 2);
+
+            GenerateBotLevel(bot);
+            AddDogtagToBot(bot);
 
             if (botDatabaseData.ContainsKey("appearance"))
             {
@@ -186,6 +213,7 @@ namespace Paulov.TarkovServices.Services
             return bot;
         }
 
+
         private void AddRandomItemToSlot(AccountProfileCharacter bot, string slotId, string[] randomTemplateItems)
         {
             if (randomTemplateItems == null)
@@ -224,8 +252,18 @@ namespace Paulov.TarkovServices.Services
             }
             else
             {
+                // TODO: This needs refactoring in to individual methods
+
                 DatabaseProvider.TryLoadGlobals(out var globals);
                 var itemPresets = ((JObject)globals["ItemPresets"]);
+
+                // Assign the weaponItem so we know what ammo to generate for it later on
+                FlatItem weaponItem = null;
+
+                List<FlatItem> allAddedItems = new();
+
+
+                // TODO: This needs to be rewritten to gather a random child that matches the randomId
                 foreach (var itempreset in itemPresets.Children())
                 {
                     var items = itempreset.Children()["_items"].ToList()[0].ToList();
@@ -250,15 +288,139 @@ namespace Paulov.TarkovServices.Services
                                     { "FireMode", EFireMode.single.ToString() },
                                 };
                                 item.upd.JToken = upd;
+                                weaponItem = item;
                             }
 
+                            allAddedItems.Add(item);
                             InventoryService.AddItemToInventory(bot, item);
                         }
+                        // TODO/FIXME: Break. If we don't break here it will attempt to add more than one weapon to the slot
                         break;
                     }
                 }
+
+                // Get an ammo type for the weapon and add the ammo to the inventory
+                var weaponTemplate = DatabaseProvider.GetTemplateItemById(_templates, weaponItem._tpl);
+                var newItems = CreateMagazineWithAmmoForWeapon(weaponItem, allAddedItems.Find(x => x.slotId == "mod_magazine"));
+                foreach (var item in newItems)
+                    InventoryService.AddItemToInventory(bot, item);
+
             }
 
+        }
+
+        /// <summary>
+        /// Generate ammo for a weapon's magazine. Will also generate the magazine if magazine = null
+        /// </summary>
+        /// <param name="weaponItem"></param>
+        /// <param name="magazine">Will use and fill this magazine if provided</param>
+        /// <returns></returns>
+        private List<FlatItem> CreateMagazineWithAmmoForWeapon(FlatItem weaponItem, FlatItem magazine = null)
+        {
+            List<FlatItem> resultItems = new List<FlatItem>();
+
+            var weaponTemplate = DatabaseProvider.GetTemplateItemById(_templates, weaponItem._tpl);
+            var weaponTemplateProps = weaponTemplate["_props"];
+
+            if (magazine == null)
+                return resultItems;
+
+            var ammoCaliber = weaponTemplate["_props"]?["ammoCaliber"]?.ToString();
+            if (string.IsNullOrEmpty(ammoCaliber))
+                return resultItems;
+
+            var templatesArray = DatabaseProvider.GetTemplateItemsAsArray(_templates);
+            var ammos = templatesArray
+                .Where(x => x["_props"]?["ammoType"]?.ToString() == "bullet" && x["_props"]?["Caliber"]?.ToString() == ammoCaliber && float.Parse(x["_props"]?["Damage"]?.ToString()) > 0)
+                .OrderBy(x => float.Parse(x["_props"]?["Damage"]?.ToString())).ToList();
+            _ = ammos;
+
+            if (ammos.Count == 0)
+                return resultItems;
+
+            var magazineTemplate = DatabaseProvider.GetTemplateItemById(_templates, magazine._tpl);
+            if (magazineTemplate == null)
+                return resultItems;
+
+            if (magazineTemplate["_props"]?["Cartridges"]?.ToArray() != null)
+            {
+                var selectedRandomAmmo = ammos.RandomElement();
+                var magazineMaxCount = int.Parse(magazineTemplate["_props"]["Cartridges"].ToArray()[0]["_max_count"].ToString());
+
+                FlatItem randomAmmo = new()
+                {
+                    _tpl = selectedRandomAmmo["_id"].ToString(),
+                    _id = MongoID.Generate(false),
+                    parentId = magazine._id,
+                    slotId = "cartridges",
+                    upd = new()
+                    {
+                        JToken = new JObject()
+                            {
+                                { "StackObjectsCount", magazineMaxCount },
+                                { "SpawnedInSession", false },
+                            }
+                    }
+                };
+                resultItems.Add(randomAmmo);
+            }
+
+            return resultItems;
+        }
+
+        private void AddDogtagToBot(AccountProfileCharacter bot)
+        {
+            if (bot.Info.Side == EPlayerSide.Savage)
+                return;
+
+            FlatItem dogtagItem = new FlatItem();
+            dogtagItem._id = MongoID.Generate(false);
+            dogtagItem._tpl = bot.Info.Side == EPlayerSide.Usec ? "59f32c3b86f77472a31742f0" : "59f32bb586f774757e1e8442";
+            dogtagItem.slotId = EquipmentSlot.Dogtag.ToString();
+            dogtagItem.parentId = InventoryService.GetEquipmentId(bot);
+            dogtagItem.upd = new();
+            JObject upd = new JObject();
+            upd["Dogtag"] = new JObject()
+            {
+                { "AccountId", bot.AccountId },
+                { "ProfileId", bot.Id.ToString() },
+                { "Nickname", bot.Info.Nickname },
+                { "Side", bot.Info.Side.ToString() },
+                { "Level", bot.Info.Level },
+                { "Time", DateTime.UtcNow.ToString() },
+                { "Status", "Killed by " },
+                { "KillerAccountId", "Unknown" },
+                { "KillerProfileId", "Unknown" },
+                { "KillerName", "Unknown" },
+                { "WeaponName", "Unknown" },
+            };
+            dogtagItem.upd.JToken = upd;
+            InventoryService.AddItemToInventory(bot, dogtagItem);
+
+        }
+
+
+        private void GenerateBotLevel(AccountProfileCharacter bot)
+        {
+            if (bot.Info.Side == EPlayerSide.Savage)
+                return;
+
+            var level = Randomizer.Next(2, 70);
+            var xp = GetNeededXPFromLvl(level);
+            bot.Info.Experience = xp;
+            bot.Info.Level = level;
+        }
+
+        private int GetNeededXPFromLvl(int level)
+        {
+            var xpTable = Singleton<BackendConfigSettingsClass>.Instance.Experience.Level.Table;
+
+            var exp = 0;
+            for (var i = 0; i < level; i++)
+            {
+                exp += xpTable[i];
+            }
+            return exp;
         }
 
     }
