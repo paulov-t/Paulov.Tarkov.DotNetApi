@@ -1,4 +1,5 @@
 using BSGHelperLibrary.ResponseModels;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Controllers;
@@ -24,10 +25,8 @@ namespace WebApiTests
         {
         }
 
-        [Test]
-        public void Globals_ResponseTest()
+        private void CommonTest_MustBeBSGSuccessBodyResult(IActionResult result)
         {
-            var result = controller.Globals();
             if (result is BSGSuccessBodyResult successBodyResult)
             {
                 var responseBody = successBodyResult.CreateResponseBody();
@@ -44,6 +43,29 @@ namespace WebApiTests
             {
                 Assert.Fail();
             }
+        }
+
+        [Test]
+        public void Start_ResponseTest()
+        {
+            var result = controller.Start().Result;
+            CommonTest_MustBeBSGSuccessBodyResult(result);
+        }
+
+
+
+        [Test]
+        public void TemplateItems_ResponseTest()
+        {
+            var result = controller.TemplateItems(-1, -1).Result;
+            CommonTest_MustBeBSGSuccessBodyResult(result);
+        }
+
+        [Test]
+        public void Globals_ResponseTest()
+        {
+            var result = controller.Globals();
+            CommonTest_MustBeBSGSuccessBodyResult(result);
         }
 
     }

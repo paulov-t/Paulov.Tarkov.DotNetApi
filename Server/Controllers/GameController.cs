@@ -45,21 +45,23 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/game/start", Name = "GameStart")]
         [HttpPost]
-        public async void Start(int? retry, bool? debug)
+        public async Task<IActionResult> Start()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
             var timeSpan = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
 
-            await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
-                new Dictionary<string, object>() { { "utc_time", (int)timeSpan.TotalSeconds } }
-                , Request, Response);
+            //await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
+            //    new Dictionary<string, object>() { { "utc_time", (int)timeSpan.TotalSeconds } }
+            //    , Request, Response);
+
+            return new BSGSuccessBodyResult(new JObject() { { "utc_time", (int)timeSpan.TotalSeconds } });
 
         }
 
         [Route("client/game/version/validate")]
         [HttpPost]
-        public async void VersionValidate(int? retry, bool? debug)
+        public async void VersionValidate()
         {
             await HttpBodyConverters.CompressNullIntoResponseBodyBSG(Request, Response);
         }
@@ -133,8 +135,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         }
 
-
-
         [Route("client/globals")]
         [HttpPost]
         public IActionResult Globals()
@@ -156,52 +156,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             var rawText = items.ToJson();
             return new BSGSuccessBodyResult(rawText);
-        }
-
-        [Route("client/game/profile/nickname/reserved")]
-        [HttpPost]
-        public IActionResult NicknameReserved()
-        {
-            var sessionId = SessionId;
-#if DEBUG
-            if (string.IsNullOrEmpty(sessionId))
-                sessionId = _saveProvider.GetProfiles().Keys.First();
-#endif
-            var name = _saveProvider.GetProfiles()[sessionId].Username;
-
-            return new BSGSuccessBodyResult(name);
-
-        }
-
-        [Route("client/game/profile/nickname/validate")]
-        [HttpPost]
-        public async Task<IActionResult> NicknameValidate()
-        {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
-            if (requestBody == null)
-                return new BSGErrorBodyResult(402, "Request Body cannot be found!");
-
-            if (!requestBody.ContainsKey("nickname"))
-            {
-                return new BSGErrorBodyResult(402, "nickname is not provided!");
-            }
-
-            if (requestBody["nickname"].ToString().Length < 3)
-            {
-                await HttpBodyConverters.CompressIntoResponseBodyBSG(null, Request, Response, 256, "The nickname is too short");
-                return null;
-            }
-            //else if (saveProvider.NameExists(requestBody["nickname"].ToString()))
-            //{
-            //    await HttpBodyConverters.CompressIntoResponseBodyBSG(null, Request, Response, 255, "The nickname is already in use");
-            //    return;
-            //}
-
-            JObject obj = new();
-            obj.TryAdd("status", "ok");
-
-            return new BSGSuccessBodyResult(obj);
-
         }
 
         [Route("client/game/keepalive")]

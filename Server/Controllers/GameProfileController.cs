@@ -295,6 +295,52 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
             return new BSGSuccessBodyResult(list);
         }
+
+        [Route("client/game/profile/nickname/reserved")]
+        [HttpPost]
+        public IActionResult NicknameReserved()
+        {
+            var sessionId = SessionId;
+#if DEBUG
+            if (string.IsNullOrEmpty(sessionId))
+                sessionId = _saveProvider.GetProfiles().Keys.First();
+#endif
+            var name = _saveProvider.GetProfiles()[sessionId].Username;
+
+            return new BSGSuccessBodyResult(name);
+
+        }
+
+        [Route("client/game/profile/nickname/validate")]
+        [HttpPost]
+        public async Task<IActionResult> NicknameValidate()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(402, "Request Body cannot be found!");
+
+            if (!requestBody.ContainsKey("nickname"))
+            {
+                return new BSGErrorBodyResult(402, "nickname is not provided!");
+            }
+
+            if (requestBody["nickname"].ToString().Length < 3)
+            {
+                await HttpBodyConverters.CompressIntoResponseBodyBSG(null, Request, Response, 256, "The nickname is too short");
+                return null;
+            }
+            //else if (saveProvider.NameExists(requestBody["nickname"].ToString()))
+            //{
+            //    await HttpBodyConverters.CompressIntoResponseBodyBSG(null, Request, Response, 255, "The nickname is already in use");
+            //    return;
+            //}
+
+            JObject obj = new();
+            obj.TryAdd("status", "ok");
+
+            return new BSGSuccessBodyResult(obj);
+
+        }
     }
 
 
