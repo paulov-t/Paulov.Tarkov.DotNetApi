@@ -86,7 +86,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
 
         public static async Task<Dictionary<string, object>> DecompressRequestBodyToDictionary(HttpRequest request)
         {
-            if (!request.Body.CanSeek)
+            if (request == null)
+                return new Dictionary<string, object>() { };
+
+            if (request?.Body?.CanSeek == false)
                 request.EnableBuffering();
 
             request.Body.Position = 0;
