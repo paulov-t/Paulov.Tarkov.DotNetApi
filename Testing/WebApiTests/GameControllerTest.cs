@@ -52,7 +52,12 @@ namespace WebApiTests
             CommonTest_MustBeBSGSuccessBodyResult(result);
         }
 
-
+        [Test]
+        public void GameConfig_ResponseTest()
+        {
+            var result = controller.GameConfig().Result;
+            CommonTest_MustBeBSGSuccessBodyResult(result);
+        }
 
         [Test]
         public void TemplateItems_ResponseTest()
