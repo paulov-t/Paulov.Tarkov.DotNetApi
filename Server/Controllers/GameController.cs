@@ -69,13 +69,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [Route("client/game/config")]
         [Route("client/game/configuration")]
         [HttpPost]
-        public async void GameConfig(int? retry)
+        public async Task<IActionResult> GameConfig()
         {
-            var r = Request;
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            string protocol = Request.Protocol.ToString();
-            string ip = Request.Host.ToString();
+            string protocol = Request?.Protocol?.ToString();
+            string ip = Request?.Host.ToString();
             string backendUrl = $"https://{ip}/";
 
             var sessionId = "";
@@ -87,10 +86,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return;
             }
 #else
-            sessionId = _saveProvider.GetProfiles().First().Key;
+            sessionId = _saveProvider?.GetProfiles().First().Key;
 #endif
 
-            var profile = _saveProvider.LoadProfile(sessionId);
+            var profile = _saveProvider?.LoadProfile(sessionId);
 
             var config = new Dictionary<string, object>()
             {
@@ -111,7 +110,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 }
             };
 
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(config, Request, Response);
+            //await HttpBodyConverters.CompressIntoResponseBodyBSG(config, Request, Response);
+            return new BSGSuccessBodyResult(config.ToJson());
         }
 
         [Route("client/items")]
