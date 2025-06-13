@@ -18,25 +18,30 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
 
         public static string GetSessionId(HttpRequest request, HttpContext context = null)
         {
-            IHeaderDictionary HttpHeaders = request.Headers;
+            IHeaderDictionary HttpHeaders = request?.Headers;
+            if (HttpHeaders == null)
+            {
+                return null;
+            }
+
             if (HttpHeaders.ContainsKey("Cookie"))
             {
                 Dictionary<string, string> HeaderCookie = new Dictionary<string, string>();
                 var Cookie = HttpHeaders["Cookie"].ToString();
                 var cookieSplit = Cookie.Split(',');
-                foreach (var cookieSplitComma in cookieSplit) 
-                { 
-                    if(!HeaderCookie.ContainsKey(cookieSplitComma.Split("=")[0]))
+                foreach (var cookieSplitComma in cookieSplit)
+                {
+                    if (!HeaderCookie.ContainsKey(cookieSplitComma.Split("=")[0]))
                         HeaderCookie.Add(cookieSplitComma.Split("=")[0], cookieSplitComma.Split("=")[1]);
                 }
 
-                if (context != null && context.Session != null && HeaderCookie.ContainsKey("PHPSESSID") )
+                if (context != null && context.Session != null && HeaderCookie.ContainsKey("PHPSESSID"))
                 {
-                    if(!context.Session.TryGetValue("SessionId", out _))
+                    if (!context.Session.TryGetValue("SessionId", out _))
                         context.Session?.SetString("SessionId", HeaderCookie["PHPSESSID"]);
                 }
 
-                if(HeaderCookie.ContainsKey("PHPSESSID"))
+                if (HeaderCookie.ContainsKey("PHPSESSID"))
                     return HeaderCookie["PHPSESSID"];
                 else
                 {
@@ -46,7 +51,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
 
             if (context != null)
             {
-                if(!context.Session.TryGetValue("SessionId", out _))
+                if (!context.Session.TryGetValue("SessionId", out _))
                     return context.Session?.GetString("SessionId");
             }
 
