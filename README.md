@@ -17,7 +17,7 @@ Under development and can get to the main menu.
 - Use username & hashed password authorization - **NOT YET IMPLEMENTED**
 - Use web token authorization - **NOT YET IMPLEMENTED**
 - Create a DOTNET Web Api that will work in the free Azure Web Service. 
-  - The free tier of the Azure Web Service has a very low memory size threshold and very low hard disk space threshold. If you exceed the threshold, the app will not start or crash. 
+  - The free tier of the Azure Web Service has a very low: memory size threshold (1GB), hard disk space threshold (1GB) and CPU threshold (60 mins per day). If you exceed the threshold, the app will not start or crash. 
   - The main aim is to keep the footprint very low 
   - Do not load anything permanently into memory
   - Do not have large loose files in the project
