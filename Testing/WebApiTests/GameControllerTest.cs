@@ -53,6 +53,13 @@ namespace WebApiTests
         }
 
         [Test]
+        public void GameMode_ResponseTest()
+        {
+            var result = controller.GameMode().Result;
+            CommonTest_MustBeBSGSuccessBodyResult(result);
+        }
+
+        [Test]
         public void GameConfig_ResponseTest()
         {
             var result = controller.GameConfig().Result;

@@ -592,31 +592,35 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         /// performed.</param>
         [Route("client/game/mode", Name = "GameMode")]
         [HttpPost]
-        public async void GameMode(int? retry)
+        public async Task<IActionResult> GameMode()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            string protocol = Request.Protocol.ToString();
-            string ip = Request.Host.ToString();
+            string protocol = Request?.Protocol?.ToString();
+            string ip = Request?.Host.ToString();
 
-            var indexOfSlash3 = Request.ToString().IndexOf('/', 7);
+            var indexOfSlash3 = Request?.ToString().IndexOf('/', 7);
             string backendUrl = $"https://{ip}/";
 
-            string mode = requestBody["sessionMode"] != null ? requestBody["sessionMode"].ToString() : null;
+            string mode = requestBody.ContainsKey("sessionMode") ? requestBody["sessionMode"].ToString() : null;
             if (mode == null)
                 mode = "pve";
 
-            HttpContext.Session.SetString("GameMode", mode);
+            HttpContext?.Session?.SetString("GameMode", mode);
 
-            _saveProvider.GetProfiles();
-            var account = _saveProvider.LoadProfile(SessionId);
-            account.CurrentMode = mode;
-            _saveProvider.SaveProfile(SessionId, account);
+            _saveProvider?.GetProfiles();
+            var account = _saveProvider?.LoadProfile(SessionId);
+            if (account != null)
+            {
+                account.CurrentMode = mode;
+                _saveProvider.SaveProfile(SessionId, account);
+            }
 
-            await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
-                new Dictionary<string, object>() { { "gameMode", mode }, { "backendUrl", ip } }
-                , Request, Response);
+            //await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
+            //    new Dictionary<string, object>() { { "gameMode", mode }, { "backendUrl", ip } }
+            //    , Request, Response);
 
+            return new BSGSuccessBodyResult(JObject.FromObject(new { gameMode = mode, backendUrl = ip }));
         }
 
         [Route("client/builds/list", Name = "BuildsList")]
