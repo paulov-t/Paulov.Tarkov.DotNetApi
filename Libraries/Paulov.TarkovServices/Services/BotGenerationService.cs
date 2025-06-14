@@ -423,5 +423,16 @@ namespace Paulov.TarkovServices.Services
             return exp;
         }
 
+        public Dictionary<string, BossLocationSpawn[]> GetZombieSpawners()
+        {
+            var stream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("zombies.json");
+            var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            var str = Encoding.UTF8.GetString(ms.ToArray());
+            var zombiesObj = JObject.Parse(str)["halloweenzombies"];
+
+            return zombiesObj.ToObject<Dictionary<string, BossLocationSpawn[]>>(DatabaseProvider.CachedSerializer);
+        }
+
     }
 }

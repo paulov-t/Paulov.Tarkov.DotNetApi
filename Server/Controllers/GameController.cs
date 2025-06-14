@@ -140,9 +140,19 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         public IActionResult Globals()
         {
             var globals = GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
-            if (configuration["ZOMBIES_ONLY"] != null)
+            if (configuration["ZOMBIES_ONLY"] != null && configuration["ZOMBIES_ONLY"].ToString() == "true")
             {
+                var infection = globals["config"]["SeasonActivity"]["InfectionHalloween"];
+                infection["DisplayUIEnabled"] = true;
+                infection["Enabled"] = true;
 
+                var locationInfection = globals["LocationInfection"];
+                var infectionKeys = ((JObject)locationInfection).Properties().Select(p => p.Name).ToArray();
+
+                foreach (var key in infectionKeys)
+                {
+                    globals["LocationInfection"][key] = 100;
+                }
             }
 
             return new BSGSuccessBodyResult(globals);

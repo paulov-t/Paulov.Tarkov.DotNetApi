@@ -2,14 +2,11 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
+using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.ZipDatabaseProviders;
-
-
 //using System.IO.Compression;
 using System.Text.Json;
-using Paulov.TarkovServices.Models;
-using SharpCompress.Common.Zip;
 
 namespace Paulov.TarkovServices
 {
@@ -56,7 +53,7 @@ namespace Paulov.TarkovServices
         {
             AllowTrailingCommas = false,
             CommentHandling = JsonCommentHandling.Skip,
-            MaxDepth = 20
+            MaxDepth = 10
         };
         static JsonLoadSettings CachedJsonLoadSettings = new()
         {
@@ -70,7 +67,8 @@ namespace Paulov.TarkovServices
             CachedSerializer = new()
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                TraceWriter = traceWriter
+                TraceWriter = traceWriter,
+                ObjectCreationHandling = ObjectCreationHandling.Replace,
             };
 
             if (!CachedSerializer.Converters.Any())
@@ -212,7 +210,7 @@ namespace Paulov.TarkovServices
 
             EntryModel entry = GetDatabaseProvider().Entries.FirstOrDefault(x => x.FullName == filePath);
             if (entry == null) yield break;
-            
+
             using Stream dbFileStream = entry.Open();
             using StreamReader sr = new(dbFileStream);
             using JsonTextReader reader = new(sr);
