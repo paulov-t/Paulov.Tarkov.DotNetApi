@@ -602,7 +602,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var indexOfSlash3 = Request?.ToString().IndexOf('/', 7);
             string backendUrl = $"https://{ip}/";
 
-            string mode = requestBody.ContainsKey("sessionMode") ? requestBody["sessionMode"].ToString() : null;
+            string mode = requestBody != null && requestBody.ContainsKey("sessionMode") ? requestBody["sessionMode"].ToString() : null;
             if (mode == null)
                 mode = "pve";
 
