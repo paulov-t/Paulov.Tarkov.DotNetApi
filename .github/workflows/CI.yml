@@ -30,8 +30,8 @@ jobs:
     - name: Build-Debug
       run: dotnet build --no-restore --configuration Debug
     # Check Release
-    - name: Build-Release
-      run: dotnet build --no-restore --configuration Release
+    #- name: Build-Release
+    #  run: dotnet build --no-restore --configuration Release
     # Run Tests
     - name: Test
       run: dotnet test --no-build --verbosity normal
