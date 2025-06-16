@@ -4,18 +4,19 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class LocationController : ControllerBase
     {
-        private SaveProvider _saveProvider;
+        private JsonFileSaveProvider _saveProvider;
         private IConfiguration configuration;
 
         public LocationController(ISaveProvider saveProvider, IConfiguration configuration)
         {
-            _saveProvider = saveProvider as SaveProvider;
+            _saveProvider = saveProvider as JsonFileSaveProvider;
             this.configuration = configuration;
         }
 
