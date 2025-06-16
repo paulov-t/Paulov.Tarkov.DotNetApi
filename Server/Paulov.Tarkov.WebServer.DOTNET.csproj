@@ -22,9 +22,13 @@
 
 	<ItemGroup>
 	  <Compile Remove="Models\**" />
+	  <Compile Remove="Services\**" />
 	  <Content Remove="Models\**" />
+	  <Content Remove="Services\**" />
 	  <EmbeddedResource Remove="Models\**" />
+	  <EmbeddedResource Remove="Services\**" />
 	  <None Remove="Models\**" />
+	  <None Remove="Services\**" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -100,7 +104,6 @@
 
 	<ItemGroup>
 	  <Folder Include="Mods\" />
-	  <Folder Include="Services\" />
 	</ItemGroup>
 
 	<ItemGroup>

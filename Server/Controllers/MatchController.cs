@@ -4,19 +4,28 @@ using JsonType;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
+using Paulov.TarkovModels;
+using Paulov.TarkovModels.Responses;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
+using Paulov.TarkovServices.Services;
+using Paulov.TarkovServices.Services.Interfaces;
+using System.Diagnostics;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class MatchController : ControllerBase
     {
         private JsonFileSaveProvider _saveProvider;
-        public MatchController(ISaveProvider saveProvider)
+        private IInventoryService _inventoryService;
+
+        public MatchController(ISaveProvider saveProvider, IInventoryService inventoryService)
         {
             _saveProvider = saveProvider as JsonFileSaveProvider;
+            _inventoryService = inventoryService;
         }
 
 
@@ -104,7 +113,143 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchLocalEnd()
         {
-            return new BSGSuccessBodyResult(new { });
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToString(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(500, "");
+
+#if DEBUG
+            if (
+               (Request.Headers.ContainsKey("Content-Encoding") && Request.Headers["Content-Encoding"] == "deflate")
+               || (Request.Headers.ContainsKey("user-agent") && Request.Headers["user-agent"].ToString().StartsWith("Unity"))
+               )
+            {
+
+                System.IO.File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "DumpMatchLocalEnd.json"), requestBody);
+            }
+#endif
+
+            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+
+            ITraceWriter traceWriter = new MemoryTraceWriter();
+
+            var obj = JsonConvert.DeserializeObject<JObject>(
+                requestBody
+                , new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters, NullValueHandling = NullValueHandling.Ignore, StringEscapeHandling = StringEscapeHandling.EscapeNonAscii, TraceWriter = traceWriter });
+
+            //#if DEBUG
+            //            Debug.WriteLine(traceWriter);
+            //#endif
+
+            obj.TryGetValue("results", out var results);
+            JObject resultsJO = ((JObject)results);
+            resultsJO.TryGetValue("profile", out var profileToken);
+
+            AccountProfileCharacter matchEndProfile = null;
+
+            // Wipe the Hideout Seed. This is a workaround for the issue where the Hideout Seed is not correct after a local match ends.
+            profileToken["Hideout"]["Seed"] = null;
+            var profileJson = profileToken.ToString(Formatting.Indented, DatabaseProvider.CachedSerializer.Converters.ToArray());
+            try
+            {
+
+                // create a new AccountProfileCharacter from the profileToken
+                matchEndProfile = JsonConvert.DeserializeObject<AccountProfileCharacter>(
+                    profileJson
+                    , new JsonSerializerSettings() { TraceWriter = traceWriter, Converters = DatabaseProvider.CachedSerializer.Converters });
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
+
+            if (matchEndProfile == null)
+            {
+                Debug.WriteLine("Match End Profile is null, this should not happen!");
+                return new BSGErrorBodyResult(500, "Match End Profile is null, this should not happen!");
+            }
+
+            var matchResult = resultsJO.GetValue("result").ToString();
+            var isKilled = matchResult == "Killed";
+
+            var localMatchResponse = new LocalMatchEndResponse();
+            localMatchResponse.ServerId = MongoID.Generate(false).ToString();
+
+            var myAccount = _saveProvider.LoadProfile(matchEndProfile.Id);
+            var myAccountByMode = _saveProvider.GetAccountProfileMode(myAccount);
+
+            var isPMC = myAccountByMode.Characters.PMC.Id == matchEndProfile.Id;
+
+            if (isPMC)
+                myAccountByMode.Characters.PMC.Info.Experience = matchEndProfile.Info.Experience;
+            else
+                myAccountByMode.Characters.Scav.Info.Experience = matchEndProfile.Info.Experience;
+
+            if (isPMC)
+                myAccountByMode.Characters.PMC.InsuredItems = matchEndProfile.InsuredItems;
+
+            if (isPMC)
+            {
+                var currentProfileItems = _inventoryService.GetInventoryItems(myAccountByMode.Characters.PMC).ToList();
+                foreach (var item in _inventoryService.GetInventoryItems(matchEndProfile))
+                {
+                    if (currentProfileItems.FindIndex(x => x._id == item._id) == -1)
+                    {
+                        // Add the item to the PMC inventory
+                        _inventoryService.AddItemToInventory(myAccountByMode.Characters.PMC, item);
+                    }
+                    else
+                    {
+                        // Replace the item in the PMC inventory
+                        _inventoryService.RemoveItemAndChildItemsFromProfile(myAccountByMode.Characters.PMC, item._id);
+                        _inventoryService.AddItemToInventory(myAccountByMode.Characters.PMC, item);
+                    }
+                }
+            }
+
+            if (isKilled && isPMC)
+            {
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "Headwear");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "Eyewear");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "FaceCover");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "Earpiece");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "ArmorVest");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "TacticalVest");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "Backpack");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "pocket1");
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "pocket2");
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "pocket3");
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "pocket4");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "FirstPrimaryWeapon");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "SecondPrimaryWeapon");
+
+                _inventoryService.RemoveItemFromSlot(myAccountByMode.Characters.PMC, "Holster");
+            }
+
+            if (isPMC)
+            {
+                myAccountByMode.Characters.PMC.Encyclopedia = matchEndProfile.Encyclopedia;
+                myAccountByMode.Characters.PMC.Health = matchEndProfile.Health;
+                myAccountByMode.Characters.PMC.QuestsData = matchEndProfile.QuestsData;
+                myAccountByMode.Characters.PMC.Skills = matchEndProfile.Skills;
+                myAccountByMode.Characters.PMC.Stats = matchEndProfile.Stats;
+                myAccountByMode.Characters.PMC.TaskConditionCounters = matchEndProfile.TaskConditionCounters;
+            }
+
+            localMatchResponse.Results = ((JObject)results);
+
+            _saveProvider.SaveProfile(matchEndProfile.Id, myAccount);
+            Debug.WriteLine("Match End Profile saved successfully.");
+
+            return new BSGSuccessBodyResult(localMatchResponse.ToJson());
         }
 
         [Route("client/getMetricsConfig")]
