@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
+using Paulov.TarkovServices.Services;
+using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -139,6 +141,7 @@ namespace SIT.WebServer
                 .AddDistributedMemoryCache()
                 .AddSession()
                 .AddSingleton<ISaveProvider, JsonFileSaveProvider>()
+                .AddSingleton<IInventoryService, InventoryService>()
                 .AddKeyedSingleton("fileAssets", (_, _) =>
                 {
                     const string fileAssetArchiveResourceName = "files.zip";
