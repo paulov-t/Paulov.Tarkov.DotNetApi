@@ -71,6 +71,7 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
 
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
+            Directory.CreateDirectory(userProfileDirectory);
             var profileFiles = Directory.GetFiles(userProfileDirectory);
 
             var profiles = new Dictionary<string, Account>();
@@ -119,16 +120,19 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             };
 
             CreateProfile(newProfileDetails);
-            LoadProfile(sessionId);
-            SaveProfile(sessionId);
+            var account = LoadProfile(sessionId);
+            SaveProfile(sessionId, account);
 
             return sessionId;
         }
 
-        public void SaveProfile(string sessionId, Account profileModel = null)
+        public void SaveProfile(string sessionId, Account accountModel)
         {
-            if (profileModel != null)
-                GetProfiles()[sessionId] = profileModel;
+            if (string.IsNullOrEmpty(sessionId))
+                throw new ArgumentNullException(nameof(sessionId), "Session ID cannot be null or empty.");
+
+            if (accountModel == null)
+                throw new ArgumentNullException(nameof(accountModel), "Profile model cannot be null.");
 
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             Directory.CreateDirectory(userProfileDirectory);
@@ -136,7 +140,7 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
 
             var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
 
-            var serializedProfile = JsonConvert.SerializeObject(GetProfiles()[sessionId], Formatting.Indented, jsonSettings);
+            var serializedProfile = JsonConvert.SerializeObject(accountModel, Formatting.Indented, jsonSettings);
 
             File.WriteAllText(filePath, serializedProfile);
         }
