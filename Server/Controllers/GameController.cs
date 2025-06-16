@@ -83,7 +83,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (string.IsNullOrEmpty(sessionId))
             {
                 Response.StatusCode = 412; // Precondition
-                return;
+                return StatusCode(500);
             }
 #else
             sessionId = _saveProvider?.GetProfiles().First().Key;
@@ -162,7 +162,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult Settings(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadDatabaseFile("settings.json", out Dictionary<string, object> items);
+            DatabaseProvider.TryLoadDatabaseFile("settings.json", out JObject items);
 
             var rawText = items.ToJson();
             return new BSGSuccessBodyResult(rawText);
