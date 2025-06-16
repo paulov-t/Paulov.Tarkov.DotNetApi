@@ -1,6 +1,5 @@
 ﻿using Comfort.Common;
 using Newtonsoft.Json.Linq;
-using Paulov.TarkovServices;
 
 namespace Paulov.TarkovServices.Services
 {
@@ -17,6 +16,7 @@ namespace Paulov.TarkovServices.Services
         static GlobalsService()
         {
             Instance = new GlobalsService();
+            Instance.LoadGlobalsIntoComfortSingleton();
         }
 
         public JObject LoadGlobals()
