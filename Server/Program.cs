@@ -28,24 +28,10 @@ namespace SIT.WebServer
             Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "user", "profiles"));
             Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "v8", "mods"));
 
-            // Load Mods
-            foreach (var file in Directory.EnumerateFiles(Path.Combine(AppContext.BaseDirectory, "Mods")).Select(x => new FileInfo(x)))
-            {
-                if (file.Extension == ".dll")
-                    assemblyMods.Add(Assembly.LoadFile(file.FullName));
-            }
-
             var builder = WebApplication.CreateBuilder(args);
             ConfigureServices(builder.Services);
 
             var app = builder.Build();
-
-            // Load the Globals
-            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
-            // test the singleton
-            _ = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
-            SaveProvider saveProvider = new();
-            
 
             app.UseWebSockets(new WebSocketOptions()
             {

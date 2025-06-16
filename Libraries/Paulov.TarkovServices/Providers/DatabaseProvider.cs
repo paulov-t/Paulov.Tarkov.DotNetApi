@@ -1,4 +1,5 @@
-﻿using EFT;
+﻿using System.Diagnostics;
+using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -159,7 +160,7 @@ namespace Paulov.TarkovServices
 
         public static string ConvertPath(in string databaseFilePath)
         {
-            return Path.Combine("database", databaseFilePath).Replace("\\", "/").Replace("database/database", "database");
+            return Path.Combine("database", databaseFilePath).Replace('\\', '/').Replace("database/database", "database");
         }
 
         public static JsonDocument GetJsonDocument(string databaseFilePath)
@@ -178,13 +179,12 @@ namespace Paulov.TarkovServices
 
         public static bool TryLoadDatabaseFile(
         in string databaseFilePath,
-        out Dictionary<string, object> templates)
+        out JObject templates)
         {
             bool result = false;
 
-            var jsonDocument = GetJsonDocument(databaseFilePath);
-            TryLoadDatabaseFile(databaseFilePath, out JObject dbFile);
-            templates = dbFile.ToObject<Dictionary<string, object>>();
+            using JsonDocument jsonDocument = GetJsonDocument(databaseFilePath);
+            result = TryLoadDatabaseFile(databaseFilePath, out templates);
 
             return result;
         }
@@ -196,7 +196,7 @@ namespace Paulov.TarkovServices
             bool result = false;
             var filePath = ConvertPath(databaseFilePath);
 
-            var jsonDocument = GetJsonDocument(databaseFilePath);
+            using JsonDocument jsonDocument = GetJsonDocument(databaseFilePath);
             var rawText = jsonDocument.RootElement.GetRawText();
             dbFile = JObject.Parse(rawText, CachedJsonLoadSettings);
 
@@ -204,25 +204,25 @@ namespace Paulov.TarkovServices
             return result;
         }
 
-        public static IEnumerable<KeyValuePair<string, JObject>> LoadDatabaseFileAsEnumerable(string databaseFilePath)
+        public static IEnumerable<KeyValuePair<string, JToken>> LoadDatabaseFileAsEnumerable(string databaseFilePath)
         {
             string filePath = ConvertPath(databaseFilePath);
-
+            
             EntryModel entry = GetDatabaseProvider().Entries.FirstOrDefault(x => x.FullName == filePath);
             if (entry == null) yield break;
-
+            
             using Stream dbFileStream = entry.Open();
             using StreamReader sr = new(dbFileStream);
             using JsonTextReader reader = new(sr);
-
+            
             while (reader.Read())
             {
                 if (reader.TokenType == JsonToken.PropertyName)
                 {
                     string key = (string)reader.Value;
                     reader.Read(); //Move the reader to the value
-                    JObject obj = JObject.Load(reader);
-                    yield return new KeyValuePair<string, JObject>(key, obj);
+                    JToken obj = JToken.ReadFrom(reader);
+                    yield return new KeyValuePair<string, JToken>(key, obj);
                 }
                 else if (reader.TokenType == JsonToken.EndObject)
                 {
@@ -285,7 +285,7 @@ namespace Paulov.TarkovServices
             bool result = false;
 
             var filePath = Path.Combine("templates", templateFile);
-            var document = GetJsonDocument(filePath);
+            using JsonDocument document = GetJsonDocument(filePath);
             result = document != null;
             templates = JObject.Parse(document.RootElement.GetRawText());
 
