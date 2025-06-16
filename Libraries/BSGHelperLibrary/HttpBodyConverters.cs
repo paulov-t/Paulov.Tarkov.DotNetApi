@@ -18,6 +18,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
 {
     public static class HttpBodyConverters
     {
+        public static int BufferSize => 1000 * 1024;
         public static bool IsCompressed(byte[] Data)
         {
             // We need the first two bytes;
@@ -64,7 +65,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
             try
             {
                 using ZLibStream zLibStream = new(request.Body, CompressionMode.Decompress);
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[BufferSize];
                 await zLibStream.ReadAsync(buffer, 0, buffer.Length);
                 return buffer;
             }
@@ -94,6 +95,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
 
             request.Body.Position = 0;
             var reader = new StreamReader(request.Body, Encoding.UTF8);
+
             var body = await reader.ReadToEndAsync().ConfigureAwait(false);
             request.Body.Position = 0;
 
@@ -107,7 +109,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
                 try
                 {
                     using ZLibStream zLibStream = new(request.Body, CompressionMode.Decompress);
-                    byte[] buffer = new byte[4096];
+                    byte[] buffer = new byte[BufferSize];
                     await zLibStream.ReadAsync(buffer, 0, buffer.Length);
                     var str = Encoding.UTF8.GetString(buffer);
                     var resultDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(str);
@@ -141,38 +143,53 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
 
         }
 
-        public static async Task<T> DecompressRequestBodyToType<T>(HttpRequest request)
+        public static async Task<JObject> DecompressRequestBodyToJObject(HttpRequest request)
         {
-            if (!request.Body.CanSeek)
+            return JObject.Parse(await DecompressRequestBodyToString(request));
+        }
+
+        public static async Task<string> DecompressRequestBodyToString(HttpRequest request)
+        {
+            if (request == null)
+                return "";
+
+            if (request?.Body?.CanSeek == false)
                 request.EnableBuffering();
 
             request.Body.Position = 0;
-            var reader = new StreamReader(request.Body, Encoding.UTF8);
-            var body = await reader.ReadToEndAsync().ConfigureAwait(false);
-            request.Body.Position = 0;
 
-            // This is the only way to handle Zlib versus Standard Json calls
-            try
+            // If we are Unity / Tarkov
+            if (
+                (request.Headers.ContainsKey("Content-Encoding") && request.Headers["Content-Encoding"] == "deflate")
+                || (request.Headers.ContainsKey("user-agent") && request.Headers["user-agent"].ToString().StartsWith("Unity"))
+                )
             {
-                using ZLibStream zLibStream = new(request.Body, CompressionMode.Decompress);
-                byte[] buffer = new byte[4096];
-                await zLibStream.ReadAsync(buffer, 0, buffer.Length);
-                var str = Encoding.UTF8.GetString(buffer);
-                if (BSGJsonHelpers.TrySITParseJson(str, out T result))
-                    return result;
+                // This is the only way to handle Zlib versus Standard Json calls
+                try
+                {
+                    using ZLibStream zLibStream = new(request.Body, CompressionMode.Decompress);
+                    var ms = new MemoryStream();
+                    await zLibStream.CopyToAsync(ms);
+                    var str = Encoding.UTF8.GetString(ms.ToArray());
+                    return str;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    Debug.WriteLine(ex.ToString());
+                }
             }
-            catch (Exception ex)
+            else
             {
-                Console.WriteLine(ex.ToString());
-                Debug.WriteLine(ex.ToString());
+                using var reader = new StreamReader(request.Body, Encoding.UTF8);
+                return await reader.ReadToEndAsync().ConfigureAwait(false);
             }
 
+            return null;
 
-            if ((body.StartsWith('{') || body.StartsWith('[')) && BSGJsonHelpers.TrySITParseJson(body, out T rBodyResult))
-                return rBodyResult;
-
-            return default(T);
         }
+
+
 
         public static async Task<(string, dynamic)> DecompressRequestBody(HttpRequest request)
         {
@@ -190,7 +207,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
             try
             {
                 using ZLibStream zLibStream = new(request.Body, CompressionMode.Decompress);
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[BufferSize];
                 await zLibStream.ReadAsync(buffer, 0, buffer.Length);
                 resultString = Encoding.UTF8.GetString(buffer);
             }
