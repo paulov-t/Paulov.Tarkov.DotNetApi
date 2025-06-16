@@ -4,15 +4,16 @@ using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Providers.SaveProviders;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class TradingController : ControllerBase
     {
-        private readonly SaveProvider _saveProvider;
+        private readonly JsonFileSaveProvider _saveProvider;
         public TradingController(ISaveProvider saveProvider)
         {
-            _saveProvider = saveProvider as SaveProvider;
+            _saveProvider = saveProvider as JsonFileSaveProvider;
         }
 
         private string SessionId

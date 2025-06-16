@@ -100,6 +100,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Mods\" />
+	  <Folder Include="Services\" />
 	</ItemGroup>
 
 	<ItemGroup>

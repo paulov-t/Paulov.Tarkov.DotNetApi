@@ -2,15 +2,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Providers.SaveProviders;
 
 namespace Paulov.Tarkov.Web.Api.Controllers
 {
     public class PrestigeController : Controller
     {
-        private SaveProvider _saveProvider;
+        private JsonFileSaveProvider _saveProvider;
         public PrestigeController(ISaveProvider saveProvider)
         {
-            _saveProvider = saveProvider as SaveProvider;
+            _saveProvider = saveProvider as JsonFileSaveProvider;
         }
 
         public IActionResult Index()

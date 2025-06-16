@@ -1,6 +1,7 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Paulov.TarkovServices.Providers.SaveProviders;
 using System.Text;
 using System.Text.Json;
 
@@ -173,7 +174,7 @@ namespace Paulov.TarkovServices
             //    Debug.WriteLine(ex);
             //}
 
-            var saveProvider = new SaveProvider();
+            var saveProvider = new JsonFileSaveProvider();
             var profile = saveProvider.LoadProfile(profileId);
             //var pmcProfile = saveProvider.GetPmcProfile(profileId);
 

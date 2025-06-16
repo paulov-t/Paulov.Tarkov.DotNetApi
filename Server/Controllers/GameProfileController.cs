@@ -5,10 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.Tarkov.WebServer.DOTNET.Services;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Providers.SaveProviders;
+using Paulov.TarkovServices.Services;
 using System.Text;
 
 namespace Paulov.Tarkov.Web.Api.Controllers
@@ -23,10 +24,10 @@ namespace Paulov.Tarkov.Web.Api.Controllers
     [Produces("application/json")]
     public class GameProfileController : ControllerBase
     {
-        private SaveProvider _saveProvider;
+        private JsonFileSaveProvider _saveProvider;
         public GameProfileController(ISaveProvider saveProvider)
         {
-            _saveProvider = saveProvider as SaveProvider;
+            _saveProvider = saveProvider as JsonFileSaveProvider;
         }
 
         private string SessionId
@@ -140,23 +141,23 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 return new BSGErrorBodyResult(500, "");
             }
 
-            var blankStat = new GClass2020()
+            var blankStat = new ProfileStatsDescriptor()
             {
                 CarriedQuestItems = new List<MongoID>(),
-                DamageHistory = new GClass2016() { LethalDamagePart = EBodyPart.Head, BodyParts = new Dictionary<EBodyPart, GClass2015>() },
-                DroppedItems = new List<GClass1985>(),
+                DamageHistory = new DamageHistoryDescriptor() { LethalDamagePart = EBodyPart.Head, BodyParts = new Dictionary<EBodyPart, BodyPartDamageHistoryDescriptor>() },
+                DroppedItems = new List<DroppedItem>(),
                 ExperienceBonusMult = 0,
-                FoundInRaidItems = new List<GClass1986>(),
+                FoundInRaidItems = new List<FoundInRaidItem>(),
                 LastPlayerState = null,
-                SessionCounters = new GClass2019(),
-                OverallCounters = new GClass2019(),
+                SessionCounters = new CounterCollectionDescriptor(),
+                OverallCounters = new CounterCollectionDescriptor(),
                 SessionExperienceMult = 0,
                 SurvivorClass = ProfileStats.ESurvivorClass.Unknown,
                 TotalInGameTime = 0,
                 TotalSessionExperience = 0,
-                Victims = new List<GClass2001>()
+                Victims = new List<VictimStats>()
             };
-            var blankStatGroup = new GClass2021()
+            var blankStatGroup = new ProfileStatsSeparatorDescriptor()
             {
                 Eft = blankStat.Clone()
                 ,
