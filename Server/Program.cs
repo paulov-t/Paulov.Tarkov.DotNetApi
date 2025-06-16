@@ -1,17 +1,13 @@
-using System.Collections;
-using Comfort.Common;
-using EFT.HealthSystem;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using Paulov.Tarkov.WebServer.DOTNET.Services;
-using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Providers.SaveProviders;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Text;
-using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace SIT.WebServer
 {
@@ -28,24 +24,10 @@ namespace SIT.WebServer
             Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "user", "profiles"));
             Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "v8", "mods"));
 
-            // Load Mods
-            foreach (var file in Directory.EnumerateFiles(Path.Combine(AppContext.BaseDirectory, "Mods")).Select(x => new FileInfo(x)))
-            {
-                if (file.Extension == ".dll")
-                    assemblyMods.Add(Assembly.LoadFile(file.FullName));
-            }
-
             var builder = WebApplication.CreateBuilder(args);
             ConfigureServices(builder.Services);
 
             var app = builder.Build();
-
-            // Load the Globals
-            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
-            // test the singleton
-            _ = Singleton<BackendConfigSettingsClass>.Instance.Health.ProfileHealthSettings.HealthFactorsSettings[EHealthFactorType.Temperature].ValueInfo;
-            SaveProvider saveProvider = new();
-            
 
             app.UseWebSockets(new WebSocketOptions()
             {
@@ -146,7 +128,7 @@ namespace SIT.WebServer
                 modAssemblyDirectory.EnumerateFiles("*.dll").Select(x => Assembly.LoadFile(x.FullName));
             foreach (Assembly assembly in modAssemblies)
             {
-                if(!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase)))) return;
+                if (!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase)))) return;
                 mvcBuilder.AddApplicationPart(assembly);
             }
 
@@ -156,7 +138,7 @@ namespace SIT.WebServer
                 .AddSwaggerGen(ConfigureSwaggerGen)
                 .AddDistributedMemoryCache()
                 .AddSession()
-                .AddSingleton<ISaveProvider, SaveProvider>()
+                .AddSingleton<ISaveProvider, JsonFileSaveProvider>()
                 .AddKeyedSingleton("fileAssets", (_, _) =>
                 {
                     const string fileAssetArchiveResourceName = "files.zip";
@@ -173,7 +155,7 @@ namespace SIT.WebServer
         {
             const string swaggerDocVersion = "v1";
             const string swaggerCommentDocName = "Paulov.Tarkov.WebServer.DOTNET.xml";
-            
+
             options.SwaggerDoc(swaggerDocVersion, new Microsoft.OpenApi.Models.OpenApiInfo());
             options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, swaggerCommentDocName));
         }

@@ -5,9 +5,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.Tarkov.WebServer.DOTNET.Services;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using System.Diagnostics;
 
@@ -18,11 +18,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
     {
         private TradingProvider tradingProvider { get; } = new TradingProvider();
 
-        private SaveProvider _saveProvider;
+        private JsonFileSaveProvider _saveProvider;
         private IConfiguration configuration;
         public GameController(ISaveProvider saveProvider, IConfiguration configuration)
         {
-            this._saveProvider = saveProvider as SaveProvider;
+            this._saveProvider = saveProvider as JsonFileSaveProvider;
             this.configuration = configuration;
         }
 
@@ -381,7 +381,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            TradingBackend.QueueData queueData = new();
+            //TradingBackend.QueueData queueData = new();
             //queueData.ProfileChanges = new();
             //queueData.InventoryWarnings = Array.Empty<TradingBackend.InventoryWarning>();
 
@@ -515,7 +515,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             ////var queueDataJson = JsonConvert.SerializeObject(queueData);
             ////await HttpBodyConverters.CompressIntoResponseBodyBSG(queueDataJson, Request, Response);
-            return new BSGSuccessBodyResult(queueData);
+            return new BSGSuccessBodyResult(null);
         }
 
         //private void DoItemsMovingAction_Move(QueueData queueData, JToken actionData)
@@ -602,7 +602,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var indexOfSlash3 = Request?.ToString().IndexOf('/', 7);
             string backendUrl = $"https://{ip}/";
 
-            string mode = requestBody != null && requestBody.ContainsKey("sessionMode") ? requestBody["sessionMode"].ToString() : null;
+            string mode = requestBody != null && requestBody.ContainsKey("sessionMode") && requestBody["sessionMode"] != null ? requestBody["sessionMode"].ToString() : null;
             if (mode == null)
                 mode = "pve";
 

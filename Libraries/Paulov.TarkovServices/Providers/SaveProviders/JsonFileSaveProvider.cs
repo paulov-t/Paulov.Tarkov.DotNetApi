@@ -2,18 +2,19 @@
 using Newtonsoft.Json;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Services;
 
-namespace Paulov.TarkovServices
+namespace Paulov.TarkovServices.Providers.SaveProviders
 {
     /// <summary>
     /// Provides functionality for managing user profiles, including creation, retrieval, and persistence.
     /// </summary>
-    /// <remarks>The <see cref="SaveProvider"/> class is responsible for handling user account profiles,
+    /// <remarks>The <see cref="JsonFileSaveProvider"/> class is responsible for handling user account profiles,
     /// including operations such as creating new accounts, saving profiles to disk, loading profiles from disk, and
     /// retrieving specific profile details. Profiles are stored in memory and serialized to JSON files located in the
     /// application's user profile directory.  This class supports operations for both PMC (Player Main Character) and
     /// Scav profiles, as well as profile modes and inventory management.</remarks>
-    public class SaveProvider : ISaveProvider
+    public class JsonFileSaveProvider : ISaveProvider
     {
         /// <summary>
         /// 
@@ -23,13 +24,56 @@ namespace Paulov.TarkovServices
         /// <summary>
         /// 
         /// </summary>
-        public SaveProvider()
+        public JsonFileSaveProvider()
         {
+            //var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
+
+            //var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
+            //var profileFiles = Directory.GetFiles(userProfileDirectory);
+
+            //var profilesToDelete = new List<string>();
+            //foreach (var profileFilePath in profileFiles)
+            //{
+            //    var fileInfo = new FileInfo(profileFilePath);
+            //    if (fileInfo == null)
+            //        continue;
+
+            //    var fileText = File.ReadAllText(profileFilePath);
+            //    if (fileText == null)
+            //        continue;
+
+            //    try
+            //    {
+            //        var model = fileText.ParseJsonTo<Account>();
+            //        //var model = JsonConvert.DeserializeObject<Account>(fileText, jsonSettings);
+            //        Profiles.Add(fileInfo.Name.Replace(".json", ""), model);
+            //    }
+            //    catch
+            //    {
+            //        profilesToDelete.Add(profileFilePath);
+            //    }
+            //}
+
+            //foreach (var item in profilesToDelete)
+            //{
+            //    File.Delete(item);
+            //}
+        }
+
+        //private Dictionary<string, Account> Profiles { get; } = new Dictionary<string, Account>();
+
+        public Dictionary<string, Account> GetProfiles()
+        {
+            // AccountProfileCharacter requires Globals to be loaded, so we load them here.
+            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+
+            //return Profiles;
             var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
 
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             var profileFiles = Directory.GetFiles(userProfileDirectory);
 
+            var profiles = new Dictionary<string, Account>();
             var profilesToDelete = new List<string>();
             foreach (var profileFilePath in profileFiles)
             {
@@ -44,8 +88,7 @@ namespace Paulov.TarkovServices
                 try
                 {
                     var model = fileText.ParseJsonTo<Account>();
-                    //var model = JsonConvert.DeserializeObject<Account>(fileText, jsonSettings);
-                    Profiles.Add(fileInfo.Name.Replace(".json", ""), model);
+                    profiles.Add(fileInfo.Name.Replace(".json", ""), model);
                 }
                 catch
                 {
@@ -57,13 +100,8 @@ namespace Paulov.TarkovServices
             {
                 File.Delete(item);
             }
-        }
 
-        private Dictionary<string, Account> Profiles { get; } = new Dictionary<string, Account>();
-
-        public Dictionary<string, Account> GetProfiles()
-        {
-            return Profiles;
+            return profiles;
         }
 
         public string CreateAccount(Dictionary<string, object> parameters)
@@ -90,7 +128,7 @@ namespace Paulov.TarkovServices
         public void SaveProfile(string sessionId, Account profileModel = null)
         {
             if (profileModel != null)
-                Profiles[sessionId] = profileModel;
+                GetProfiles()[sessionId] = profileModel;
 
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             Directory.CreateDirectory(userProfileDirectory);
@@ -98,7 +136,7 @@ namespace Paulov.TarkovServices
 
             var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
 
-            var serializedProfile = JsonConvert.SerializeObject(Profiles[sessionId], Formatting.Indented, jsonSettings);
+            var serializedProfile = JsonConvert.SerializeObject(GetProfiles()[sessionId], Formatting.Indented, jsonSettings);
 
             File.WriteAllText(filePath, serializedProfile);
         }
@@ -108,10 +146,10 @@ namespace Paulov.TarkovServices
             if (string.IsNullOrEmpty(sessionId))
                 return null;
 
-            if (!Profiles.ContainsKey(sessionId))
+            if (!GetProfiles().ContainsKey(sessionId))
                 return null;
 
-            var prof = Profiles[sessionId] as Account;
+            var prof = GetProfiles()[sessionId] as Account;
             //CleanIdsOfInventory(prof);
 
             return prof;
@@ -134,7 +172,7 @@ namespace Paulov.TarkovServices
 
         public AccountProfileMode GetAccountProfileMode(string sessionId)
         {
-            var account = Profiles[sessionId] as Account;
+            var account = GetProfiles()[sessionId] as Account;
             if (account == null)
                 return null;
 
@@ -146,7 +184,7 @@ namespace Paulov.TarkovServices
 
         public AccountProfileCharacter GetPmcProfile(string sessionId)
         {
-            var prof = Profiles[sessionId] as Account;
+            var prof = GetProfiles()[sessionId];
             if (prof == null)
                 return null;
 
@@ -183,7 +221,7 @@ namespace Paulov.TarkovServices
             return pmcObject;
         }
 
-        public Dictionary<EFT.MongoID, EFT.Profile.TraderInfo> GetPmcProfileTradersInfo(string sessionId)
+        public Dictionary<MongoID, Profile.TraderInfo> GetPmcProfileTradersInfo(string sessionId)
         {
             var pmcProfile = GetPmcProfile(sessionId);
             if (pmcProfile == null) return null;
@@ -204,13 +242,15 @@ namespace Paulov.TarkovServices
 
         private void CreateProfile(Account newProfileDetails)
         {
-            Profiles.Add(newProfileDetails.AccountId, newProfileDetails);
+            var profiles = GetProfiles();
+            profiles.Add(newProfileDetails.AccountId, newProfileDetails);
+            SaveProfile(newProfileDetails.AccountId, newProfileDetails);
         }
 
         public bool ProfileExists(string username, out string sessionId)
         {
             sessionId = null;
-            foreach (var profile in Profiles.Values)
+            foreach (var profile in GetProfiles().Values)
             {
                 if (profile.Username == username)
                 {
@@ -225,7 +265,7 @@ namespace Paulov.TarkovServices
 
         public bool NameExists(string username)
         {
-            foreach (var profile in Profiles.Values)
+            foreach (var profile in GetProfiles().Values)
             {
                 if (profile.Username == username)
                     return true;

@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovServices;
 
-namespace Paulov.Tarkov.WebServer.DOTNET.Services
+namespace Paulov.TarkovServices.Services
 {
     /// <summary>
     /// 

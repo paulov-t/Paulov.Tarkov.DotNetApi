@@ -1,8 +1,8 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Providers.SaveProviders;
 using System.Text;
 
 namespace Paulov.Launcher.Support
@@ -11,10 +11,10 @@ namespace Paulov.Launcher.Support
     {
         //private SaveProvider saveProvider { get; } = new SaveProvider();
 
-        private SaveProvider _saveProvider;
+        private JsonFileSaveProvider _saveProvider;
         public LauncherSupportController(ISaveProvider saveProvider)
         {
-            _saveProvider = saveProvider as SaveProvider;
+            _saveProvider = saveProvider as JsonFileSaveProvider;
         }
 
         /// <summary>
