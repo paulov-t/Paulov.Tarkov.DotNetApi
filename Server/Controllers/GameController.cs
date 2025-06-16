@@ -707,11 +707,18 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 , new JsonSerializerSettings() { TraceWriter = traceWriter, Converters = DatabaseProvider.CachedSerializer.Converters }
                 );
 
-#if DEBUG
-            Debug.WriteLine(traceWriter);
-#endif
+            //#if DEBUG
+            //            Debug.WriteLine(traceWriter);
+            //#endif
 
             return new BSGSuccessBodyResult(botsJson);
+        }
+
+        [Route("client/putMetrics")]
+        [HttpPost]
+        public async Task<IActionResult> PutMetrics()
+        {
+            return new BSGSuccessBodyResult(new JObject());
         }
     }
 }
