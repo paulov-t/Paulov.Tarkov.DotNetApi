@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Net.WebSockets;
 using System.Reflection;
 using System.Text;
+using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 
 namespace SIT.WebServer
 {
@@ -35,62 +36,8 @@ namespace SIT.WebServer
             {
                 KeepAliveInterval = TimeSpan.FromMinutes(2)
             });
-
-            // ----------------------------------------------------------------------------------------------------------------------------------------------------
-            // Handle the WebSocket request
-            // You can find useful information on WebSockets in .NET here https://learn.microsoft.com/en-us/aspnet/core/fundamentals/websockets?view=aspnetcore-9.0
-            app.Use(async (context, next) =>
-            {
-                if (!context.WebSockets.IsWebSocketRequest)
-                {
-                    await next(context);
-                    return;
-                }
-
-                var path = context.Request.Path.ToString();
-                var lastIndexOfSlash = path.LastIndexOf('/');
-                var sessionId = path.Substring(lastIndexOfSlash + 1);
-                if (string.IsNullOrEmpty(sessionId))
-                {
-                    await next(context);
-                    return;
-                }
-
-                JObject defaultNotificationPing = new();
-                defaultNotificationPing.Add("type", "Ping");
-                defaultNotificationPing.Add("eventId", "ping");
-
-#if DEBUG
-                Debug.WriteLine($"WebSocket: request received for {sessionId}");
-#endif
-
-                var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                if (webSocket == null)
-                    return;
-
-#if DEBUG
-                Debug.WriteLine($"WebSocket: request accepted for {sessionId}");
-#endif
-
-                if (!WebSockets.ContainsKey(sessionId))
-                    WebSockets.Add(sessionId, webSocket);
-
-                if (webSocket.State != WebSocketState.Open)
-                    return;
-
-#if DEBUG
-                Debug.WriteLine($"WebSocket: sending default ping notification to {sessionId}");
-#endif
-
-                await webSocket.SendAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(defaultNotificationPing.ToJson())), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
-
-                var socketFinishedTcs = new TaskCompletionSource<object>();
-                // TODO: Handle receive of information and handle it in a background Task
-                await socketFinishedTcs.Task;
-
-            });
-            // <-- End of Handle WebSocket
-
+            
+            app.UseMiddleware<WebsocketMiddleware>();
             app.UseMiddleware<RequestLoggingMiddleware>();
 
             // Configure the HTTP request pipeline.
@@ -102,6 +49,7 @@ namespace SIT.WebServer
 
             app.UseAuthorization();
             app.UseSession(new SessionOptions() { IdleTimeout = new TimeSpan(1, 1, 1, 1) });
+            app.UseWebSockets();
 
             app.MapControllers();
 
