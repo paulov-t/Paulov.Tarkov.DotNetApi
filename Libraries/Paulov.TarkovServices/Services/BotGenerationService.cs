@@ -31,12 +31,6 @@ namespace Paulov.TarkovServices.Services
 
         private AccountProfileCharacter CreateBaseBot()
         {
-            //var stream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("scav.json");
-            //var ms = new MemoryStream();
-            //stream.CopyTo(ms);
-            //var str = Encoding.UTF8.GetString(ms.ToArray());
-            //var scavObj = JObject.Parse(str)["scav"];
-            //BaseBot = scavObj.ToObject<AccountProfileCharacter>(DatabaseProvider.CachedSerializer);
             BaseBot = new AccountProfileCharacter();
 
             if (BaseBot.Info == null)
@@ -59,9 +53,11 @@ namespace Paulov.TarkovServices.Services
 
                 List<FlatItem> items = new List<FlatItem>();
                 // equipment
-                var equipmentItem = new FlatItem() { _id = MongoID.Generate(false), _tpl = "55d7217a4bdc2d86028b456d" };
-                items.Add(equipmentItem);
-                BSGHelperLibrary.ReflectionHelpers.SetValueOfJsonProperty(BaseBot.Inventory, "equipment", equipmentItem._id);
+                {
+                    var equipmentItem = new FlatItem() { _id = MongoID.Generate(false), _tpl = "55d7217a4bdc2d86028b456d" };
+                    items.Add(equipmentItem);
+                    BSGHelperLibrary.ReflectionHelpers.SetValueOfJsonProperty(BaseBot.Inventory, "equipment", equipmentItem._id);
+                }
                 // stash
                 {
                     var stashItem = new FlatItem() { _id = MongoID.Generate(false), _tpl = "566abbc34bdc2d92178b4576" };
