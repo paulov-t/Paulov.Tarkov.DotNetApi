@@ -53,10 +53,24 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                             var str = JsonConvert.SerializeObject(z, Formatting.Indented, settings: new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters, NullValueHandling = NullValueHandling.Ignore });
                             bossSpawns.Add(JToken.Parse(str));
                         }
-                        mapBase["Events"]["Halloween2024"]["MinInfectionPercentage"] = 99;
+                        mapBase["Events"]["Halloween2024"]["MinInfectionPercentage"] = 50;
                         mapBase["Events"]["Halloween2024"]["InfectionPercentage"] = 100;
                     }
                 }
+            }
+
+            foreach (var mapBase in locationsJObjectByLocationMongoId.Values())
+            {
+                var bossSpawns = ((JArray)mapBase["BossLocationSpawn"]);
+                if (bossSpawns.Count == 0)
+                    continue;
+
+                var cloneBossSpawn1 = bossSpawns[0];
+                cloneBossSpawn1["BossName"] = "pmcUSEC";
+                cloneBossSpawn1["BossChance"] = 999999;
+                cloneBossSpawn1["Time"] = 1;
+                bossSpawns.Add(cloneBossSpawn1);
+
             }
 
             if (!DatabaseProvider.TryLoadLocationPaths(out var paths))

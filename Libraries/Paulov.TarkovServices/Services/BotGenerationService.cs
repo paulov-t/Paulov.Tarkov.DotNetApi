@@ -3,6 +3,7 @@ using EFT;
 using EFT.InventoryLogic;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
+using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 using System.Text;
@@ -24,18 +25,70 @@ namespace Paulov.TarkovServices.Services
         public BotGenerationService()
         {
             GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
-            CreateBaseBot();
             InventoryService = new InventoryService();
+            CreateBaseBot();
         }
 
         private AccountProfileCharacter CreateBaseBot()
         {
-            var stream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("scav.json");
-            var ms = new MemoryStream();
-            stream.CopyTo(ms);
-            var str = Encoding.UTF8.GetString(ms.ToArray());
-            var scavObj = JObject.Parse(str)["scav"];
-            BaseBot = scavObj.ToObject<AccountProfileCharacter>(DatabaseProvider.CachedSerializer);
+            //var stream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName("scav.json");
+            //var ms = new MemoryStream();
+            //stream.CopyTo(ms);
+            //var str = Encoding.UTF8.GetString(ms.ToArray());
+            //var scavObj = JObject.Parse(str)["scav"];
+            //BaseBot = scavObj.ToObject<AccountProfileCharacter>(DatabaseProvider.CachedSerializer);
+            BaseBot = new AccountProfileCharacter();
+
+            if (BaseBot.Info == null)
+                BaseBot.Info = new ProfileInfoDescriptor();
+
+            if (BaseBot.Health.BodyParts.Count == 0)
+            {
+                foreach (var bodyPartName in Enum.GetNames<EBodyPart>())
+                {
+                    if (bodyPartName == "Common")
+                        continue;
+                    BaseBot.Health.BodyParts.Add(Enum.Parse<EBodyPart>(bodyPartName), new Profile.ProfileHealthInfo.ProfileHealthInfoBodyPartInfo());
+                }
+            }
+
+            if (BaseBot.Inventory == null)
+            {
+                BaseBot.Inventory = new InventoryDescriptor();
+                BaseBot.Inventory.Equipment = new ItemDescriptor();
+
+                List<FlatItem> items = new List<FlatItem>();
+                // equipment
+                var equipmentItem = new FlatItem() { _id = MongoID.Generate(false), _tpl = "55d7217a4bdc2d86028b456d" };
+                items.Add(equipmentItem);
+                BSGHelperLibrary.ReflectionHelpers.SetValueOfJsonProperty(BaseBot.Inventory, "equipment", equipmentItem._id);
+                // stash
+                {
+                    var stashItem = new FlatItem() { _id = MongoID.Generate(false), _tpl = "566abbc34bdc2d92178b4576" };
+                    BSGHelperLibrary.ReflectionHelpers.SetValueOfJsonProperty(BaseBot.Inventory, "stash", stashItem._id);
+                    items.Add(stashItem);
+                }
+                // questRaidItems
+                {
+                    var questRaidItems = new FlatItem() { _id = MongoID.Generate(false), _tpl = "5963866286f7747bf429b572" };
+                    BSGHelperLibrary.ReflectionHelpers.SetValueOfJsonProperty(BaseBot.Inventory, "questRaidItems", questRaidItems._id);
+                    items.Add(questRaidItems);
+                }
+                // questStashItems
+                {
+                    var questStashItems = new FlatItem() { _id = MongoID.Generate(false), _tpl = "5963866b86f7747bfa1c4462" };
+                    BSGHelperLibrary.ReflectionHelpers.SetValueOfJsonProperty(BaseBot.Inventory, "questStashItems", questStashItems._id);
+                    items.Add(questStashItems);
+                }
+                // sorting table
+                var sortingTable = new FlatItem() { _id = MongoID.Generate(false), _tpl = "602543c13fee350cd564d032" };
+                BSGHelperLibrary.ReflectionHelpers.SetValueOfJsonProperty(BaseBot.Inventory, "sortingTable", sortingTable._id);
+                items.Add(sortingTable);
+
+                InventoryService.SetInventoryItems(BaseBot, items.ToArray());
+                InventoryService.UpdateInventoryEquipmentId(BaseBot);
+            }
+
             return BaseBot;
         }
 
@@ -65,8 +118,16 @@ namespace Paulov.TarkovServices.Services
             return CreateBaseBot();
         }
 
+        public AccountProfileCharacter GenerateBot(GenerateBotConditionModel condition)
+        {
+            return GenerateBot(condition.ToWaveInfoClass());
+        }
+
         public AccountProfileCharacter GenerateBot(WaveInfoClass condition)
         {
+            if (_templates == null)
+                DatabaseProvider.TryLoadTemplateFile("items.json", out _templates);
+
             if (condition.Role == WildSpawnType.gifter)
                 condition.Role = WildSpawnType.assault;
 
@@ -129,6 +190,26 @@ namespace Paulov.TarkovServices.Services
 
             if (bot.Info.Side != EPlayerSide.Savage)
                 bot.Info.PrestigeLevel = Randomizer.Next(0, 2);
+
+            // Setup Bot's Health
+            var dbHealth = ((JArray)botDatabaseData["health"]["BodyParts"])[0];
+            bot.Health.BodyParts[EBodyPart.Head].Health.Current = 60;
+            bot.Health.BodyParts[EBodyPart.Head].Health.Maximum = 60;
+            bot.Health.BodyParts[EBodyPart.Chest].Health.Current = 60;
+            bot.Health.BodyParts[EBodyPart.Chest].Health.Maximum = 60;
+            bot.Health.BodyParts[EBodyPart.Stomach].Health.Current = 60;
+            bot.Health.BodyParts[EBodyPart.Stomach].Health.Maximum = 60;
+            bot.Health.BodyParts[EBodyPart.LeftArm].Health.Current = 60;
+            bot.Health.BodyParts[EBodyPart.LeftArm].Health.Maximum = 60;
+            bot.Health.BodyParts[EBodyPart.RightArm].Health.Current = 60;
+            bot.Health.BodyParts[EBodyPart.RightArm].Health.Maximum = 60;
+            bot.Health.BodyParts[EBodyPart.LeftLeg].Health.Current = 60;
+            bot.Health.BodyParts[EBodyPart.LeftLeg].Health.Maximum = 60;
+            bot.Health.BodyParts[EBodyPart.RightLeg].Health.Current = 60;
+            bot.Health.BodyParts[EBodyPart.RightLeg].Health.Maximum = 60;
+
+            bot.Health.Energy.Current = 60;
+            bot.Health.Hydration.Current = 60;
 
             GenerateBotLevel(bot);
             AddDogtagToBot(bot);
@@ -205,7 +286,7 @@ namespace Paulov.TarkovServices.Services
             InventoryService.UpdateInventoryEquipmentId(bot);
 
             // Update each item Id to something Unique
-            InventoryService.SetInventoryItems(bot, InventoryService.UpdateMongoIds(InventoryService.GetInventoryItems(bot).ToList()).ToArray());
+            InventoryService.SetInventoryItems(bot, InventoryService.UpdateMongoIds(bot, InventoryService.GetInventoryItems(bot).ToList()).ToArray());
 
 #if DEBUG
             // Display on Debug what we have generated

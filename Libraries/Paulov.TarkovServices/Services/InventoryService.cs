@@ -66,7 +66,47 @@ namespace Paulov.TarkovServices.Services
 
         public string GetEquipmentId(AccountProfileCharacter profile)
         {
-            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "equipment").ToString();
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "equipment")?.ToString();
+        }
+
+        public string GetStashId(AccountProfileCharacter profile)
+        {
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "stash")?.ToString();
+        }
+
+        public string GetQuestRaidItemsId(AccountProfileCharacter profile)
+        {
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "questRaidItems")?.ToString();
+        }
+
+        public string GetQuestStashItemsId(AccountProfileCharacter profile)
+        {
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "questStashItems")?.ToString();
+        }
+
+        public string GetSortingTableId(AccountProfileCharacter profile)
+        {
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "sortingTable")?.ToString();
+        }
+
+        public Dictionary<EAreaType, MongoID> GetHideoutAreaStashes(AccountProfileCharacter profile)
+        {
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "hideoutAreaStashes") as Dictionary<EAreaType, MongoID>;
+        }
+
+        public Dictionary<EFT.InventoryLogic.EBoundItem, MongoID> GetFastPanel(AccountProfileCharacter profile)
+        {
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "fastPanel") as Dictionary<EFT.InventoryLogic.EBoundItem, MongoID>;
+        }
+
+        public List<MongoID> GetFavoriteItems(AccountProfileCharacter profile)
+        {
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "favoriteItems") as List<MongoID>;
+        }
+
+        public string GetHideoutCustomizationStashId(AccountProfileCharacter profile)
+        {
+            return BSGHelperLibrary.ReflectionHelpers.GetValueOfJsonProperty(profile.Inventory, "hideoutCustomizationStashId")?.ToString();
         }
 
         public FlatItem[] GetInventoryItems(AccountProfileCharacter profile)
@@ -128,6 +168,9 @@ namespace Paulov.TarkovServices.Services
         {
             var newEquipmentId = MongoID.Generate(false);
             var equipmentId = GetEquipmentId(profile);
+
+            bool generateEquipmentInItems = equipmentId == null;
+
             var items = GetInventoryItems(profile);
             foreach (var item in items)
             {
@@ -138,17 +181,38 @@ namespace Paulov.TarkovServices.Services
                     item.parentId = newEquipmentId;
             }
             BSGHelperLibrary.ReflectionHelpers.SetValueOfJsonProperty(profile.Inventory, "equipment", newEquipmentId);
-            SetInventoryItems(profile, items);
+            var lstItems = items.ToList();
+
+            if (generateEquipmentInItems)
+                lstItems.Add(new FlatItem() { _id = newEquipmentId, _tpl = "55d7217a4bdc2d86028b456d" });
+
+            SetInventoryItems(profile, lstItems.ToArray());
 
         }
 
-        public List<FlatItem> UpdateMongoIds(List<FlatItem> items)
+        public List<FlatItem> UpdateMongoIds(AccountProfileCharacter character, List<FlatItem> items)
         {
             List<(string from, string to)> renamedId = new List<(string, string)>();
+
+            var equipmentId = GetEquipmentId(character);
+            var questRaidItemsId = GetQuestRaidItemsId(character);
+            var questStashItemsId = GetQuestStashItemsId(character);
+            var sortingTableId = GetSortingTableId(character);
+            var stashId = GetStashId(character);
+            var hideoutCustomizationStashId = GetHideoutCustomizationStashId(character);
             // Pass 1: Generate new IDs for each item
             foreach (var item in items)
             {
-                // TODO: Must not remap the equipment, questRaidItems, questStashItems, sortingTable, stash and hideoutCustomizationStashId
+                // Must not remap the equipment, questRaidItems, questStashItems, sortingTable, stash and hideoutCustomizationStashId
+                if (item._id.ToString() == equipmentId ||
+                    item._id.ToString() == questRaidItemsId ||
+                    item._id.ToString() == questStashItemsId ||
+                    item._id.ToString() == sortingTableId ||
+                    item._id.ToString() == stashId ||
+                    item._id.ToString() == hideoutCustomizationStashId)
+                {
+                    continue;
+                }
 
                 var previousId = item._id;
                 item._id = MongoID.Generate(false).ToString();
