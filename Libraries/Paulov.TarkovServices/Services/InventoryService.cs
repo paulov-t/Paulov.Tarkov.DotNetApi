@@ -142,9 +142,40 @@ namespace Paulov.TarkovServices.Services
 
         }
 
-        public void UpdateMongoIds(AccountProfileCharacter profile, FlatItem[] items)
+        public List<FlatItem> UpdateMongoIds(List<FlatItem> items)
         {
+            List<(string from, string to)> renamedId = new List<(string, string)>();
+            // Pass 1: Generate new IDs for each item
+            foreach (var item in items)
+            {
+                // TODO: Must not remap the equipment, questRaidItems, questStashItems, sortingTable, stash and hideoutCustomizationStashId
 
+                var previousId = item._id;
+                item._id = MongoID.Generate(false).ToString();
+                renamedId.Add((from: previousId, to: item._id));
+            }
+
+            // Pass 2: Update parentId to the new IDs
+            foreach (var item in items.Where(x => x.parentId.HasValue))
+            {
+                // Find the previous ID in the renamedId list
+                if (!renamedId.Any(x => x.from == item.parentId))
+                    continue;
+
+                item.parentId = renamedId.First(x => x.from == item.parentId).to;
+            }
+
+            // Pass 3: Update parentId to the new IDs
+            foreach (var item in items.Where(x => x.parentId.HasValue))
+            {
+                // Find the previous ID in the renamedId list
+                if (!renamedId.Any(x => x.from == item.parentId))
+                    continue;
+
+                item.parentId = renamedId.First(x => x.from == item.parentId).to;
+            }
+
+            return items;
         }
     }
 }

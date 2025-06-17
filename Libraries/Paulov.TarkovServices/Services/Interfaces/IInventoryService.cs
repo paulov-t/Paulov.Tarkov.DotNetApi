@@ -31,7 +31,7 @@ namespace Paulov.TarkovServices.Services.Interfaces
 
         public void RemoveItemFromSlot(AccountProfileCharacter profile, string slotId);
 
-        public void SetInventoryItems(AccountProfileCharacter profile, GClass1354[] items);
+        public void SetInventoryItems(AccountProfileCharacter profile, FlatItem[] items);
 
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Paulov.TarkovServices.Services.Interfaces
         /// </summary>
         /// <param name="profile"></param>
         /// <param name="items"></param>
-        public void UpdateMongoIds(AccountProfileCharacter profile, GClass1354[] items);
+        public List<FlatItem> UpdateMongoIds(List<FlatItem> items);
 
     }
 }
