@@ -1,4 +1,5 @@
-﻿using Paulov.TarkovModels;
+﻿using EFT;
+using Paulov.TarkovModels;
 using FlatItem = GClass1354;
 
 namespace Paulov.TarkovServices.Services.Interfaces
@@ -18,6 +19,22 @@ namespace Paulov.TarkovServices.Services.Interfaces
         /// <param name="profile"></param>
         /// <returns></returns>
         public string GetEquipmentId(AccountProfileCharacter profile);
+
+        public string GetStashId(AccountProfileCharacter profile);
+
+        public string GetQuestRaidItemsId(AccountProfileCharacter profile);
+
+        public string GetQuestStashItemsId(AccountProfileCharacter profile);
+
+        public string GetSortingTableId(AccountProfileCharacter profile);
+
+        public Dictionary<EAreaType, MongoID> GetHideoutAreaStashes(AccountProfileCharacter profile);
+
+        public Dictionary<EFT.InventoryLogic.EBoundItem, MongoID> GetFastPanel(AccountProfileCharacter profile);
+
+        public List<MongoID> GetFavoriteItems(AccountProfileCharacter profile);
+
+        public string GetHideoutCustomizationStashId(AccountProfileCharacter profile);
 
         /// <summary>
         /// Gets the items in flat format (including EquipmentId, StashId etc) from the profile's inventory
@@ -46,7 +63,7 @@ namespace Paulov.TarkovServices.Services.Interfaces
         /// </summary>
         /// <param name="profile"></param>
         /// <param name="items"></param>
-        public List<FlatItem> UpdateMongoIds(List<FlatItem> items);
+        public List<FlatItem> UpdateMongoIds(AccountProfileCharacter character, List<FlatItem> items);
 
     }
 }
