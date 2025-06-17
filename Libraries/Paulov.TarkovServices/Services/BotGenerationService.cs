@@ -23,6 +23,7 @@ namespace Paulov.TarkovServices.Services
 
         public BotGenerationService()
         {
+            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
             CreateBaseBot();
             InventoryService = new InventoryService();
         }
@@ -204,7 +205,7 @@ namespace Paulov.TarkovServices.Services
             InventoryService.UpdateInventoryEquipmentId(bot);
 
             // Update each item Id to something Unique
-            InventoryService.UpdateMongoIds(bot, InventoryService.GetInventoryItems(bot));
+            InventoryService.SetInventoryItems(bot, InventoryService.UpdateMongoIds(InventoryService.GetInventoryItems(bot).ToList()).ToArray());
 
 #if DEBUG
             // Display on Debug what we have generated
