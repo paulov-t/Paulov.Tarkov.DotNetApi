@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
@@ -28,7 +27,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> Locations()
         {
-            if (!DatabaseProvider.TryLoadLocationBases(out var locationsJObjectByLocationMongoId))
+            if (!DatabaseService.TryLoadLocationBases(out var locationsJObjectByLocationMongoId))
             {
                 Response.StatusCode = 500;
                 return new BSGResult(null);
@@ -50,7 +49,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                         {
                             z.BossChance = 999999;
                             z.Time = 1;
-                            var str = JsonConvert.SerializeObject(z, Formatting.Indented, settings: new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters, NullValueHandling = NullValueHandling.Ignore });
+                            var str = JsonConvert.SerializeObject(z, Formatting.Indented, settings: new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters, NullValueHandling = NullValueHandling.Ignore });
                             bossSpawns.Add(JToken.Parse(str));
                         }
                         mapBase["Events"]["Halloween2024"]["MinInfectionPercentage"] = 50;
@@ -73,7 +72,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             }
 
-            if (!DatabaseProvider.TryLoadLocationPaths(out var paths))
+            if (!DatabaseService.TryLoadLocationPaths(out var paths))
             {
                 Response.StatusCode = 500;
                 return new BSGResult(null);

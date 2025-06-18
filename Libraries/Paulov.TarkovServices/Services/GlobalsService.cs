@@ -1,28 +1,35 @@
 ﻿using Comfort.Common;
 using Newtonsoft.Json.Linq;
+using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Services.Interfaces;
 
 namespace Paulov.TarkovServices.Services
 {
     /// <summary>
     /// 
     /// </summary>
-    public class GlobalsService
+    public sealed class GlobalsService : IGlobalsService
     {
         /// <summary>
         /// Gets the singleton instance of the <see cref="GlobalsService"/> class.
         /// </summary>
         public static GlobalsService Instance { get; private set; }
 
-        static GlobalsService()
+        public GlobalsService(IDatabaseProvider databaseProvider)
         {
-            Instance = new GlobalsService();
-            Instance.LoadGlobalsIntoComfortSingleton();
+            Instance = this;
         }
+
+        //static GlobalsService()
+        //{
+        //    Instance = new GlobalsService(null);
+        //    Instance.LoadGlobalsIntoComfortSingleton();
+        //}
 
         public JObject LoadGlobals()
         {
             // TODO: Detect which Globals to load
-            if (DatabaseProvider.TryLoadDatabaseFile("globals.json", out JObject items))
+            if (DatabaseService.TryLoadDatabaseFile("globals.json", out JObject items))
             {
                 if (!items.ContainsKey("LocationInfection"))
                     items.Add("LocationInfection", new JObject() { });

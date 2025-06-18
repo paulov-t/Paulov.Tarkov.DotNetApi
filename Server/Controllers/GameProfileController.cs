@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
-using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
@@ -129,13 +128,13 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
             GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
 
-            if (!DatabaseProvider.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
+            if (!DatabaseService.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
             {
                 Response.StatusCode = 500;
                 return new BSGErrorBodyResult(500, "");
             }
 
-            if (!DatabaseProvider.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            if (!DatabaseService.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
             {
                 Response.StatusCode = 500;
                 return new BSGErrorBodyResult(500, "");
@@ -178,7 +177,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             template["Hideout"]["Seed"] = "";
             var hideoutCheck = template["Hideout"];
             // Get Template Profile
-            var pmcData = template.ToObject<AccountProfileCharacter>(DatabaseProvider.CachedSerializer);
+            var pmcData = template.ToObject<AccountProfileCharacter>(DatabaseService.CachedSerializer);
             if (pmcData == null)
             {
                 Response.StatusCode = 500;
@@ -200,7 +199,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             var scavTemplate = JObject.Parse(scavTemplateText)["scav"];
             scavTemplate["Inventory"] = template["Inventory"].DeepClone();
             scavTemplate["Stats"] = JToken.FromObject(blankStatGroup);
-            var scavData = scavTemplate.ToObject<AccountProfileCharacter>(DatabaseProvider.CachedSerializer);
+            var scavData = scavTemplate.ToObject<AccountProfileCharacter>(DatabaseService.CachedSerializer);
             scavData.Id = MongoID.Generate();
             pmcData.PetId = scavData.Id;
 

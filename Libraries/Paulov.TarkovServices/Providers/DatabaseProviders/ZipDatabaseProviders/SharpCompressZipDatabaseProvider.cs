@@ -6,7 +6,7 @@ using SharpCompress.Readers;
 using System.Data;
 using System.Text;
 
-namespace Paulov.TarkovServices.Providers.ZipDatabaseProviders
+namespace Paulov.TarkovServices.Providers.DatabaseProviders.ZipDatabaseProviders
 {
     public sealed class SharpCompressZipDatabaseProvider : IDatabaseProvider
     {
@@ -79,7 +79,7 @@ namespace Paulov.TarkovServices.Providers.ZipDatabaseProviders
 
             var json = Encoding.UTF8.GetString(ms.ToArray());
 
-            DataTable? dataTable = new();
+            DataTable dataTable = new();
             if (string.IsNullOrWhiteSpace(json))
             {
                 return dataTable;

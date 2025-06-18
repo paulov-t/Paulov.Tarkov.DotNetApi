@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovServices.Providers.SaveProviders;
+using Paulov.TarkovServices.Services;
 using System.Text;
 using System.Text.Json;
 
@@ -26,7 +27,7 @@ namespace Paulov.TarkovServices
         {
 
             traderByTraderId = new Dictionary<string, object>();
-            var entries = DatabaseProvider.GetDatabaseProvider().Entries.Where(x => x.FullName.StartsWith("database/traders")).ToArray();
+            var entries = DatabaseService.GetDatabaseProvider().Entries.Where(x => x.FullName.StartsWith("database/traders")).ToArray();
             foreach (var traderDirectory in entries)
             {
                 if (traderDirectory.Name.Contains("ragfair"))
@@ -50,10 +51,10 @@ namespace Paulov.TarkovServices
             if (StaticPrices.Count > 0)
                 return StaticPrices;
 
-            if (!DatabaseProvider.TryLoadItemTemplates(out var templates))
+            if (!DatabaseService.TryLoadItemTemplates(out var templates))
                 return StaticPrices;
 
-            if (!DatabaseProvider.TryLoadTemplateFile("handbook.json", out var handbookTemplates))
+            if (!DatabaseService.TryLoadTemplateFile("handbook.json", out var handbookTemplates))
                 return StaticPrices;
 
             var handbookTemplateItems = handbookTemplates["Items"] as JArray;
@@ -90,10 +91,10 @@ namespace Paulov.TarkovServices
         internal Trader GetTraderById(string traderId)
         {
             var assortJsonPath = Path.Combine("traders", traderId, "assort.json");
-            DatabaseProvider.TryLoadDatabaseFile(assortJsonPath, out JsonDocument assort);
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("traders", traderId, "base.json"), out JsonDocument b);
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("traders", traderId, "dialogue.json"), out JsonDocument dialogue);
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("traders", traderId, "questassort.json"), out JsonDocument questAssort);
+            DatabaseService.TryLoadDatabaseFile(assortJsonPath, out JsonDocument assort);
+            DatabaseService.TryLoadDatabaseFile(Path.Combine("traders", traderId, "base.json"), out JsonDocument b);
+            DatabaseService.TryLoadDatabaseFile(Path.Combine("traders", traderId, "dialogue.json"), out JsonDocument dialogue);
+            DatabaseService.TryLoadDatabaseFile(Path.Combine("traders", traderId, "questassort.json"), out JsonDocument questAssort);
 
             //var traderAssortment = assort.ToObject<EFT.TraderAssortment>();
             //var trader = new Trader();
@@ -104,7 +105,7 @@ namespace Paulov.TarkovServices
         public EFT.TraderAssortment GetTraderAssortmentById(string traderId, string profileId)
         {
             var assortJsonPath = Path.Combine("traders", traderId, "assort.json");
-            DatabaseProvider.TryLoadDatabaseFile(assortJsonPath, out JsonDocument assort);
+            DatabaseService.TryLoadDatabaseFile(assortJsonPath, out JsonDocument assort);
             if (assort == null)
                 return new TraderAssortment();
             var options = new JsonSerializerOptions()

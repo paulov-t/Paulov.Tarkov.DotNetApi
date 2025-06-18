@@ -6,11 +6,13 @@
 	  <AssemblyVersion>$([System.DateTime]::Now.ToString("1.yyyy.MM.dd"))</AssemblyVersion>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
 	  <NoWarn>$(NoWarn);1591</NoWarn>
+	  <UserSecretsId>1cfaee7c-8513-42eb-a515-4d6c48e22257</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="FMT.FileTools" Version="2025.6.3.17001" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.14" />
+    <PackageReference Include="MongoDB.Driver" Version="3.4.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="SharpCompress" Version="0.40.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />

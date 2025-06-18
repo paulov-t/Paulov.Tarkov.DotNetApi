@@ -68,7 +68,7 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
 
             //return Profiles;
-            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
+            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters };
 
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             Directory.CreateDirectory(userProfileDirectory);
@@ -138,7 +138,7 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             Directory.CreateDirectory(userProfileDirectory);
             var filePath = Path.Combine(userProfileDirectory, $"{sessionId}.json");
 
-            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
+            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters };
 
             var serializedProfile = JsonConvert.SerializeObject(accountModel, Formatting.Indented, jsonSettings);
 

@@ -3,7 +3,7 @@ using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Providers.Interfaces;
 using System.Data;
 
-namespace Paulov.TarkovServices.Providers.FileDatabaseProviders
+namespace Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders
 {
     /// <summary>
     /// Provides functionality to interact with a JSON file-based database. 
@@ -52,7 +52,7 @@ namespace Paulov.TarkovServices.Providers.FileDatabaseProviders
         {
             var json = File.ReadAllText(FileName);
 
-            DataTable? dataTable = new();
+            DataTable dataTable = new();
             if (string.IsNullOrWhiteSpace(json))
             {
                 return dataTable;

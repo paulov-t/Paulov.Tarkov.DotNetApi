@@ -8,7 +8,6 @@ using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
 using Paulov.TarkovModels.Responses;
-using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
@@ -59,7 +58,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "expected location in request body");
 
             // Load all Location Bases
-            DatabaseProvider.TryLoadLocationBases(out JObject locationsJO);
+            DatabaseService.TryLoadLocationBases(out JObject locationsJO);
 
             // Match Location Base to requested location by Location Id
             // Todo: This needs refining
@@ -89,7 +88,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             locationSettings.Add("locationLoot", location);
             //locationSettings.Add("profile", new JObject() { { "insuredItems", new JArray() } });
             locationSettings.Add("profile", new JObject() { });
-            DatabaseProvider.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
+            DatabaseService.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
             locationSettings.Add("serverSettings", serverSettings);
             //locationSettings.Add("transitionType", "None");
             locationSettings.Add("transition", new JObject() { });
@@ -134,7 +133,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             var obj = JsonConvert.DeserializeObject<JObject>(
                 requestBody
-                , new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters, NullValueHandling = NullValueHandling.Ignore, StringEscapeHandling = StringEscapeHandling.EscapeNonAscii, TraceWriter = traceWriter });
+                , new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters, NullValueHandling = NullValueHandling.Ignore, StringEscapeHandling = StringEscapeHandling.EscapeNonAscii, TraceWriter = traceWriter });
 
             //#if DEBUG
             //            Debug.WriteLine(traceWriter);
@@ -148,14 +147,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             // Wipe the Hideout Seed. This is a workaround for the issue where the Hideout Seed is not correct after a local match ends.
             profileToken["Hideout"]["Seed"] = null;
-            var profileJson = profileToken.ToString(Formatting.Indented, DatabaseProvider.CachedSerializer.Converters.ToArray());
+            var profileJson = profileToken.ToString(Formatting.Indented, DatabaseService.CachedSerializer.Converters.ToArray());
             try
             {
 
                 // create a new AccountProfileCharacter from the profileToken
                 matchEndProfile = JsonConvert.DeserializeObject<AccountProfileCharacter>(
                     profileJson
-                    , new JsonSerializerSettings() { TraceWriter = traceWriter, Converters = DatabaseProvider.CachedSerializer.Converters });
+                    , new JsonSerializerSettings() { TraceWriter = traceWriter, Converters = DatabaseService.CachedSerializer.Converters });
             }
             catch (Exception e)
             {
@@ -256,7 +255,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> GetMetricsConfig()
         {
-            DatabaseProvider.TryLoadDatabaseFile("match/metrics.json", out JObject dbFile);
+            DatabaseService.TryLoadDatabaseFile("match/metrics.json", out JObject dbFile);
             return new BSGSuccessBodyResult(dbFile);
         }
 

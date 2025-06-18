@@ -1,8 +1,8 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
-using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
+using Paulov.TarkovServices.Services;
 
 namespace Paulov.Tarkov.Web.Api.Controllers
 {
@@ -23,7 +23,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
         [HttpPost]
         public IActionResult List(int? retry, bool? debug)
         {
-            return new BSGSuccessBodyResult(DatabaseProvider.GetJsonDocument("templates/prestige.json").RootElement.GetRawText());
+            return new BSGSuccessBodyResult(DatabaseService.GetJsonDocument("templates/prestige.json").RootElement.GetRawText());
         }
 
         [Route("client/prestige/obtain")]
