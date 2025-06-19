@@ -36,12 +36,9 @@ jobs:
       - name: dotnet publish
         run: dotnet publish -c Debug -o ${{env.DOTNET_ROOT}}/myapp
 
-      - name: Azure login
-        uses: azure/login@v2
+      - uses: azure/login@v1
         with:
-          client-id: ${{ secrets.CLIENTID }}
-          tenant-id: ${{ secrets.TENANTID }}
-          subscription-id: ${{ secrets.SUBSCRIPTIONID }}
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
     
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
