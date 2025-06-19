@@ -30,7 +30,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (!DatabaseService.TryLoadLocationBases(out var locationsJObjectByLocationMongoId))
             {
                 Response.StatusCode = 500;
-                return new BSGResult(null);
+                return new BSGErrorBodyResult(500, "Failed to load locations from database.");
             }
 
             if (configuration["ZOMBIES_ONLY"] != null && bool.TryParse(configuration["ZOMBIES_ONLY"].ToString(), out var ZOMBIES_ONLY) && ZOMBIES_ONLY)
@@ -58,24 +58,24 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 }
             }
 
-            foreach (var mapBase in locationsJObjectByLocationMongoId.Values())
-            {
-                var bossSpawns = ((JArray)mapBase["BossLocationSpawn"]);
-                if (bossSpawns.Count == 0)
-                    continue;
+            //foreach (var mapBase in locationsJObjectByLocationMongoId.Values())
+            //{
+            //    var bossSpawns = ((JArray)mapBase["BossLocationSpawn"]);
+            //    if (bossSpawns.Count == 0)
+            //        continue;
 
-                var cloneBossSpawn1 = bossSpawns[0];
-                cloneBossSpawn1["BossName"] = "pmcUSEC";
-                cloneBossSpawn1["BossChance"] = 999999;
-                cloneBossSpawn1["Time"] = 1;
-                bossSpawns.Add(cloneBossSpawn1);
+            //    var cloneBossSpawn1 = bossSpawns[0];
+            //    cloneBossSpawn1["BossName"] = "pmcUSEC";
+            //    cloneBossSpawn1["BossChance"] = 999999;
+            //    cloneBossSpawn1["Time"] = 1;
+            //    bossSpawns.Add(cloneBossSpawn1);
 
-            }
+            //}
 
             if (!DatabaseService.TryLoadLocationPaths(out var paths))
             {
                 Response.StatusCode = 500;
-                return new BSGResult(null);
+                return new BSGErrorBodyResult(500, "Failed to load location paths from database.");
             }
 
             JObject result = new JObject();
