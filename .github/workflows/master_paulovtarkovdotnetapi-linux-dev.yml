@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: 
-          lfs: true
+          # lfs: true
           submodules: true
 
       - name: Set up .NET Core
@@ -34,6 +34,24 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'paulovtarkovdotnetapi-linux-dev'
+          app-settings-json: |
+           [
+               {
+                   "name": "DatabaseProvider",
+                   "value": "GitHubDatabaseProvider",
+                   "slotSetting": false
+               },
+               {
+                   "name": "GitHubDatabaseUrl",
+                   "value": "paulov-t/Paulov.Tarkov.Db",
+                   "slotSetting": false
+               },
+               {
+                   "name": "GitHubAuthToken",
+                   "value": "${{ secrets.PAULOVTARKOVDBAUTHTOKEN }}",
+                   "slotSetting": false
+               }
+           ]
           slot-name: 'Production'
           package: ${{env.DOTNET_ROOT}}/myapp
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6178094BA35E46E5B8B2982317F96537 }}
