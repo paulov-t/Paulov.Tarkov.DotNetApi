@@ -10,14 +10,17 @@ namespace Paulov.TarkovServices.Services
     /// </summary>
     public sealed class GlobalsService : IGlobalsService
     {
+        IDatabaseProvider _databaseProvider;
+
         public GlobalsService(IDatabaseProvider databaseProvider)
         {
+            this._databaseProvider = databaseProvider;
             LoadGlobalsIntoComfortSingleton();
         }
 
         public JObject LoadGlobals()
         {
-            // TODO: Detect which Globals to load
+            // TODO: Detect which Globals to load (EFT or Arena)
             if (DatabaseService.TryLoadDatabaseFile("globals.json", out JObject items))
             {
                 if (!items.ContainsKey("LocationInfection"))

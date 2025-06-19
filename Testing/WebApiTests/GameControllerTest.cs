@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Controllers;
+using Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services;
+using Paulov.TarkovServices.Services.Interfaces;
 
 namespace WebApiTests
 {
@@ -13,12 +15,17 @@ namespace WebApiTests
         private readonly GameController controller;
         private readonly ISaveProvider saveProvider;
         private readonly IConfiguration configuration;
+        private readonly IGlobalsService globalsService;
+        private readonly IDatabaseProvider databaseProvider;
+        private readonly IDatabaseService databaseService;
 
         public GameControllerTest()
         {
-            new DatabaseService(null);
+            databaseProvider = new JsonFileCollectionDatabaseProvider();
+            databaseProvider.Connect(AppContext.BaseDirectory);
             saveProvider = new NullSaveProvider();
             configuration = new ConfigurationBuilder().Build();
+            databaseService = new DatabaseService(configuration, databaseProvider);
             controller = new GameController(saveProvider, configuration, new TestsGlobalsService());
         }
 

@@ -1,4 +1,6 @@
 using NUnit.Framework.Internal;
+using Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders;
+using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 
 namespace Paulov.TarkovServices.Tests
@@ -6,10 +8,13 @@ namespace Paulov.TarkovServices.Tests
     public class JsonFileSaveProviderTests
     {
         private readonly JsonFileSaveProvider _saveProvider;
+        private readonly IDatabaseProvider _databaseProvider;
 
         public JsonFileSaveProviderTests()
         {
             _saveProvider = new JsonFileSaveProvider();
+            _databaseProvider = new JsonFileCollectionDatabaseProvider();
+            _databaseProvider.Connect(AppContext.BaseDirectory);
         }
 
         [SetUp]

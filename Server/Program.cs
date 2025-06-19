@@ -92,12 +92,12 @@ namespace SIT.WebServer
             services.AddControllers();
 
             // Get the database provider from configuration and register it
-            IDatabaseProvider dbProvider = DatabaseService.GetDatabaseProvider(builder.Configuration);
+            IDatabaseProvider dbProvider = DatabaseService.GetDatabaseProviderByConfiguration(builder.Configuration);
             services.AddSingleton(typeof(IDatabaseProvider), dbProvider);
 
             // Register the GlobalsService and DatabaseService as singletons
             services.AddSingleton(typeof(IGlobalsService), new GlobalsService(dbProvider));
-            services.AddSingleton(typeof(IDatabaseService), (new DatabaseService(builder.Configuration)));
+            services.AddSingleton(typeof(IDatabaseService), (new DatabaseService(builder.Configuration, dbProvider)));
 
             services
                 .AddSwaggerGen(ConfigureSwaggerGen)

@@ -10,7 +10,20 @@ namespace Paulov.TarkovServices.Providers.DatabaseProviders.ZipDatabaseProviders
 {
     public sealed class MicrosoftCompressionZipDatabaseProvider : IDatabaseProvider
     {
-        public static Stream DatabaseAssetStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip"); } }
+        public static Stream DatabaseAssetStream
+        {
+            get
+            {
+                try
+                {
+                    return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip");
+                }
+                catch
+                {
+                    return new FileStream(Path.Combine(AppContext.BaseDirectory, "database.zip"), FileMode.Open);
+                }
+            }
+        }
         public static ZipArchive ZipArchive { get { return new ZipArchive(DatabaseAssetStream); } }
         public List<EntryModel> Entries
         {

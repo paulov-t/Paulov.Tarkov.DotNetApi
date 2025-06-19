@@ -55,11 +55,16 @@ namespace Paulov.TarkovServices.Providers.DatabaseProviders.CloudDatabaseProvide
 
             var apiEntries = new HttpClient();
             apiEntries.BaseAddress = new Uri($"https://api.github.com/");
-            apiEntries.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _configuration["GitHubAuthToken"]);
+
+            // Set the authorization header using the GitHub token from configuration. This would be used for private repositories or to increase rate limits.
+            if (!string.IsNullOrEmpty(_configuration["GitHubAuthToken"]))
+                apiEntries.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _configuration["GitHubAuthToken"]);
+
             apiEntries.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("*/*"));
             apiEntries.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue("Paulov.TarkovServices", "1.0"));
             var r = apiEntries.GetAsync($"/repos/{connectionString}/contents").Result.Content.ReadAsStringAsync().Result;
-            RecursiveAddEntries(apiEntries, JArray.Parse(r));
+            if (r.StartsWith("["))
+                RecursiveAddEntries(apiEntries, JArray.Parse(r));
             _ = Entries;
         }
 

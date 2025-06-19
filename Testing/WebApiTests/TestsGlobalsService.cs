@@ -1,21 +1,18 @@
 ﻿using Comfort.Common;
-using FMT.FileTools;
 using Newtonsoft.Json.Linq;
+using Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders;
 using Paulov.TarkovServices.Services.Interfaces;
 
 namespace WebApiTests
 {
     internal sealed class TestsGlobalsService : IGlobalsService
     {
-        public static Stream GlobalsStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("globals.json"); } }
-
         public JObject LoadGlobals()
         {
-            if (GlobalsStream == null)
-            {
-                return null;
-            }
-            using var reader = new StreamReader(GlobalsStream);
+            var databaseProvider = new JsonFileCollectionDatabaseProvider();
+            databaseProvider.Connect(AppContext.BaseDirectory);
+
+            using var reader = new StreamReader(databaseProvider.GetEntryStream("globals.json"));
             var json = reader.ReadToEnd();
             return JObject.Parse(json);
         }

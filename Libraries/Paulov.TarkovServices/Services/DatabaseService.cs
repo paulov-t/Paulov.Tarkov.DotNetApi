@@ -5,10 +5,20 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Providers.DatabaseProviders.CloudDatabaseProviders;
+using Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders;
 using Paulov.TarkovServices.Providers.DatabaseProviders.ZipDatabaseProviders;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Text.Json;
+
+
+/**
+ * 
+ * Paulov: DatabaseService.cs
+ * TODO: REWRITE THIS ENTIRE CLASS TO BE A SINGLETON SERVICE THAT CAN BE INJECTED INTO OTHER SERVICES.
+ * REMOVE ALL STATIC METHODS AND PROPERTIES.
+ * 
+ */
 
 namespace Paulov.TarkovServices.Services
 {
@@ -26,13 +36,14 @@ namespace Paulov.TarkovServices.Services
     {
         public readonly IConfiguration Configuration;
 
-        public static IDatabaseProvider DatabaseProvider => GetDatabaseProvider();
-
         public static DatabaseService Instance { get; private set; }
 
-        public DatabaseService(IConfiguration configuration)
+        public IDatabaseProvider DatabaseProvider;
+
+        public DatabaseService(IConfiguration configuration, IDatabaseProvider databaseProvider)
         {
-            Configuration = configuration;
+            this.DatabaseProvider = databaseProvider;
+            this.Configuration = configuration;
             Instance = this;
         }
 
@@ -40,15 +51,18 @@ namespace Paulov.TarkovServices.Services
 
         public static IDatabaseProvider GetDatabaseProvider()
         {
+            if (Instance != null && Instance.DatabaseProvider != null)
+                return Instance.DatabaseProvider;
+
             // This is bad. Because we are using statics throughout DatabaseService there can be a loop to get the provider. We need to convert this service to a single instance
             if (databaseProvider != null)
                 return databaseProvider;
 
             var configuration = Instance.Configuration;
-            return GetDatabaseProvider(configuration);
+            return GetDatabaseProviderByConfiguration(configuration);
         }
 
-        public static IDatabaseProvider GetDatabaseProvider(IConfiguration configuration)
+        public static IDatabaseProvider GetDatabaseProviderByConfiguration(IConfiguration configuration)
         {
             // This is bad. Because we are using statics throughout DatabaseService there can be a loop to get the provider. We need to convert this service to a single instance
             if (databaseProvider != null)
@@ -65,6 +79,9 @@ namespace Paulov.TarkovServices.Services
                     break;
                 case "GitHubDatabaseProvider":
                     databaseProvider = new GitHubDatabaseProvider(configuration);
+                    break;
+                case "JsonFileCollectionDatabaseProvider":
+                    databaseProvider = new JsonFileCollectionDatabaseProvider();
                     break;
                 case "MicrosoftCompressionZipDatabaseProvider":
                 default:
@@ -197,8 +214,10 @@ namespace Paulov.TarkovServices.Services
 
             using var ms = new MemoryStream();
 
+            var databaseProvider = GetDatabaseProvider();
+
             // If the databaseprovider uses entries then attempt to find it there
-            var entry = GetDatabaseProvider().Entries.FirstOrDefault(x => x.FullName == filePath);
+            var entry = databaseProvider.Entries.FirstOrDefault(x => x.FullName == filePath);
             if (entry != null)
             {
                 using var stream = entry.Open();
@@ -207,7 +226,12 @@ namespace Paulov.TarkovServices.Services
             // If the databaseprovider doesn't support entries, then attempt to get directly
             else
             {
-                GetDatabaseProvider().GetEntryStream(filePath).CopyTo(ms);
+                databaseProvider.GetEntryStream(filePath).CopyTo(ms);
+            }
+
+            if (ms.Length == 0)
+            {
+                throw new FileNotFoundException($"Database file not found: {filePath}");
             }
 
             var jsonDocument = JsonDocument.Parse(new ReadOnlyMemory<byte>(ms.ToArray()));

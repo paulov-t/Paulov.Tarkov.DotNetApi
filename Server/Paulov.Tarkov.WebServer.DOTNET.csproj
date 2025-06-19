@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FMT.FileTools" Version="2025.6.3.17001" />
+    <PackageReference Include="FMT.FileTools" Version="2025.6.17.13001" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.14" />
     <PackageReference Include="MongoDB.Driver" Version="3.4.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -31,16 +31,6 @@
 	  <EmbeddedResource Remove="Services\**" />
 	  <None Remove="Models\**" />
 	  <None Remove="Services\**" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Remove="data\database.zip" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <EmbeddedResource Include="data\database.zip">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </EmbeddedResource>
 	</ItemGroup>
 
 
