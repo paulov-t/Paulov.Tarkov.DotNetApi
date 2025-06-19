@@ -9,6 +9,7 @@ using Paulov.TarkovModels;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
+using Paulov.TarkovServices.Services.Interfaces;
 using System.Text;
 
 namespace Paulov.Tarkov.Web.Api.Controllers
@@ -24,9 +25,12 @@ namespace Paulov.Tarkov.Web.Api.Controllers
     public class GameProfileController : ControllerBase
     {
         private JsonFileSaveProvider _saveProvider;
-        public GameProfileController(ISaveProvider saveProvider)
+        private IGlobalsService _globalsService;
+
+        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService)
         {
             _saveProvider = saveProvider as JsonFileSaveProvider;
+            _globalsService = globalsService;
         }
 
         private string SessionId
@@ -126,7 +130,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 requestBody.Add("voiceId", "5fc615110b735e7b024c76ea");
             }
 
-            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            _globalsService.LoadGlobalsIntoComfortSingleton();
 
             if (!DatabaseService.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
             {

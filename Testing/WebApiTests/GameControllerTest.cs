@@ -19,7 +19,7 @@ namespace WebApiTests
             new DatabaseService(null);
             saveProvider = new NullSaveProvider();
             configuration = new ConfigurationBuilder().Build();
-            controller = new GameController(saveProvider, configuration);
+            controller = new GameController(saveProvider, configuration, new TestsGlobalsService());
         }
 
         [SetUp]

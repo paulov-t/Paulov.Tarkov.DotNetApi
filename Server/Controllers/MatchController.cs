@@ -20,11 +20,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
     {
         private JsonFileSaveProvider _saveProvider;
         private IInventoryService _inventoryService;
+        private IGlobalsService _globalsService;
 
-        public MatchController(ISaveProvider saveProvider, IInventoryService inventoryService)
+        public MatchController(ISaveProvider saveProvider, IInventoryService inventoryService, IGlobalsService globalsService)
         {
             _saveProvider = saveProvider as JsonFileSaveProvider;
             _inventoryService = inventoryService;
+            _globalsService = globalsService;
         }
 
 
@@ -127,7 +129,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
 #endif
 
-            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            _globalsService.LoadGlobalsIntoComfortSingleton();
 
             ITraceWriter traceWriter = new MemoryTraceWriter();
 

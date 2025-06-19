@@ -10,21 +10,10 @@ namespace Paulov.TarkovServices.Services
     /// </summary>
     public sealed class GlobalsService : IGlobalsService
     {
-        /// <summary>
-        /// Gets the singleton instance of the <see cref="GlobalsService"/> class.
-        /// </summary>
-        public static GlobalsService Instance { get; private set; }
-
         public GlobalsService(IDatabaseProvider databaseProvider)
         {
-            Instance = this;
+            LoadGlobalsIntoComfortSingleton();
         }
-
-        //static GlobalsService()
-        //{
-        //    Instance = new GlobalsService(null);
-        //    Instance.LoadGlobalsIntoComfortSingleton();
-        //}
 
         public JObject LoadGlobals()
         {

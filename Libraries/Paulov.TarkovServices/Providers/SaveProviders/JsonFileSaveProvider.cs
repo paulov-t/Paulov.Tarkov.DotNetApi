@@ -65,7 +65,7 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
         public Dictionary<string, Account> GetProfiles()
         {
             // AccountProfileCharacter requires Globals to be loaded, so we load them here.
-            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            //GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
 
             //return Profiles;
             var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters };

@@ -10,7 +10,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="globals.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="globals.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="FMT.FileTools" Version="2025.6.17.13001" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.6" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="NUnit" Version="3.14.0" />
@@ -21,6 +30,15 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Libraries\Paulov.TarkovServices\Paulov.TarkovServices.csproj" />
     <ProjectReference Include="..\..\Server\Paulov.Tarkov.WebServer.DOTNET.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\Server\References\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Comfort">
+      <HintPath>..\..\Server\References\Comfort.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

@@ -24,7 +24,7 @@ namespace Paulov.TarkovServices.Services
 
         public BotGenerationService()
         {
-            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            //GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
             InventoryService = new InventoryService();
             CreateBaseBot();
         }

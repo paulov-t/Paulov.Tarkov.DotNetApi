@@ -9,6 +9,7 @@ using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
+using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
@@ -20,10 +21,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         private JsonFileSaveProvider _saveProvider;
         private IConfiguration configuration;
-        public GameController(ISaveProvider saveProvider, IConfiguration configuration)
+        private IGlobalsService _globalsService;
+
+        public GameController(ISaveProvider saveProvider, IConfiguration configuration, IGlobalsService globalsService)
         {
             this._saveProvider = saveProvider as JsonFileSaveProvider;
             this.configuration = configuration;
+            this._globalsService = globalsService;
         }
 
         private string SessionId
@@ -139,7 +143,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult Globals()
         {
-            var globals = GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            var globals = _globalsService.LoadGlobalsIntoComfortSingleton();
             if (configuration["ZOMBIES_ONLY"] != null && configuration["ZOMBIES_ONLY"].ToString() == "true")
             {
                 var infection = globals["config"]["SeasonActivity"]["InfectionHalloween"];
