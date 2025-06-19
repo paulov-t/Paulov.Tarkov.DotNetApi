@@ -10,7 +10,18 @@ using System.Text;
 
 namespace Paulov.TarkovServices.Providers.DatabaseProviders.CloudDatabaseProviders
 {
-    public class MongoDatabaseProvider : IDatabaseProvider
+    /// <summary>
+    /// Provides functionality for connecting to and interacting with a MongoDB database.
+    /// </summary>
+    /// <remarks>This class supports connecting to a MongoDB instance using a connection string provided
+    /// either through an <see cref="IConfiguration"/> object or directly as a string. It allows retrieving database
+    /// entries, executing commands, and managing connections.
+    /// 
+    /// It does however rely on the Mongo Database being structured in a way that it can be queried as a database. i.e. it has a collection of JSON files that can be queried as a database.
+    /// Example: database/globals.json, database/templates/items.json, etc.
+    /// 
+    /// </remarks>
+    public sealed class MongoDatabaseProvider : IDatabaseProvider
     {
         public List<EntryModel> Entries { get; set; } = new List<EntryModel>();
 
