@@ -9,7 +9,7 @@
 This is a personal project to develop a .NET Web & Api against a real world example. In this case Escape from Tarkov server side endpoints.
 
 ## Status
-Under development and can get to the main menu.
+Under development, can get to the main menu and play a match with some bots.
 
 ## The project ruleset
 - Use the Model-View-Controller design
@@ -21,6 +21,13 @@ Under development and can get to the main menu.
   - The main aim is to keep the footprint very low 
   - Do not load anything permanently into memory
   - Do not have large loose files in the project
+
+## Database Support
+This app can support the following databases:
+- MongoDb (MongoDatabaseProvider) - `Documentation TBD`
+- GitHub Repository (GitHubDatabaseProvider) - Fork [the database repo](https://github.com/paulov-t/Paulov.Tarkov.Db/) and create an Auth Token to use 
+- JSON File Collection in the app binary directory (JsonFileCollectionDatabaseProvider) - Download [the database repo](https://github.com/paulov-t/Paulov.Tarkov.Db/) and place the loose files in the binary directory
+- Ultra Compressed Zip called Database.zip in the app binary directory (MicrosoftCompressionZipDatabaseProvider)  - Download [the database repo](https://github.com/paulov-t/Paulov.Tarkov.Db/) as a zip and place in the binary directory
 
 ## Disclaimer
 - This is a purely a for fun and personal learning for me against a real world scenario
