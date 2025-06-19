@@ -29,6 +29,13 @@ namespace Paulov.TarkovServices.Services
             CreateBaseBot();
         }
 
+        public BotGenerationService(IGlobalsService globalsService, IInventoryService inventoryService)
+        {
+            globalsService.LoadGlobalsIntoComfortSingleton();
+            InventoryService = inventoryService;
+            CreateBaseBot();
+        }
+
         private AccountProfileCharacter CreateBaseBot()
         {
             BaseBot = new AccountProfileCharacter();
