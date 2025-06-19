@@ -60,13 +60,13 @@ namespace Paulov.TarkovServices.Services
 
             switch (configuration["DatabaseProvider"])
             {
-                case "mongodb":
+                case "MongoDatabaseProvider":
                     databaseProvider = new MongoDatabaseProvider(configuration);
                     break;
-                case "github":
+                case "GitHubDatabaseProvider":
                     databaseProvider = new GitHubDatabaseProvider(configuration);
                     break;
-                case "ms-zip":
+                case "MicrosoftCompressionZipDatabaseProvider":
                 default:
                     databaseProvider = new MicrosoftCompressionZipDatabaseProvider();
                     break;
