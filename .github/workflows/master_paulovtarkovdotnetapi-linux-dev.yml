@@ -7,8 +7,15 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - '**/README.md'
+      - '**/CI.yml'
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,13 +35,25 @@ jobs:
 
       - name: dotnet publish
         run: dotnet publish -c Debug -o ${{env.DOTNET_ROOT}}/myapp
+
+      - uses: azure/login@v1
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
     
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'paulovtarkovdotnetapi-linux-dev'
-          app-settings-json: |
+          slot-name: 'Production'
+          package: ${{env.DOTNET_ROOT}}/myapp
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6178094BA35E46E5B8B2982317F96537 }}
+
+      - name: Set Web App Database Provider
+        uses: Azure/appservice-settings@v1
+        with:
+         app-name: 'paulovtarkovdotnetapi-linux-dev'
+         app-settings-json: |
            [
                {
                    "name": "DatabaseProvider",
@@ -52,6 +71,3 @@ jobs:
                    "slotSetting": false
                }
            ]
-          slot-name: 'Production'
-          package: ${{env.DOTNET_ROOT}}/myapp
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6178094BA35E46E5B8B2982317F96537 }}
