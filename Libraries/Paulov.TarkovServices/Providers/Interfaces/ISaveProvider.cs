@@ -11,11 +11,9 @@ namespace Paulov.TarkovServices.Providers.Interfaces
         public Account LoadProfile(string sessionId);
 
         public AccountProfileMode GetAccountProfileMode(Account account);
-        public AccountProfileMode GetAccountProfileMode(string sessionId);
 
-        public AccountProfileCharacter GetPmcProfile(string sessionId);
+        public AccountProfileCharacter GetPmcProfile(Account account);
 
-        public AccountProfileCharacter GetScavProfile(string sessionId);
-
+        public AccountProfileCharacter GetScavProfile(Account account);
     }
 }

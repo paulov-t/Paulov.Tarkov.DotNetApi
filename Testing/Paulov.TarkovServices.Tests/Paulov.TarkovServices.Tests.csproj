@@ -1,21 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="database.zip" />
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="FMT.FileTools" Version="2025.6.3.17001" />
+    <PackageReference Include="FMT.FileTools" Version="2025.6.17.13001" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
@@ -27,14 +30,29 @@
     <ProjectReference Include="..\..\Libraries\Paulov.TarkovServices\Paulov.TarkovServices.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\Server\References\Assembly-CSharp.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
+	<ItemGroup>
+		<Reference Include="Assembly-CSharp">
+			<HintPath>..\..\Server\References\Assembly-CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="Comfort">
+			<HintPath>..\..\Server\References\Comfort.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+	
   <ItemGroup>
     <Using Include="NUnit.Framework" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <None Update="database\bots\types\assault.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="database\globals.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="database\templates\items.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

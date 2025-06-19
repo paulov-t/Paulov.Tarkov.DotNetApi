@@ -19,18 +19,6 @@ namespace Paulov.TarkovServices.Models
 
         public Stream Open()
         {
-            //var reader = SharpCompressZipDatabaseProvider.DatabaseAssetZipReader;
-            //while (reader.MoveToNextEntry())
-            //{
-            //    if (!reader.Entry.IsDirectory)
-            //    {
-            //        var fullname = reader.Entry?.Key != null ? reader.Entry.Key : "/";
-            //        if (fullname == FullName)
-            //        {
-            //            return reader.OpenEntryStream();
-            //        }
-            //    }
-            //}
             return Provider.GetEntryStream(FullName);
         }
 

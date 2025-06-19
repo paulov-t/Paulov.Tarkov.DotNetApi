@@ -65,10 +65,10 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
         public Dictionary<string, Account> GetProfiles()
         {
             // AccountProfileCharacter requires Globals to be loaded, so we load them here.
-            GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            //GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
 
             //return Profiles;
-            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
+            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters };
 
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
             Directory.CreateDirectory(userProfileDirectory);
@@ -138,7 +138,7 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             Directory.CreateDirectory(userProfileDirectory);
             var filePath = Path.Combine(userProfileDirectory, $"{sessionId}.json");
 
-            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
+            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters };
 
             var serializedProfile = JsonConvert.SerializeObject(accountModel, Formatting.Indented, jsonSettings);
 
@@ -161,6 +161,9 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
 
         public AccountProfileMode GetAccountProfileMode(Account account)
         {
+            if (account.Modes == null)
+                account.Modes = new AccountProfileModes();
+
             switch (account.CurrentMode.ToLower())
             {
                 case "regular":
@@ -174,25 +177,9 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return null;
         }
 
-        public AccountProfileMode GetAccountProfileMode(string sessionId)
+        public AccountProfileCharacter GetPmcProfile(Account account)
         {
-            var account = GetProfiles()[sessionId] as Account;
-            if (account == null)
-                return null;
-
-            if (account.Modes == null)
-                account.Modes = new AccountProfileModes();
-
-            return GetAccountProfileMode(account);
-        }
-
-        public AccountProfileCharacter GetPmcProfile(string sessionId)
-        {
-            var prof = GetProfiles()[sessionId];
-            if (prof == null)
-                return null;
-
-            var characters = GetAccountProfileMode(sessionId)?.Characters;
+            var characters = GetAccountProfileMode(account)?.Characters;
             if (characters == null)
                 return null;
 
@@ -225,9 +212,9 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return pmcObject;
         }
 
-        public Dictionary<MongoID, Profile.TraderInfo> GetPmcProfileTradersInfo(string sessionId)
+        public Dictionary<MongoID, Profile.TraderInfo> GetPmcProfileTradersInfo(Account account)
         {
-            var pmcProfile = GetPmcProfile(sessionId);
+            var pmcProfile = GetPmcProfile(account);
             if (pmcProfile == null) return null;
 
             var objTradersInfo = pmcProfile.GetProfile().TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
@@ -235,9 +222,9 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return objTradersInfo;
         }
 
-        public AccountProfileCharacter GetScavProfile(string sessionId)
+        public AccountProfileCharacter GetScavProfile(Account account)
         {
-            var characters = GetAccountProfileMode(sessionId)?.Characters;
+            var characters = GetAccountProfileMode(account)?.Characters;
             if (characters == null)
                 return null;
 

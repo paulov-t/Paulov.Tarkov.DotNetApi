@@ -2,9 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
+using Paulov.TarkovServices.Services;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -18,9 +18,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/menu/locale/{language}")]
         [HttpPost]
-        public async void MenuLocale([FromRoute] string language, int? retry, bool? debug)
+        public async void MenuLocale([FromRoute] string language)
         {
-            DatabaseProvider.TryLoadLocales(out var locales, out var localesDict, out var languages);
+            DatabaseService.TryLoadLocales(out var locales, out var localesDict, out var languages);
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(localesDict.GetValue("menu_en").ToObject<JObject>()
                 , Request, Response);
@@ -32,17 +32,17 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/languages")]
         [HttpPost]
-        public async Task<IActionResult> Languages(int? retry, bool? debug)
+        public async Task<IActionResult> Languages()
         {
-            DatabaseProvider.TryLoadLanguages(out var languages);
+            DatabaseService.TryLoadLanguages(out var languages);
             return new BSGSuccessBodyResult(languages);
         }
 
         [Route("client/locale/{language}")]
         [HttpPost]
-        public async Task<IActionResult> Locale([FromRoute] string language, int? retry, bool? debug)
+        public async Task<IActionResult> Locale([FromRoute] string language)
         {
-            DatabaseProvider.TryLoadLocaleGlobalEn(out string globalEn);
+            DatabaseService.TryLoadLocaleGlobalEn(out string globalEn);
 
             return new BSGSuccessBodyResult(globalEn);
         }

@@ -1,9 +1,9 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
+using Paulov.TarkovServices.Services;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -19,7 +19,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult HideoutAreas()
         {
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "areas.json"), out JArray jobj);
+            DatabaseService.TryLoadDatabaseFile(Path.Combine("hideout", "areas.json"), out JArray jobj);
 
             return new BSGSuccessBodyResult(jobj);
 
@@ -30,7 +30,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> HideoutQTEList(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "qte.json"), out JArray jobj);
+            DatabaseService.TryLoadDatabaseFile(Path.Combine("hideout", "qte.json"), out JArray jobj);
 
             return new BSGSuccessBodyResult(jobj);
         }
@@ -40,7 +40,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> HideoutSettings(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "settings.json"), out JObject jobj);
+            DatabaseService.TryLoadDatabaseFile(Path.Combine("hideout", "settings.json"), out JObject jobj);
 
             return new BSGSuccessBodyResult(jobj);
         }
@@ -49,7 +49,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> HideoutProduction(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "production.json"), out JObject jobj);
+            DatabaseService.TryLoadDatabaseFile(Path.Combine("hideout", "production.json"), out JObject jobj);
 
             return new BSGSuccessBodyResult(jobj);
         }
@@ -69,7 +69,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult HideoutCustomizationList()
         {
-            DatabaseProvider.TryLoadDatabaseFile(Path.Combine("hideout", "customisation.json"), out JObject jobj);
+            DatabaseService.TryLoadDatabaseFile(Path.Combine("hideout", "customisation.json"), out JObject jobj);
 
             return new BSGSuccessBodyResult(jobj);
 

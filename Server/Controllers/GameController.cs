@@ -9,6 +9,7 @@ using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
+using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
@@ -20,10 +21,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         private JsonFileSaveProvider _saveProvider;
         private IConfiguration configuration;
-        public GameController(ISaveProvider saveProvider, IConfiguration configuration)
+        private IGlobalsService _globalsService;
+
+        public GameController(ISaveProvider saveProvider, IConfiguration configuration, IGlobalsService globalsService)
         {
             this._saveProvider = saveProvider as JsonFileSaveProvider;
             this.configuration = configuration;
+            this._globalsService = globalsService;
         }
 
         private string SessionId
@@ -119,7 +123,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         public async Task<IActionResult> TemplateItems(int? count, int? page)
         {
 
-            if (DatabaseProvider.TryLoadItemTemplates(out var items, count, page))
+            if (DatabaseService.TryLoadItemTemplates(out var items, count, page))
             {
                 //var dict = items.ParseJsonTo<GClass1372>();
                 //var dict = JsonConvert.DeserializeObject<GClass1372>(items, new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters, ReferenceLoopHandling = ReferenceLoopHandling.Ignore,   });
@@ -139,7 +143,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult Globals()
         {
-            var globals = GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
+            var globals = _globalsService.LoadGlobalsIntoComfortSingleton();
             if (configuration["ZOMBIES_ONLY"] != null && configuration["ZOMBIES_ONLY"].ToString() == "true")
             {
                 var infection = globals["config"]["SeasonActivity"]["InfectionHalloween"];
@@ -162,7 +166,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult Settings(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadDatabaseFile("settings.json", out JObject items);
+            DatabaseService.TryLoadDatabaseFile("settings.json", out JObject items);
 
             var rawText = items.ToJson();
             return new BSGSuccessBodyResult(rawText);
@@ -183,7 +187,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult AccountCustomization(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadDatabaseFile("templates/character.json", out string items);
+            DatabaseService.TryLoadDatabaseFile("templates/character.json", out string items);
 
             return new BSGSuccessBodyResult(items);
         }
@@ -239,7 +243,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> HandbookTemplates(int? retry, bool? debug)
         {
-            DatabaseProvider.TryLoadTemplateFile("handbook.json", out var templates);
+            DatabaseService.TryLoadTemplateFile("handbook.json", out var templates);
 
             return new BSGSuccessBodyResult(templates);
 
@@ -704,7 +708,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             var botsJson = JsonConvert.SerializeObject(bots
                 , Formatting.Indented
-                , new JsonSerializerSettings() { TraceWriter = traceWriter, Converters = DatabaseProvider.CachedSerializer.Converters }
+                , new JsonSerializerSettings() { TraceWriter = traceWriter, Converters = DatabaseService.CachedSerializer.Converters }
                 );
 
             //#if DEBUG
