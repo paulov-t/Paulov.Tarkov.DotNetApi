@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.TarkovServices.Providers.DatabaseProviders.CloudDatabaseProviders;
-using Paulov.TarkovServices.Providers.DatabaseProviders.ZipDatabaseProviders;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
@@ -94,17 +92,7 @@ namespace SIT.WebServer
             services.AddControllers();
 
             // Get the database provider from configuration and register it
-            IDatabaseProvider dbProvider;
-            switch (builder.Configuration["DatabaseProvider"])
-            {
-                case "mongodb":
-                    dbProvider = new MongoDatabaseProvider(builder.Configuration);
-                    break;
-                case "ms-zip":
-                default:
-                    dbProvider = new MicrosoftCompressionZipDatabaseProvider();
-                    break;
-            }
+            IDatabaseProvider dbProvider = DatabaseService.GetDatabaseProvider(builder.Configuration);
             services.AddSingleton(typeof(IDatabaseProvider), dbProvider);
 
             // Register the GlobalsService and DatabaseService as singletons

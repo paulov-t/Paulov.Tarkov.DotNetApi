@@ -45,6 +45,14 @@ namespace Paulov.TarkovServices.Services
                 return databaseProvider;
 
             var configuration = Instance.Configuration;
+            return GetDatabaseProvider(configuration);
+        }
+
+        public static IDatabaseProvider GetDatabaseProvider(IConfiguration configuration)
+        {
+            // This is bad. Because we are using statics throughout DatabaseService there can be a loop to get the provider. We need to convert this service to a single instance
+            if (databaseProvider != null)
+                return databaseProvider;
 
             // I don't know whether to put this here?
             if (configuration == null)
@@ -54,6 +62,9 @@ namespace Paulov.TarkovServices.Services
             {
                 case "mongodb":
                     databaseProvider = new MongoDatabaseProvider(configuration);
+                    break;
+                case "github":
+                    databaseProvider = new GitHubDatabaseProvider(configuration);
                     break;
                 case "ms-zip":
                 default:
@@ -182,11 +193,20 @@ namespace Paulov.TarkovServices.Services
         {
             var filePath = ConvertPath(databaseFilePath);
 
-            var zipEntry = GetDatabaseProvider().Entries.First(x => x.FullName == filePath);
-
             using var ms = new MemoryStream();
-            using var stream = zipEntry.Open();
-            stream.CopyTo(ms);
+
+            // If the databaseprovider uses entries then attempt to find it there
+            var entry = GetDatabaseProvider().Entries.FirstOrDefault(x => x.FullName == filePath);
+            if (entry != null)
+            {
+                using var stream = entry.Open();
+                stream.CopyTo(ms);
+            }
+            // If the databaseprovider doesn't support entries, then attempt to get directly
+            else
+            {
+                GetDatabaseProvider().GetEntryStream(filePath).CopyTo(ms);
+            }
 
             var jsonDocument = JsonDocument.Parse(new ReadOnlyMemory<byte>(ms.ToArray()));
             return jsonDocument;
