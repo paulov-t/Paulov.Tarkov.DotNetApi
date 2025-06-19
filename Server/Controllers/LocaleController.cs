@@ -18,7 +18,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/menu/locale/{language}")]
         [HttpPost]
-        public async void MenuLocale([FromRoute] string language, int? retry, bool? debug)
+        public async void MenuLocale([FromRoute] string language)
         {
             DatabaseService.TryLoadLocales(out var locales, out var localesDict, out var languages);
 
@@ -32,7 +32,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/languages")]
         [HttpPost]
-        public async Task<IActionResult> Languages(int? retry, bool? debug)
+        public async Task<IActionResult> Languages()
         {
             DatabaseService.TryLoadLanguages(out var languages);
             return new BSGSuccessBodyResult(languages);
@@ -40,7 +40,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/locale/{language}")]
         [HttpPost]
-        public async Task<IActionResult> Locale([FromRoute] string language, int? retry, bool? debug)
+        public async Task<IActionResult> Locale([FromRoute] string language)
         {
             DatabaseService.TryLoadLocaleGlobalEn(out string globalEn);
 
