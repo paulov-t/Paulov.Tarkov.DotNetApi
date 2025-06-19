@@ -25,7 +25,17 @@ namespace WebApiTests
             return null;
         }
 
+        public AccountProfileCharacter GetPmcProfile(Account account)
+        {
+            return null;
+        }
+
         public AccountProfileCharacter GetScavProfile(string sessionId)
+        {
+            return null;
+        }
+
+        public AccountProfileCharacter GetScavProfile(Account account)
         {
             return null;
         }

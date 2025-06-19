@@ -161,6 +161,9 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
 
         public AccountProfileMode GetAccountProfileMode(Account account)
         {
+            if (account.Modes == null)
+                account.Modes = new AccountProfileModes();
+
             switch (account.CurrentMode.ToLower())
             {
                 case "regular":
@@ -174,25 +177,9 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return null;
         }
 
-        public AccountProfileMode GetAccountProfileMode(string sessionId)
+        public AccountProfileCharacter GetPmcProfile(Account account)
         {
-            var account = GetProfiles()[sessionId] as Account;
-            if (account == null)
-                return null;
-
-            if (account.Modes == null)
-                account.Modes = new AccountProfileModes();
-
-            return GetAccountProfileMode(account);
-        }
-
-        public AccountProfileCharacter GetPmcProfile(string sessionId)
-        {
-            var prof = GetProfiles()[sessionId];
-            if (prof == null)
-                return null;
-
-            var characters = GetAccountProfileMode(sessionId)?.Characters;
+            var characters = GetAccountProfileMode(account)?.Characters;
             if (characters == null)
                 return null;
 
@@ -225,9 +212,9 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return pmcObject;
         }
 
-        public Dictionary<MongoID, Profile.TraderInfo> GetPmcProfileTradersInfo(string sessionId)
+        public Dictionary<MongoID, Profile.TraderInfo> GetPmcProfileTradersInfo(Account account)
         {
-            var pmcProfile = GetPmcProfile(sessionId);
+            var pmcProfile = GetPmcProfile(account);
             if (pmcProfile == null) return null;
 
             var objTradersInfo = pmcProfile.GetProfile().TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
@@ -235,9 +222,9 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return objTradersInfo;
         }
 
-        public AccountProfileCharacter GetScavProfile(string sessionId)
+        public AccountProfileCharacter GetScavProfile(Account account)
         {
-            var characters = GetAccountProfileMode(sessionId)?.Characters;
+            var characters = GetAccountProfileMode(account)?.Characters;
             if (characters == null)
                 return null;
 

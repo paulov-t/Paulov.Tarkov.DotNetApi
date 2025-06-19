@@ -176,12 +176,12 @@ namespace Paulov.TarkovServices
             //}
 
             var saveProvider = new JsonFileSaveProvider();
-            var profile = saveProvider.LoadProfile(profileId);
+            var account = saveProvider.LoadProfile(profileId);
             //var pmcProfile = saveProvider.GetPmcProfile(profileId);
 
-            var pmcProfile = saveProvider.GetAccountProfileMode(profileId).Characters.PMC;
+            var pmcProfile = saveProvider.GetAccountProfileMode(account).Characters.PMC;
             var pmcTradersInfo = pmcProfile.TradersInfo;
-            var tradersInfo = saveProvider.GetPmcProfileTradersInfo(profileId);
+            var tradersInfo = saveProvider.GetPmcProfileTradersInfo(account);
             var myTraderLevel = tradersInfo.ContainsKey(traderId) ? tradersInfo[traderId].LoyaltyLevel : 1;
 
             var resultTraderAssort = new EFT.TraderAssortment();
