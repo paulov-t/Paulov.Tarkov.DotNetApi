@@ -99,13 +99,16 @@ namespace SIT.WebServer
             services.AddSingleton(typeof(IGlobalsService), new GlobalsService(dbProvider));
             services.AddSingleton(typeof(IDatabaseService), (new DatabaseService(builder.Configuration, dbProvider)));
 
+            services.AddSingleton<IInventoryService, InventoryService>();
+            services.AddSingleton<IBotGenerationService, BotGenerationService>();
+            services.AddSingleton<ILocationService, LocationService>();
+            services.AddSingleton<ILootGenerationService, LootGenerationService>();
+
             services
                 .AddSwaggerGen(ConfigureSwaggerGen)
                 .AddDistributedMemoryCache()
                 .AddSession()
-                //.AddSingleton<IGlobalsService, GlobalsService>()
                 .AddSingleton<ISaveProvider, JsonFileSaveProvider>()
-                .AddSingleton<IInventoryService, InventoryService>()
                 .AddKeyedSingleton("fileAssets", (_, _) =>
                 {
                     const string fileAssetArchiveResourceName = "files.zip";
