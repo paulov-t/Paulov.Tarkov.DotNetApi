@@ -32,7 +32,7 @@ namespace Paulov.TarkovServices.Services
 
         public DatabaseService(IConfiguration configuration)
         {
-            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            Configuration = configuration;
             Instance = this;
         }
 
@@ -143,19 +143,22 @@ namespace Paulov.TarkovServices.Services
             if (db == null)
                 return false;
 
-            var languagesEntry = db.Entries.First(x => x.Name == "languages.json");
-            TryLoadDatabaseFile(languagesEntry.FullName, out languages);
+            var languagesJsonPath = Path.Combine("database", "locales", "languages.json");
+            TryLoadDatabaseFile(languagesJsonPath, out languages);
 
             foreach (var language in languages)
             {
-                var localeEntries = db.Entries.Where(x => x.FullName.EndsWith(".json") && x.FullName.StartsWith("database/locales"));
-                localeEntries = localeEntries.Where(x => x.FullName.EndsWith(language.Key + ".json"));
-                foreach (var localeEntry in localeEntries)
+                var key = language.Key;
+                try
                 {
-                    if (localeEntry.FullName.Contains("global"))
-                        localesDict.Add("global_" + language.Key, JObject.Parse(GetJsonDocument(localeEntry.FullName).RootElement.GetRawText()));
-                    else if (localeEntry.FullName.Contains("menu"))
-                        localesDict.Add("menu_" + language.Key, JObject.Parse(GetJsonDocument(localeEntry.FullName).RootElement.GetRawText()));
+                    var menuPath = Path.Combine("database", "locales", "menu", $"{key}.json");
+                    localesDict.Add("menu_" + language.Key, JObject.Parse(GetJsonDocument(menuPath).RootElement.GetRawText()));
+                    var globalPath = Path.Combine("database", "locales", "global", $"{key}.json");
+                    localesDict.Add("global_" + language.Key, JObject.Parse(GetJsonDocument(globalPath).RootElement.GetRawText()));
+                }
+                catch
+                {
+
                 }
             }
 
@@ -167,7 +170,6 @@ namespace Paulov.TarkovServices.Services
         {
             globalEn = null;
             var localesPath = Path.Combine("database", "locales", "global", "en.json");
-            //globalEn = File.ReadAllText(Path.Combine(localesPath, "global", "en.json"));
             globalEn = GetJsonDocument(localesPath).RootElement.GetRawText();
             return true;
         }
@@ -180,8 +182,8 @@ namespace Paulov.TarkovServices.Services
             if (db == null)
                 return false;
 
-            var languagesEntry = db.Entries.First(x => x.Name == "languages.json");
-            return TryLoadDatabaseFile(languagesEntry.FullName, out languages);
+            var languagesJsonPath = Path.Combine("database", "locales", "languages.json");
+            return TryLoadDatabaseFile(languagesJsonPath, out languages);
         }
 
         public static string ConvertPath(in string databaseFilePath)
