@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        lfs: true
+        # lfs: true
         submodules: true
         fetch-depth: 0
     - name: Setup .NET
