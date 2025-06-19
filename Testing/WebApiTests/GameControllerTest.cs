@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Controllers;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Services;
 
 namespace WebApiTests
 {
@@ -15,6 +16,7 @@ namespace WebApiTests
 
         public GameControllerTest()
         {
+            new DatabaseService(null);
             saveProvider = new NullSaveProvider();
             configuration = new ConfigurationBuilder().Build();
             controller = new GameController(saveProvider, configuration);
