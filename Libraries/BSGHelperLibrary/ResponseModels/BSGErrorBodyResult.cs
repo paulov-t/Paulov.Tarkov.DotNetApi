@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace BSGHelperLibrary.ResponseModels
@@ -63,6 +64,10 @@ namespace BSGHelperLibrary.ResponseModels
             ArgumentNullException.ThrowIfNull(context);
 
             var responseText = "{ \"err\": " + ErrorCode + ", \"errmsg\": \"" + ErrorMessage + "\", \"data\": null }";
+
+#if DEBUG
+            Debug.WriteLine($"{ErrorCode}:{ErrorMessage}");
+#endif
 
             return HttpBodyConverters.CompressStringIntoResponseBody(responseText, context.HttpContext.Request, context.HttpContext.Response);
         }
