@@ -6,7 +6,6 @@ using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Diagnostics;
-using System.IO.Compression;
 using System.Net.WebSockets;
 using System.Reflection;
 
@@ -109,11 +108,13 @@ namespace SIT.WebServer
                 .AddDistributedMemoryCache()
                 .AddSession()
                 .AddSingleton<ISaveProvider, JsonFileSaveProvider>()
+                .AddSingleton<IInventoryService, InventoryService>();
                 .AddKeyedSingleton("fileAssets", (_, _) =>
                 {
                     const string fileAssetArchiveResourceName = "files.zip";
                     Stream resourceStream = FMT.FileTools.EmbeddedResourceHelper.GetEmbeddedResourceByName(fileAssetArchiveResourceName);
                     return new ZipArchive(resourceStream);
+                });
                 });
 
 
