@@ -389,6 +389,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             //queueData.ProfileChanges = new();
             //queueData.InventoryWarnings = Array.Empty<TradingBackend.InventoryWarning>();
 
+            JObject resultData = new JObject();
+
+            var profileChanges = new Dictionary<string, JObject>();
+
+            resultData["ProfileChanges"] = JToken.FromObject(profileChanges);
+            resultData["InventoryWarnings"] = new JArray();
+
             ////try
             ////{
             ////    var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
@@ -397,19 +404,19 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             //var pmcProfile = saveProvider.GetPmcProfile(SessionId);
 
 
-            //if (!queueData.ProfileChanges.ContainsKey(SessionId))
-            //    queueData.ProfileChanges.Add(SessionId, new Changes()
-            //    {
-            //        Experience = 0,
-            //        HideoutAreaStashes = new Dictionary<EFT.EAreaType, EFT.HideoutAreaStashInfo>(),
-            //        //Production = new Dictionary<string, EFT.Hideout.ProductionData>(),
-            //        Quests = Array.Empty<RawQuestClass>(),
-            //        RagFairOffers = new EFT.UI.Ragfair.Offer[0],
-            //        RepeatableQuests = Array.Empty<DailyQuestClass>(),
-            //        Stash = new StashChanges() { change = new FlatItem[0], del = new FlatItem[0], @new = new FlatItem[0] },
-            //        TradersData = new Dictionary<string, EFT.TraderData>(),
-            //        UnlockedRecipes = new Dictionary<string, bool>()
-            //    });
+            profileChanges.Add(SessionId, JObject.FromObject(
+            new
+            {
+                Experience = 0,
+                HideoutAreaStashes = new Dictionary<EFT.EAreaType, EFT.HideoutAreaStashInfo>(),
+                //Production = new Dictionary<string, EFT.Hideout.ProductionData>(),
+                Quests = Array.Empty<RawQuestClass>(),
+                RagFairOffers = new EFT.UI.Ragfair.Offer[0],
+                RepeatableQuests = Array.Empty<DailyQuestClass>(),
+                Stash = new { change = Array.Empty<object>(), del = Array.Empty<object>(), @new = Array.Empty<object>() },
+                TradersData = new Dictionary<string, EFT.TraderData>(),
+                UnlockedRecipes = new Dictionary<string, bool>()
+            }));
 
 
 
@@ -519,7 +526,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             ////var queueDataJson = JsonConvert.SerializeObject(queueData);
             ////await HttpBodyConverters.CompressIntoResponseBodyBSG(queueDataJson, Request, Response);
-            return new BSGSuccessBodyResult(null);
+            //return new BSGSuccessBodyResult(null);
+
+            resultData["ProfileChanges"] = JToken.FromObject(profileChanges);
+
+            return new BSGSuccessBodyResult(resultData);
         }
 
         //private void DoItemsMovingAction_Move(QueueData queueData, JToken actionData)
