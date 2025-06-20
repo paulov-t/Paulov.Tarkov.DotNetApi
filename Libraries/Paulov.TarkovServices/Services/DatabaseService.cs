@@ -212,7 +212,7 @@ namespace Paulov.TarkovServices.Services
         {
             var filePath = ConvertPath(databaseFilePath);
 
-            using var ms = new MemoryStream();
+            var ms = new MemoryStream();
 
             var databaseProvider = GetDatabaseProvider();
 
@@ -220,8 +220,10 @@ namespace Paulov.TarkovServices.Services
             var entry = databaseProvider.Entries.FirstOrDefault(x => x.FullName == filePath);
             if (entry != null)
             {
-                using var stream = entry.Open();
+                var stream = entry.Open();
                 stream.CopyTo(ms);
+                stream.Dispose();
+                stream = null;
             }
             // If the databaseprovider doesn't support entries, then attempt to get directly
             else
@@ -235,6 +237,10 @@ namespace Paulov.TarkovServices.Services
             }
 
             var jsonDocument = JsonDocument.Parse(new ReadOnlyMemory<byte>(ms.ToArray()));
+            ms.Dispose();
+            ms = null;
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
             return jsonDocument;
         }
 

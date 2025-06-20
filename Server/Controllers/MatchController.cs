@@ -21,12 +21,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private JsonFileSaveProvider _saveProvider;
         private IInventoryService _inventoryService;
         private IGlobalsService _globalsService;
+        private ILootGenerationService _lootGenerationService;
 
-        public MatchController(ISaveProvider saveProvider, IInventoryService inventoryService, IGlobalsService globalsService)
+        public MatchController(ISaveProvider saveProvider, IInventoryService inventoryService, IGlobalsService globalsService, ILootGenerationService lootGenerationService)
         {
             _saveProvider = saveProvider as JsonFileSaveProvider;
             _inventoryService = inventoryService;
             _globalsService = globalsService;
+            _lootGenerationService = lootGenerationService ?? throw new ArgumentNullException(nameof(lootGenerationService));
         }
 
 
@@ -76,7 +78,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
 
             // Generate the loot for the Location
-            location["Loot"] = JToken.FromObject(Array.Empty<string>());
+            location["Loot"] = _lootGenerationService.GenerateLootForLocation(location as JObject);
 
 #if DEBUG
             // Paulov: I have left this here just as a reference
@@ -103,10 +105,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             //}
             //);
 
-            //GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
 
             //var r = new BSGSuccessBodyResult(JsonConvert.SerializeObject(locationLocalSettings, Formatting.Indented, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore }));
             var r = new BSGSuccessBodyResult(JsonConvert.SerializeObject(locationSettings, Formatting.Indented, new JsonSerializerSettings() { ReferenceLoopHandling = ReferenceLoopHandling.Ignore }));
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
             return r;
         }
 

@@ -56,19 +56,22 @@ namespace Paulov.TarkovServices.Services
                 }
             }
 
-            //foreach (var mapBase in locationsJObjectByLocationMongoId.Values())
-            //{
-            //    var bossSpawns = ((JArray)mapBase["BossLocationSpawn"]);
-            //    if (bossSpawns.Count == 0)
-            //        continue;
+            foreach (var mapBase in locationsJObjectByLocationMongoId.Values())
+            {
+                var bossSpawns = ((JArray)mapBase["BossLocationSpawn"]);
+                if (bossSpawns.Count == 0)
+                    continue;
 
-            //    var cloneBossSpawn1 = bossSpawns[0];
-            //    cloneBossSpawn1["BossName"] = "pmcUSEC";
-            //    cloneBossSpawn1["BossChance"] = 999999;
-            //    cloneBossSpawn1["Time"] = 1;
-            //    bossSpawns.Add(cloneBossSpawn1);
+                foreach (var bossSpawn in bossSpawns)
+                {
+                    if (bossSpawn["BossName"]?.ToString() != "pmcUSEC")
+                        continue;
 
-            //}
+                    bossSpawn["BossChance"] = 100;
+                    bossSpawn["Time"] = -1;
+                }
+
+            }
 
             if (!DatabaseService.TryLoadLocationPaths(out var paths))
             {
