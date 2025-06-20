@@ -36,7 +36,6 @@
 
 	<ItemGroup>
 	  <EmbeddedResource Include="data\zombies.json" />
-	  <EmbeddedResource Include="files\files.zip" />
 	</ItemGroup>
 
 	<ItemGroup>
