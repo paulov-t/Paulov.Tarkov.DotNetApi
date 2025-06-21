@@ -5,7 +5,7 @@
 # AZURE_CRENDITIALS = Generated from a PowerShell script for azure/login@v1. See https://github.com/Azure/login?tab=readme-ov-file#login-with-openid-connect-oidc-recommended for more details
 # PUBLISH_PROFILE = Generated from Azure Portal Azure Web App overview page
 
-name: Deploy to Azure (Dev-Test)
+name: Deploy to Azure
 
 on:
   push:
@@ -14,7 +14,13 @@ on:
     paths-ignore:
       - '**/README.md'
       - '**/CI.yml'
+      
   workflow_dispatch:
+    inputs:
+      azurewebappname:
+        description: 'The Azure Web App Resource Name'
+        required: true
+        default: 'paulovtarkovdotnetapi-linux-dev'
 
 permissions:
   id-token: write
