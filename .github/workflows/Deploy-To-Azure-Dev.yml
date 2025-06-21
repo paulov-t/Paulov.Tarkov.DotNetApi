@@ -1,7 +1,11 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# This action is designed to deploy this repository to an Azure Web App running Linux
+# The following conditions need to be met before this action can function
+# 1. You must have created an Azure Web App running Linux on DOTNET 8 using the AZURE PORTAL
+# 2. You must have the following SECRETS in the repository SETTINGS:
+# AZURE_CRENDITIALS = Generated from a PowerShell script for azure/login@v1. See https://github.com/Azure/login?tab=readme-ov-file#login-with-openid-connect-oidc-recommended for more details
+# PUBLISH_PROFILE = Generated from Azure Portal Azure Web App overview page
 
-name: Deploy paulovtarkovdotnetapi-linux-dev
+name: Deploy to Azure (Dev-Test)
 
 on:
   push:
