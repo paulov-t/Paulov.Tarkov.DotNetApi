@@ -11,6 +11,8 @@ namespace Paulov.TarkovServices.Services
     public class LootGenerationService : ILootGenerationService
     {
         private Random Randomizer = new Random();
+        private ContainerHelpers containerHelpers = new();
+
         public LootGenerationService(IGlobalsService globalsService, IInventoryService inventoryService, IDatabaseService databaseService, IDatabaseProvider databaseProvider)
         {
             _globalsService = globalsService ?? throw new ArgumentNullException(nameof(globalsService));
@@ -138,7 +140,7 @@ namespace Paulov.TarkovServices.Services
                     var itemWidth = int.Parse(templateItem["_props"]["Width"].ToString());
                     var itemHeight = int.Parse(templateItem["_props"]["Height"].ToString());
 
-                    if (new ContainerHelpers().PlaceItemInRandomSpotInContainer(container2d, itemWidth, itemHeight, out Vector2 position, out bool rotation))
+                    if (containerHelpers.PlaceItemInContainer(container2d, itemWidth, itemHeight, out Vector2 position, out bool rotation))
                     {
                         JObject resultItem = new JObject();
                         resultItem["__DEBUG_Name"] = templateItem["_name"];
