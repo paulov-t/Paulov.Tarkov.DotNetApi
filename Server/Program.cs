@@ -8,6 +8,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Reflection;
+using Paulov.TarkovServices.Models;
 
 namespace SIT.WebServer
 {
@@ -104,8 +105,8 @@ namespace SIT.WebServer
                 .AddSession()
                 //.AddSingleton<IGlobalsService, GlobalsService>()
                 .AddSingleton<ISaveProvider, JsonFileSaveProvider>()
-                .AddSingleton<IInventoryService, InventoryService>();
-
+                .AddSingleton<IInventoryService, InventoryService>()
+                .AddSingleton<IPasswordService, PasswordService>();
 
 
 
