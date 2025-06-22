@@ -6,16 +6,12 @@ namespace Paulov.TarkovServices.Services;
 
 public class PasswordService : IDisposable, IPasswordService
 {
-    private const int Pbkdf2_Iterations = 2 ^ 15;
+    private const int Pbkdf2_Iterations = 2 ^ 18;
     private const int Pbkdf2_OutputBlockSize = 64;
     //TODO: Make this configurable from the app configuration
     private static readonly HashAlgorithmName Pbkdf2_HashAlgorithm = HashAlgorithmName.SHA512;
     
-    private readonly RandomNumberGenerator _secureRNG = RandomNumberGenerator.Create(); 
-    public PasswordService()
-    {
-        
-    }
+    private readonly RandomNumberGenerator _secureRNG = RandomNumberGenerator.Create();
 
     public void GenerateSalt(Span<byte> buffer)
     {
