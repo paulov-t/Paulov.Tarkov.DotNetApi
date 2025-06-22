@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
-using Paulov.TarkovServices.Services;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -38,7 +38,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> TraderSettings(int? retry)
         {
-            DatabaseService.TryLoadTraders(out JObject traders);
+            DatabaseHelpers.TryLoadTraders(out JObject traders);
 
             JArray arrayResponse = new JArray();
             foreach (var key in traders)

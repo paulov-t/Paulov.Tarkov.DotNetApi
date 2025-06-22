@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Services.Interfaces;
 
 namespace Paulov.TarkovServices.Services
@@ -26,7 +27,7 @@ namespace Paulov.TarkovServices.Services
 
         public JObject LoadLocations()
         {
-            if (!DatabaseService.TryLoadLocationBases(out var locationsJObjectByLocationMongoId))
+            if (!DatabaseHelpers.TryLoadLocationBases(out var locationsJObjectByLocationMongoId))
             {
                 return null;
             }
@@ -73,7 +74,7 @@ namespace Paulov.TarkovServices.Services
 
             }
 
-            if (!DatabaseService.TryLoadLocationPaths(out var paths))
+            if (!DatabaseHelpers.TryLoadLocationPaths(out var paths))
             {
                 return null;
             }

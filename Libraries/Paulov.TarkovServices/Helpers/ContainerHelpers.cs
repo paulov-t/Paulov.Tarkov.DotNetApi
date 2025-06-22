@@ -42,6 +42,15 @@ namespace Paulov.TarkovServices.Helpers
 
         }
 
+        /// <summary>
+        /// TODO: This is a more complex placement algorithm that checks if the item can fit in the container, either horizontally or vertically.
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="itemWidth"></param>
+        /// <param name="itemHeight"></param>
+        /// <param name="position"></param>
+        /// <param name="rotation"></param>
+        /// <returns></returns>
         public bool PlaceItemInContainer(bool[,] container, int itemWidth, int itemHeight, out Vector2 position, out bool rotation)
         {
             rotation = false;

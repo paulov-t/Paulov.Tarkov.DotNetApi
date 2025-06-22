@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
@@ -132,13 +133,13 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
             _globalsService.LoadGlobalsIntoComfortSingleton();
 
-            if (!DatabaseService.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
+            if (!DatabaseHelpers.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
             {
                 Response.StatusCode = 500;
                 return new BSGErrorBodyResult(500, "");
             }
 
-            if (!DatabaseService.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            if (!DatabaseHelpers.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
             {
                 Response.StatusCode = 500;
                 return new BSGErrorBodyResult(500, "");

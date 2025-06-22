@@ -1,9 +1,9 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
-using Paulov.TarkovServices.Services;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -19,7 +19,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult AchievementStat(int? retry, bool? debug)
         {
-            DatabaseService.TryLoadDatabaseFile("templates/achievements.json", out JArray dbFile);
+            DatabaseHelpers.TryLoadDatabaseFile("templates/achievements.json", out JArray dbFile);
 
             JObject dbObject = new JObject();
             dbObject.Add("elements", new JObject());
@@ -30,7 +30,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult AchievementList(int? retry, bool? debug)
         {
-            DatabaseService.TryLoadDatabaseFile("templates/achievements.json", out JArray dbFile);
+            DatabaseHelpers.TryLoadDatabaseFile("templates/achievements.json", out JArray dbFile);
 
             JObject dbObject = new JObject();
             dbObject.Add("elements", dbFile);

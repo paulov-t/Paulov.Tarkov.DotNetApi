@@ -3,6 +3,7 @@ using EFT;
 using EFT.InventoryLogic;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
@@ -97,7 +98,7 @@ namespace Paulov.TarkovServices.Services
 
         public List<AccountProfileCharacter> GenerateBots(List<WaveInfoClass> conditions)
         {
-            DatabaseService.TryLoadTemplateFile("items.json", out _templates);
+            DatabaseHelpers.TryLoadTemplateFile("items.json", out _templates);
 
             List<AccountProfileCharacter> bots = new List<AccountProfileCharacter>();
 
@@ -129,7 +130,7 @@ namespace Paulov.TarkovServices.Services
         public AccountProfileCharacter GenerateBot(WaveInfoClass condition)
         {
             if (_templates == null)
-                DatabaseService.TryLoadTemplateFile("items.json", out _templates);
+                DatabaseHelpers.TryLoadTemplateFile("items.json", out _templates);
 
             if (condition.Role == WildSpawnType.gifter)
                 condition.Role = WildSpawnType.assault;
@@ -150,7 +151,7 @@ namespace Paulov.TarkovServices.Services
 
             // Load the bot database data role (roles are stored in lowercase)
             var lowerRole = condition.Role.ToString().ToLower();
-            DatabaseService.TryLoadDatabaseFile($"bots/types/{lowerRole}.json", out JObject botDatabaseData);
+            DatabaseHelpers.TryLoadDatabaseFile($"bots/types/{lowerRole}.json", out JObject botDatabaseData);
             if (botDatabaseData == null)
                 return bot;
 
@@ -339,7 +340,7 @@ namespace Paulov.TarkovServices.Services
             {
                 // TODO: This needs refactoring in to individual methods
 
-                DatabaseService.TryLoadGlobals(out var globals);
+                DatabaseHelpers.TryLoadGlobals(out var globals);
                 var itemPresets = ((JObject)globals["ItemPresets"]);
 
                 // Assign the weaponItem so we know what ammo to generate for it later on
@@ -385,7 +386,7 @@ namespace Paulov.TarkovServices.Services
                 }
 
                 // Get an ammo type for the weapon and add the ammo to the inventory
-                var weaponTemplate = DatabaseService.GetTemplateItemById(_templates, weaponItem._tpl);
+                var weaponTemplate = DatabaseHelpers.GetTemplateItemById(_templates, weaponItem._tpl);
                 var newItems = CreateMagazineWithAmmoForWeapon(weaponItem, allAddedItems.Find(x => x.slotId == "mod_magazine"));
                 foreach (var item in newItems)
                     InventoryService.AddItemToInventory(bot, item);
@@ -404,7 +405,7 @@ namespace Paulov.TarkovServices.Services
         {
             List<FlatItem> resultItems = new List<FlatItem>();
 
-            var weaponTemplate = DatabaseService.GetTemplateItemById(_templates, weaponItem._tpl);
+            var weaponTemplate = DatabaseHelpers.GetTemplateItemById(_templates, weaponItem._tpl);
             var weaponTemplateProps = weaponTemplate["_props"];
 
             if (magazine == null)
@@ -414,7 +415,7 @@ namespace Paulov.TarkovServices.Services
             if (string.IsNullOrEmpty(ammoCaliber))
                 return resultItems;
 
-            var templatesArray = DatabaseService.GetTemplateItemsAsArray(_templates);
+            var templatesArray = DatabaseHelpers.GetTemplateItemsAsArray(_templates);
             var ammos = templatesArray
                 .Where(x => x["_props"]?["ammoType"]?.ToString() == "bullet" && x["_props"]?["Caliber"]?.ToString() == ammoCaliber && float.Parse(x["_props"]?["Damage"]?.ToString()) > 0)
                 .OrderBy(x => float.Parse(x["_props"]?["Damage"]?.ToString())).ToList();
@@ -423,7 +424,7 @@ namespace Paulov.TarkovServices.Services
             if (ammos.Count == 0)
                 return resultItems;
 
-            var magazineTemplate = DatabaseService.GetTemplateItemById(_templates, magazine._tpl);
+            var magazineTemplate = DatabaseHelpers.GetTemplateItemById(_templates, magazine._tpl);
             if (magazineTemplate == null)
                 return resultItems;
 

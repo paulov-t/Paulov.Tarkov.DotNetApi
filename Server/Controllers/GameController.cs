@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
@@ -123,7 +124,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         public async Task<IActionResult> TemplateItems(int? count, int? page)
         {
 
-            if (DatabaseService.TryLoadItemTemplates(out var items, count, page))
+            if (DatabaseHelpers.TryLoadItemTemplates(out var items, count, page))
             {
                 //var dict = items.ParseJsonTo<GClass1372>();
                 //var dict = JsonConvert.DeserializeObject<GClass1372>(items, new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters, ReferenceLoopHandling = ReferenceLoopHandling.Ignore,   });
@@ -166,7 +167,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult Settings(int? retry, bool? debug)
         {
-            DatabaseService.TryLoadDatabaseFile("settings.json", out JObject items);
+            DatabaseHelpers.TryLoadDatabaseFile("settings.json", out JObject items);
 
             var rawText = items.ToJson();
             return new BSGSuccessBodyResult(rawText);
@@ -187,7 +188,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult AccountCustomization(int? retry, bool? debug)
         {
-            DatabaseService.TryLoadDatabaseFile("templates/character.json", out string items);
+            DatabaseHelpers.TryLoadDatabaseFile("templates/character.json", out string items);
 
             return new BSGSuccessBodyResult(items);
         }
@@ -243,7 +244,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> HandbookTemplates(int? retry, bool? debug)
         {
-            DatabaseService.TryLoadTemplateFile("handbook.json", out var templates);
+            DatabaseHelpers.TryLoadTemplateFile("handbook.json", out var templates);
 
             return new BSGSuccessBodyResult(templates);
 

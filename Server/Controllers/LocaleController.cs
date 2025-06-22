@@ -2,9 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
-using Paulov.TarkovServices.Services;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -20,7 +20,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async void MenuLocale([FromRoute] string language)
         {
-            DatabaseService.TryLoadLocales(out var locales, out var localesDict, out var languages);
+            DatabaseHelpers.TryLoadLocales(out var locales, out var localesDict, out var languages);
 
             await HttpBodyConverters.CompressIntoResponseBodyBSG(localesDict.GetValue("menu_en").ToObject<JObject>()
                 , Request, Response);
@@ -34,7 +34,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> Languages()
         {
-            DatabaseService.TryLoadLanguages(out var languages);
+            DatabaseHelpers.TryLoadLanguages(out var languages);
             return new BSGSuccessBodyResult(languages);
         }
 
@@ -42,7 +42,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> Locale([FromRoute] string language)
         {
-            DatabaseService.TryLoadLocaleGlobalEn(out string globalEn);
+            DatabaseHelpers.TryLoadLocaleGlobalEn(out string globalEn);
 
             return new BSGSuccessBodyResult(globalEn);
         }

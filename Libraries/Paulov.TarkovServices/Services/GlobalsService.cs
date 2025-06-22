@@ -1,5 +1,6 @@
 ﻿using Comfort.Common;
 using Newtonsoft.Json.Linq;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
 
@@ -21,7 +22,7 @@ namespace Paulov.TarkovServices.Services
         public JObject LoadGlobals()
         {
             // TODO: Detect which Globals to load (EFT or Arena)
-            if (DatabaseService.TryLoadDatabaseFile("globals.json", out JObject items))
+            if (DatabaseHelpers.TryLoadDatabaseFile("globals.json", out JObject items))
             {
                 if (!items.ContainsKey("LocationInfection"))
                     items.Add("LocationInfection", new JObject() { });

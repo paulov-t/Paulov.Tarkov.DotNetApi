@@ -8,6 +8,7 @@ using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
 using Paulov.TarkovModels.Responses;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
@@ -62,7 +63,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "expected location in request body");
 
             // Load all Location Bases
-            DatabaseService.TryLoadLocationBases(out JObject locationsJO);
+            DatabaseHelpers.TryLoadLocationBases(out JObject locationsJO);
 
             // Match Location Base to requested location by Location Id
             // Todo: This needs refining
@@ -92,7 +93,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             locationSettings.Add("locationLoot", location);
             //locationSettings.Add("profile", new JObject() { { "insuredItems", new JArray() } });
             locationSettings.Add("profile", new JObject() { });
-            DatabaseService.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
+            DatabaseHelpers.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
             locationSettings.Add("serverSettings", serverSettings);
             //locationSettings.Add("transitionType", "None");
             locationSettings.Add("transition", new JObject() { });
@@ -261,7 +262,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> GetMetricsConfig()
         {
-            DatabaseService.TryLoadDatabaseFile("match/metrics.json", out JObject dbFile);
+            DatabaseHelpers.TryLoadDatabaseFile("match/metrics.json", out JObject dbFile);
             return new BSGSuccessBodyResult(dbFile);
         }
 

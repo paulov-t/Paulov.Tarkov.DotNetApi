@@ -38,17 +38,17 @@ namespace Paulov.TarkovServices.Services
 
             JArray lootItems = new JArray();
 
-            DatabaseService.TryLoadItemTemplates(out string templates);
+            DatabaseHelpers.TryLoadItemTemplates(out string templates);
             JObject itemTemplates = JObject.Parse(templates);
 
             var locationLootChanceModifierFromFile = float.Parse(location["GlobalLootChanceModifier"].ToString());
             var locationIdLower = location["Id"].ToString().ToLower();
 
-            var looseLootDocument = DatabaseService.GetJsonDocument($"database/locations/{locationIdLower}/looseLoot.json");
-            var staticAmmoDocument = DatabaseService.GetJsonDocument($"database/locations/{locationIdLower}/staticAmmo.json");
-            var staticContainersDocument = DatabaseService.GetJsonDocument($"database/locations/{locationIdLower}/staticContainers.json");
-            var staticLootDocument = DatabaseService.GetJsonDocument($"database/locations/{locationIdLower}/staticLoot.json");
-            var staticsDocument = DatabaseService.GetJsonDocument($"database/locations/{locationIdLower}/statics.json");
+            var looseLootDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/looseLoot.json");
+            var staticAmmoDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticAmmo.json");
+            var staticContainersDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticContainers.json");
+            var staticLootDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticLoot.json");
+            var staticsDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/statics.json");
 
 
             foreach (var r in staticContainersDocument.RootElement.EnumerateObject())
