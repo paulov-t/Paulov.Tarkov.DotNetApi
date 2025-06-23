@@ -5,6 +5,7 @@ using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 using System.Numerics;
+using System.Text.Json;
 
 namespace Paulov.TarkovServices.Services
 {
@@ -45,12 +46,109 @@ namespace Paulov.TarkovServices.Services
             var locationIdLower = location["Id"].ToString().ToLower();
 
             var looseLootDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/looseLoot.json");
+            ParseLootLootDocument(location, lootItems, itemTemplates, locationLootChanceModifierFromFile, looseLootDocument);
             var staticAmmoDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticAmmo.json");
             var staticContainersDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticContainers.json");
             var staticLootDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticLoot.json");
             var staticsDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/statics.json");
+            ParseStaticsDocument(location, lootItems, itemTemplates, locationLootChanceModifierFromFile, staticContainersDocument, staticLootDocument);
 
+            return JArray.FromObject(lootItems);
+        }
 
+        private void ParseLootLootDocument(JObject location, JArray lootItems, JObject itemTemplates, float locationLootChanceModifierFromFile, JsonDocument looseLootDocument)
+        {
+            var spawnsArray = new JArray();
+            foreach (var r in looseLootDocument.RootElement.EnumerateObject())
+            {
+                switch (r.Name)
+                {
+                    // usually quest items are forced into the loot pool
+                    case "spawnpointsForced":
+                        foreach (var forced in JArray.Parse(r.Value.ToString()))
+                            spawnsArray.Add(forced);
+                        break;
+                    // this is the dynamic spawn system. determine the spawn by running against the probability provided by BSG.
+                    case "spawnpoints":
+                        foreach (var spawn in JArray.Parse(r.Value.ToString()))
+                        {
+                            if (Random.Shared.NextDouble() < double.Parse(spawn["probability"].ToString()))
+                                spawnsArray.Add(spawn);
+                        }
+                        break;
+                }
+            }
+
+            // Determine the item and create the item into the loot pool
+            foreach (var spawn in spawnsArray)
+            {
+                var spawnTemplate = spawn["template"];
+#if DEBUG
+                var debug_spawnTemplateJson_before = spawnTemplate.ToString();
+#endif
+                var newRootId = MongoID.Generate(false).ToString();
+                var oldRootId = spawnTemplate["Root"].ToString();
+                spawnTemplate["Root"] = newRootId.ToString();
+
+                ((JArray)spawnTemplate["Items"])[0]["_id"] = newRootId;
+                List<(string oldId, string newId)> changedId = new();
+                foreach (var item in ((JArray)spawnTemplate["Items"]))
+                {
+                    if (item["_id"].ToString() == oldRootId)
+                    {
+                        item["_id"] = newRootId;
+                    }
+
+                    if (item["parentId"] != null && item["parentId"].ToString() == oldRootId)
+                    {
+                        changedId.Add((item["parentId"].ToString(), newRootId));
+                        item["parentId"] = newRootId;
+                    }
+
+                    if (item["_id"].ToString().Length < MongoID.Generate(false).ToString().Length)
+                    {
+                        var newId = MongoID.Generate(false).ToString();
+                        changedId.Add((item["_id"].ToString(), newId));
+                        item["_id"] = newId;
+                    }
+
+                    if (item["parentId"] != null && item["parentId"].ToString().Length < MongoID.Generate(false).ToString().Length)
+                    {
+                        var newId = MongoID.Generate(false).ToString();
+                        changedId.Add((item["parentId"].ToString(), newId));
+                        item["parentId"] = newId;
+                    }
+
+                }
+
+                foreach (var item in ((JArray)spawnTemplate["Items"]))
+                {
+                    if (item["parentId"] != null && changedId.Any(x => x.oldId == item["parentId"].ToString()))
+                        item["parentId"] = changedId.First(x => x.oldId == item["parentId"].ToString()).newId;
+                }
+
+#if DEBUG
+                var debug_spawnTemplateJson_after = spawnTemplate.ToString();
+#endif
+
+                // Checks
+                foreach (var item in ((JArray)spawnTemplate["Items"]))
+                {
+                    // parentId
+                    if (item["_id"] != null && item["_id"].ToString().Length < MongoID.Generate(false).ToString().Length)
+                        throw new Exception($"_id {item["_id"]} is not a MongoID");
+
+                    // parentId
+                    if (item["parentId"] != null && item["parentId"].ToString().Length < MongoID.Generate(false).ToString().Length)
+                        throw new Exception($"parentId {item["parentId"]} is not a MongoID");
+                }
+
+                lootItems.Add(spawnTemplate);
+            }
+        }
+
+        private void ParseStaticsDocument(JObject location, JArray lootItems, JObject itemTemplates, float locationLootChanceModifierFromFile, System.Text.Json.JsonDocument staticContainersDocument, System.Text.Json.JsonDocument staticLootDocument)
+        {
             foreach (var r in staticContainersDocument.RootElement.EnumerateObject())
             {
                 switch (r.Name)
@@ -78,8 +176,6 @@ namespace Paulov.TarkovServices.Services
                         break;
                 }
             }
-
-            return JArray.FromObject(lootItems);
         }
 
         private JArray GenerateContainerLoot(JToken containerData, JToken staticLootForContainer, float locationLootChanceModifierFromFile, string locationName, JObject templateItemList)
@@ -117,7 +213,8 @@ namespace Paulov.TarkovServices.Services
             JArray lootItems = new JArray();
 
             var itemCountDistList = staticLootForContainer["itemcountDistribution"] as JArray;
-            var itemCount = Math.Max(1, itemCountDistList[this.Randomizer.Next(0, itemCountDistList.Count - 1)].Count());
+            var itemCount = Math.Max(0, int.Parse(itemCountDistList[this.Randomizer.Next(0, itemCountDistList.Count - 1)]["count"].ToString()));
+
             var itemDistList = staticLootForContainer["itemDistribution"] as JArray;
 
             var orderedDistList = itemDistList
@@ -133,7 +230,9 @@ namespace Paulov.TarkovServices.Services
                 var item = orderedDistList[i];
                 var itemRelativeProbability = int.Parse(orderedDistList[0]["relativeProbability"].ToString());
                 var calculatedProbability = Randomizer.Next((int)Math.Round(itemRelativeProbability * 0.9), (int)Math.Round(itemRelativeProbability * 1.5));
-                // TODO: Calculate by rarity
+
+                // TODO: Add calculation by rarity multiplier
+
                 if (calculatedProbability < maxProbability)
                 {
                     var templateItem = templateItemList[item["tpl"].ToString()];
