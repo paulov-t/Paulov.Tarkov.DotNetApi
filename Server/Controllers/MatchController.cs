@@ -279,5 +279,21 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             return new BSGSuccessBodyResult(new { });
         }
+
+        [Route("client/localGame/weather")]
+        [HttpPost]
+        public async Task<IActionResult> LocalGameWeather()
+        {
+            var response = new
+            {
+                season = ESeason.Summer,
+                weather = new WeatherClass[]
+                {
+                    WeatherClass.CreateDefault()
+                }
+            };
+
+            return new BSGSuccessBodyResult(response.ToJson(DatabaseHelpers.CachedSerializer.Converters.ToArray()));
+        }
     }
 }
