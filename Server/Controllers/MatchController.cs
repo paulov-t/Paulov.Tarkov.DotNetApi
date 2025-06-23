@@ -72,10 +72,17 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             foreach (var locationJO in locationsJO)
             {
                 var l = locationJO.Value;
-                if (locationStringLower.Contains(l["Id"].ToString()))
+                if (locationStringLower.Contains(l["Id"].ToString(), StringComparison.OrdinalIgnoreCase))
                 {
                     location = l;
+                    break;
                 }
+            }
+
+            if (location == null)
+            {
+                Debug.WriteLine($"Location {requestBody["location"]} not found in database.");
+                return new BSGErrorBodyResult(500, $"Location {requestBody["location"]} not found in database.");
             }
 
             // Generate the loot for the Location
