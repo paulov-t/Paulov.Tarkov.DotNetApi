@@ -473,7 +473,7 @@ namespace Paulov.TarkovServices.Services
                 { "Nickname", bot.Info.Nickname },
                 { "Side", bot.Info.Side.ToString() },
                 { "Level", bot.Info.Level },
-                { "Time", DateTime.UtcNow.ToString() },
+                { "Time", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
                 { "Status", "Killed by " },
                 { "KillerAccountId", "Unknown" },
                 { "KillerProfileId", "Unknown" },
