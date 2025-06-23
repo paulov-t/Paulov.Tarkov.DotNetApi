@@ -1,20 +1,25 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
+using Paulov.TarkovServices.Services.Interfaces;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class TradingController : ControllerBase
     {
         private readonly JsonFileSaveProvider _saveProvider;
-        public TradingController(ISaveProvider saveProvider)
+        private readonly IGlobalsService _globalsService;
+
+        public TradingController(ISaveProvider saveProvider, IGlobalsService globalsService)
         {
             _saveProvider = saveProvider as JsonFileSaveProvider;
+            _globalsService = globalsService;
         }
 
         private string SessionId
@@ -73,8 +78,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGSuccessBodyResult(traderAssortment);
             }
 
+            _globalsService.LoadGlobalsIntoComfortSingleton();
             var traderAssortmentForPlayer = tradingProvider.GetTraderAssortmentById(traderId, sessionId);
-            return new BSGSuccessBodyResult(traderAssortmentForPlayer);
+            return new BSGSuccessBodyResult(JsonConvert.SerializeObject(traderAssortmentForPlayer, DatabaseHelpers.CachedSerializer.Converters.ToArray()));
         }
 
         [Route("/client/trading/api/getTraders")]

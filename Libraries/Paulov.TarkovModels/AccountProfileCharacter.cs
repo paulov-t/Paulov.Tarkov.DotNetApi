@@ -11,11 +11,6 @@
         {
         }
 
-        public EFT.Profile GetProfile()
-        {
-            return new EFT.Profile(this);
-        }
-
         public override string ToString()
         {
             if (Info != null)

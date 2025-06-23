@@ -6,6 +6,7 @@ using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using System.Text;
 using System.Text.Json;
+using FlatItem = GClass1354;
 
 namespace Paulov.TarkovServices
 {
@@ -105,24 +106,18 @@ namespace Paulov.TarkovServices
 
         public EFT.TraderAssortment GetTraderAssortmentById(string traderId, string profileId)
         {
+            var baseJsonPath = Path.Combine("traders", traderId, "base.json");
             var assortJsonPath = Path.Combine("traders", traderId, "assort.json");
-            DatabaseHelpers.TryLoadDatabaseFile(assortJsonPath, out JsonDocument assort);
-            if (assort == null)
+            DatabaseHelpers.TryLoadDatabaseFile(baseJsonPath, out JsonDocument baseDocument);
+            DatabaseHelpers.TryLoadDatabaseFile(assortJsonPath, out JsonDocument assortDocument);
+            if (assortDocument == null)
                 return new TraderAssortment();
-            var options = new JsonSerializerOptions()
-            {
-                MaxDepth = 10,
-                AllowTrailingCommas = true
-                ,
-                IgnoreReadOnlyFields = false,
-                IgnoreReadOnlyProperties = false,
-                IncludeFields = true,
-                WriteIndented = false
-                ,
-                UnknownTypeHandling = System.Text.Json.Serialization.JsonUnknownTypeHandling.JsonElement
-            ,
-                UnmappedMemberHandling = System.Text.Json.Serialization.JsonUnmappedMemberHandling.Skip
-            };
+
+#if DEBUG
+            var debugBaseJson = baseDocument.RootElement.GetRawText();
+            var debugAssortJson = assortDocument.RootElement.GetRawText();
+#endif
+
             //var baseAssortmentItems = Array.Empty<FlatItem>();
             //var baseAssortmentLLItems = new Dictionary<string, int>();
             //var baseAssortmentBarter = new Dictionary<string, object>();
@@ -178,7 +173,6 @@ namespace Paulov.TarkovServices
 
             var saveProvider = new JsonFileSaveProvider();
             var account = saveProvider.LoadProfile(profileId);
-            //var pmcProfile = saveProvider.GetPmcProfile(profileId);
 
             var pmcProfile = saveProvider.GetAccountProfileMode(account).Characters.PMC;
             var pmcTradersInfo = pmcProfile.TradersInfo;
@@ -186,6 +180,9 @@ namespace Paulov.TarkovServices
             var myTraderLevel = tradersInfo.ContainsKey(traderId) ? tradersInfo[traderId].LoyaltyLevel : 1;
 
             var resultTraderAssort = new EFT.TraderAssortment();
+            resultTraderAssort.BarterScheme = new();
+            resultTraderAssort.Items = new List<FlatItem>().ToArray();
+            resultTraderAssort.LoyaltyLevelItems = new();
             //List<FlatItem> list = new();
             //foreach (var lli in baseAssortmentLLItems.Where(x => x.Value <= myTraderLevel))
             //{
@@ -196,8 +193,8 @@ namespace Paulov.TarkovServices
 
             //    list.Add(item);
             //}
-            //resultTraderAssort.NextResupply = 1631489718;
-            //resultTraderAssort.ExchangeRate = 1;
+            resultTraderAssort.NextResupply = 1631489718;
+            resultTraderAssort.ExchangeRate = 0;
             //resultTraderAssort.BarterScheme = baseAssortmentBarter.SITToJson().SITParseJson<Dictionary<string, BarterScheme>>();
             //resultTraderAssort.Items = list.ToArray();
             //resultTraderAssort.LoyaltyLevelItems = baseAssortmentLLItems;

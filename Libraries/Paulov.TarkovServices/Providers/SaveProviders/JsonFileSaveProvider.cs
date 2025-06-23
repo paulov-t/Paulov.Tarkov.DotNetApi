@@ -212,12 +212,12 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return pmcObject;
         }
 
-        public Dictionary<MongoID, Profile.TraderInfo> GetPmcProfileTradersInfo(Account account)
+        public Dictionary<MongoID, TraderInfoDescriptor> GetPmcProfileTradersInfo(Account account)
         {
             var pmcProfile = GetPmcProfile(account);
             if (pmcProfile == null) return null;
 
-            var objTradersInfo = pmcProfile.GetProfile().TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
+            var objTradersInfo = pmcProfile.TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
 
             return objTradersInfo;
         }
