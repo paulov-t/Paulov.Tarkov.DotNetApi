@@ -98,6 +98,8 @@ namespace SIT.WebServer
             services.AddSingleton(typeof(IGlobalsService), new GlobalsService(dbProvider));
             services.AddSingleton(typeof(IDatabaseService), (new DatabaseService(builder.Configuration, dbProvider)));
 
+            services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider));
+
             services
                 .AddSwaggerGen(ConfigureSwaggerGen)
                 .AddDistributedMemoryCache()
