@@ -1,8 +1,8 @@
 ﻿using Comfort.Common;
-using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Text;
@@ -57,35 +57,15 @@ namespace Paulov.TarkovServices.Services
                 {
                     new JsonStringEnumConverter(JsonNamingPolicy.CamelCase),
                 }
-                //, TypeInfoResolver = JsonTypeInfoResolver.Default
                 ,
                 AllowTrailingCommas = true
                 ,
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
 
-            var newtonSoftJsonSerializer = new Newtonsoft.Json.JsonSerializer
-            {
-            };
-            var tarkovTypes = typeof(TarkovApplication).Assembly.DefinedTypes;
-            var convertersType = tarkovTypes.FirstOrDefault(x => x.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).Any(p => p.Name == "Converters"));
-            List<Newtonsoft.Json.JsonConverter> converters = new List<Newtonsoft.Json.JsonConverter>();
-            if (convertersType != null)
-            {
-                converters.AddRange((Newtonsoft.Json.JsonConverter[])convertersType.GetField("Converters", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).GetValue(null));
-                // the GClass1669`1 converter is calling an ECall error because its using Unity Loggers...
-                //foreach (var converter in converters.Where(x => x.GetType().Name != "GClass1669`1"))
-                //    CachedSerializer.Converters.Add(converter);
-            }
-            converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-            //converters.Add(new BSGTypeJsonConverter<EFT.Quests.ECompareMethod>());
-            foreach (var converter in converters)
-            {
-                newtonSoftJsonSerializer.Converters.Add(converter);
-            }
+            Newtonsoft.Json.JsonSerializer newtonSoftJsonSerializer = JsonHelpers.GetNewtonsoftJsonSerializer();
 
             var allQuestsKVP = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonDocumentText, options);
-            //var allQuestsRaw = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, QuestDataTemplate>>(jsonDocumentText, converters.ToArray());
             var allQuestsJObject = JObject.Parse(jsonDocumentText);
             _ = allQuestsJObject;
 
@@ -94,7 +74,7 @@ namespace Paulov.TarkovServices.Services
             foreach (var questKVP in allQuestsKVP)
             {
                 var questJson = questKVP.Value.GetRawText();
-                var rawQuest = Newtonsoft.Json.JsonConvert.DeserializeObject<RawQuestClass>(questJson, new JsonSerializerSettings() { Converters = converters });
+                var rawQuest = Newtonsoft.Json.JsonConvert.DeserializeObject<RawQuestClass>(questJson, new JsonSerializerSettings() { Converters = JsonHelpers.GetNewtonsoftJsonSerializerConverters() });
 
                 // Check if the quest is already in the profile's quest data
                 var questInProfile = _saveProvider.GetPmcProfile(account).QuestsData.Find((x) => x != null && x.Id == questKVP.Key);
