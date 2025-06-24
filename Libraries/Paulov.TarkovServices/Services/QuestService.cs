@@ -3,8 +3,6 @@ using EFT;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
-using Paulov.TarkovServices.JsonConverters;
-using Paulov.TarkovServices.Models.QuestModels;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Text;
@@ -80,14 +78,14 @@ namespace Paulov.TarkovServices.Services
                 //    CachedSerializer.Converters.Add(converter);
             }
             converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-            converters.Add(new BSGTypeJsonConverter<EFT.Quests.ECompareMethod>());
+            //converters.Add(new BSGTypeJsonConverter<EFT.Quests.ECompareMethod>());
             foreach (var converter in converters)
             {
                 newtonSoftJsonSerializer.Converters.Add(converter);
             }
 
             var allQuestsKVP = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonDocumentText, options);
-            var allQuestsRaw = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, QuestDataTemplate>>(jsonDocumentText, converters.ToArray());
+            //var allQuestsRaw = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, QuestDataTemplate>>(jsonDocumentText, converters.ToArray());
             var allQuestsJObject = JObject.Parse(jsonDocumentText);
             _ = allQuestsJObject;
 
@@ -96,7 +94,7 @@ namespace Paulov.TarkovServices.Services
             foreach (var questKVP in allQuestsKVP)
             {
                 var questJson = questKVP.Value.GetRawText();
-                var rawQuest = Newtonsoft.Json.JsonConvert.DeserializeObject<QuestDataTemplate>(questJson, new JsonSerializerSettings() { Converters = converters });
+                var rawQuest = Newtonsoft.Json.JsonConvert.DeserializeObject<RawQuestClass>(questJson, new JsonSerializerSettings() { Converters = converters });
 
                 // Check if the quest is already in the profile's quest data
                 var questInProfile = _saveProvider.GetPmcProfile(account).QuestsData.Find((x) => x != null && x.Id == questKVP.Key);
@@ -104,7 +102,7 @@ namespace Paulov.TarkovServices.Services
                     continue;
 
                 // if it has no conditions just add
-                if (rawQuest.Conditions.AvailableForStart.Count == 0)
+                if (rawQuest.Conditions[EFT.Quests.EQuestStatus.AvailableForStart].Count == 0)
                 {
                     var questData = new QuestDataClass
                     {

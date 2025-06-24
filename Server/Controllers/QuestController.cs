@@ -3,7 +3,6 @@ using EFT;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.TarkovServices.JsonConverters;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services.Interfaces;
@@ -62,13 +61,16 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 //    CachedSerializer.Converters.Add(converter);
             }
             converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-            converters.Add(new BSGTypeJsonConverter<EFT.Quests.ECompareMethod>());
             foreach (var converter in converters)
             {
                 newtonSoftJsonSerializer.Converters.Add(converter);
             }
 
+
             var returnString = JsonConvert.SerializeObject(questList, Formatting.Indented, converters.ToArray());
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
             return new BSGSuccessBodyResult(returnString);
         }
     }
