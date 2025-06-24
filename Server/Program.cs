@@ -8,7 +8,6 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Reflection;
-using Paulov.TarkovServices.Models;
 
 namespace SIT.WebServer
 {
@@ -99,7 +98,7 @@ namespace SIT.WebServer
             services.AddSingleton(typeof(IGlobalsService), new GlobalsService(dbProvider));
             services.AddSingleton(typeof(IDatabaseService), (new DatabaseService(builder.Configuration, dbProvider)));
 
-            services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider));
+            services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider, new JsonFileSaveProvider()));
 
             services
                 .AddSwaggerGen(ConfigureSwaggerGen)

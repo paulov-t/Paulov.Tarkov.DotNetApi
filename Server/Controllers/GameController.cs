@@ -81,16 +81,16 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             string ip = Request?.Host.ToString();
             string backendUrl = $"https://{ip}/";
 
-            var sessionId = "";
+            var sessionId = SessionId;
 #if !DEBUG
-            sessionId = SessionId;
             if (string.IsNullOrEmpty(sessionId))
             {
                 Response.StatusCode = 412; // Precondition
                 return StatusCode(500);
             }
 #else
-            sessionId = _saveProvider?.GetProfiles().First().Key;
+            if (string.IsNullOrEmpty(sessionId))
+                sessionId = _saveProvider?.GetProfiles().First().Key;
 #endif
 
             var profile = _saveProvider?.LoadProfile(sessionId);
@@ -340,14 +340,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             return new BSGSuccessBodyResult(packet);
         }
 
-        [Route("client/quest/list")]
-        [HttpPost]
-        public async Task<IActionResult> QuestList(int? retry, bool? debug)
-        {
-            //await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
 
-            return new BSGSuccessBodyResult(new JArray());
-        }
 
         [Route("client/repeatalbeQuests/activityPeriods")]
         [HttpPost]

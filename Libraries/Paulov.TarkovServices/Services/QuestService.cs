@@ -1,18 +1,159 @@
-﻿using Paulov.TarkovServices.Services.Interfaces;
+﻿using Comfort.Common;
+using EFT;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Paulov.TarkovModels;
+using Paulov.TarkovServices.JsonConverters;
+using Paulov.TarkovServices.Models.QuestModels;
+using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Services.Interfaces;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Paulov.TarkovServices.Services
 {
     public sealed class QuestService : IQuestService
     {
+        private IDatabaseProvider _dbProvider;
+        private ISaveProvider _saveProvider;
+
         // This service is currently empty, but it can be expanded in the future to handle quest-related logic.
         // For example, it could manage quest states, progress, and interactions with other services.
 
-        public QuestService(Providers.Interfaces.IDatabaseProvider dbProvider)
+        public QuestService(IDatabaseProvider dbProvider, ISaveProvider saveProvider)
         {
             // Constructor logic can be added here if needed in the future.
+            ArgumentNullException.ThrowIfNull(nameof(dbProvider), "Database provider cannot be null.");
+            ArgumentNullException.ThrowIfNull(nameof(saveProvider), "Save provider cannot be null.");
+            _dbProvider = dbProvider;
+            _saveProvider = saveProvider;
         }
 
-        // Additional methods related to quests can be added here.
 
+
+        public List<RawQuestClass> GetQuestsForAccount(Account account)
+        {
+            ArgumentNullException.ThrowIfNull(nameof(account), "Account cannot be null.");
+
+            if (_saveProvider.GetPmcProfile(account).QuestsData == null)
+            {
+                _saveProvider.GetPmcProfile(account).QuestsData = new List<QuestDataClass>();
+            }
+
+            var entryStream = _dbProvider.GetEntryStream("database/templates/quests.json");
+            if (entryStream == null)
+            {
+                throw new FileNotFoundException("Quests data file not found in the database.");
+            }
+
+            using var reader = new StreamReader(entryStream, Encoding.UTF8);
+            var jsonContent = reader.ReadToEnd();
+
+
+            var jsonDocumentText = JsonDocument.Parse(jsonContent).RootElement.GetRawText();
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Converters =
+                {
+                    new JsonStringEnumConverter(JsonNamingPolicy.CamelCase),
+                }
+                //, TypeInfoResolver = JsonTypeInfoResolver.Default
+                ,
+                AllowTrailingCommas = true
+                ,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+
+            var newtonSoftJsonSerializer = new Newtonsoft.Json.JsonSerializer
+            {
+            };
+            var tarkovTypes = typeof(TarkovApplication).Assembly.DefinedTypes;
+            var convertersType = tarkovTypes.FirstOrDefault(x => x.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).Any(p => p.Name == "Converters"));
+            List<Newtonsoft.Json.JsonConverter> converters = new List<Newtonsoft.Json.JsonConverter>();
+            if (convertersType != null)
+            {
+                converters.AddRange((Newtonsoft.Json.JsonConverter[])convertersType.GetField("Converters", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).GetValue(null));
+                // the GClass1669`1 converter is calling an ECall error because its using Unity Loggers...
+                //foreach (var converter in converters.Where(x => x.GetType().Name != "GClass1669`1"))
+                //    CachedSerializer.Converters.Add(converter);
+            }
+            converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+            converters.Add(new BSGTypeJsonConverter<EFT.Quests.ECompareMethod>());
+            foreach (var converter in converters)
+            {
+                newtonSoftJsonSerializer.Converters.Add(converter);
+            }
+
+            var allQuestsKVP = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonDocumentText, options);
+            var allQuestsRaw = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, QuestDataTemplate>>(jsonDocumentText, converters.ToArray());
+            var allQuestsJObject = JObject.Parse(jsonDocumentText);
+            _ = allQuestsJObject;
+
+            var questsToAddToProfile = new List<QuestDataClass>();
+
+            foreach (var questKVP in allQuestsKVP)
+            {
+                var questJson = questKVP.Value.GetRawText();
+                var rawQuest = Newtonsoft.Json.JsonConvert.DeserializeObject<QuestDataTemplate>(questJson, new JsonSerializerSettings() { Converters = converters });
+
+                // Check if the quest is already in the profile's quest data
+                var questInProfile = _saveProvider.GetPmcProfile(account).QuestsData.Find((x) => x != null && x.Id == questKVP.Key);
+                if (questInProfile != null)
+                    continue;
+
+                // if it has no conditions just add
+                if (rawQuest.Conditions.AvailableForStart.Count == 0)
+                {
+                    var questData = new QuestDataClass
+                    {
+                        Id = questKVP.Key,
+                        AvailableAfter = 0,
+                        StartTime = 0,
+                        CompletedConditions = new HashSet<EFT.MongoID>(),
+                        Status = EFT.Quests.EQuestStatus.AvailableForStart,
+                        StatusStartTimestamps = new Dictionary<EFT.Quests.EQuestStatus, double>(),
+                        Template = allQuestsJObject[questKVP.Key].ToObject<RawQuestClass>(newtonSoftJsonSerializer),
+                    };
+                    questsToAddToProfile.Add(questData);
+                }
+            }
+
+            Singleton<GInterface425>.Create(new HandbookSingletonForQuests());
+
+            var profileQuestData = _saveProvider.GetPmcProfile(account).QuestsData;
+            foreach (var questToAdd in questsToAddToProfile)
+            {
+                foreach (var qtaTemplateConditionsByStatus in questToAdd.Template.Conditions)
+                {
+                    foreach (var qtaTemplateConditions in qtaTemplateConditionsByStatus.Value)
+                    {
+                        foreach (var item in qtaTemplateConditions.ChildConditions)
+                        {
+                        }
+                    }
+                }
+                profileQuestData.Add(questToAdd);
+            }
+
+
+
+            return profileQuestData.Select(x => x.Template).ToList();
+        }
+
+    }
+
+    public class HandbookSingletonForQuests : GInterface425
+    {
+        public bool IsCategory(string testId)
+        {
+            return false;
+        }
+
+        public bool IsChildOf(string testId, string parentId)
+        {
+            return false;
+        }
     }
 }
