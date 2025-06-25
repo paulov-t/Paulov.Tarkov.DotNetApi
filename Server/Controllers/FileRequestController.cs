@@ -12,8 +12,17 @@ public class FileRequestController() : Controller
     private readonly FileExtensionContentTypeProvider _contentTypeProvider = new();
 
     [HttpGet]
-    public IActionResult ServeFile(string path)
+    public async Task<IActionResult> ServeFile(string path)
     {
+        if (path.EndsWith(".jpg"))
+        {
+            HttpClient checkClient = new HttpClient();
+            if ((await checkClient.GetAsync($"https://raw.githubusercontent.com/paulov-t/Paulov.Tarkov.Db/refs/heads/master/files/{path}")).StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return new RedirectResult($"https://raw.githubusercontent.com/paulov-t/Paulov.Tarkov.Db/refs/heads/master/files/{path.Replace(".jpg", ".png")}");
+            }
+        }
+
         return new RedirectResult($"https://raw.githubusercontent.com/paulov-t/Paulov.Tarkov.Db/refs/heads/master/files/{path}");
     }
 }

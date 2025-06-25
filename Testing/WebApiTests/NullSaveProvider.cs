@@ -7,7 +7,7 @@ namespace WebApiTests
     {
         public string CreateAccount(Dictionary<string, object> parameters)
         {
-            return null;
+            return "00000000000000000000001"; // Return a dummy account ID
         }
 
         public AccountProfileMode GetAccountProfileMode(Account account)
@@ -28,6 +28,23 @@ namespace WebApiTests
         public AccountProfileCharacter GetPmcProfile(Account account)
         {
             return null;
+        }
+
+        public Dictionary<string, Account> GetProfiles()
+        {
+            return new Dictionary<string, Account>
+            {
+                {
+                    "00000000000000000000001",
+                    new Account
+                    {
+                        AccountId = "00000000000000000000001",
+                        Username = "TestUser",
+                        Password = "TestPassword",
+                        Modes = new AccountProfileModes()
+                    }
+                }
+            };
         }
 
         public AccountProfileCharacter GetScavProfile(string sessionId)

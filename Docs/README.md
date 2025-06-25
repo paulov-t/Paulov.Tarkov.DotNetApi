@@ -1,4 +1,4 @@
 # Documentation
 
-Index
+## Index
 [Database Providers](DatabaseProvider.md)
