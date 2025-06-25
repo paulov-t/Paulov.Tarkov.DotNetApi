@@ -15,5 +15,7 @@ namespace Paulov.TarkovServices.Providers.Interfaces
         public AccountProfileCharacter GetPmcProfile(Account account);
 
         public AccountProfileCharacter GetScavProfile(Account account);
+
+        public Dictionary<string, Account> GetProfiles();
     }
 }

@@ -1,7 +1,9 @@
 using BSGHelperLibrary.ResponseModels;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
+using NUnit.Framework.Internal;
 using Paulov.Tarkov.WebServer.DOTNET.Controllers;
 using Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders;
 using Paulov.TarkovServices.Providers.Interfaces;
@@ -12,10 +14,10 @@ namespace WebApiTests
 {
     public sealed class GameControllerTest
     {
-        private readonly GameController controller;
-        private readonly ISaveProvider saveProvider;
+        private readonly GameController _controller;
+        private readonly ISaveProvider _saveProvider;
         private readonly IConfiguration configuration;
-        private readonly IGlobalsService globalsService;
+        private readonly IGlobalsService _globalsService;
         private readonly IDatabaseProvider databaseProvider;
         private readonly IDatabaseService databaseService;
 
@@ -23,10 +25,10 @@ namespace WebApiTests
         {
             databaseProvider = new JsonFileCollectionDatabaseProvider();
             databaseProvider.Connect(AppContext.BaseDirectory);
-            saveProvider = new NullSaveProvider();
+            _saveProvider = new SimpleSaveProvider();
             configuration = new ConfigurationBuilder().Build();
             databaseService = new DatabaseService(configuration, databaseProvider);
-            controller = new GameController(saveProvider, configuration, new TestsGlobalsService());
+            _controller = new GameController(_saveProvider, configuration, new TestsGlobalsService());
         }
 
         [SetUp]
@@ -57,35 +59,69 @@ namespace WebApiTests
         [Test]
         public void Start_ResponseTest()
         {
-            var result = controller.Start().Result;
+            var result = _controller.Start().Result;
             CommonTest_MustBeBSGSuccessBodyResult(result);
         }
 
         [Test]
         public void GameMode_ResponseTest()
         {
-            var result = controller.GameMode().Result;
+            var result = _controller.GameMode().Result;
             CommonTest_MustBeBSGSuccessBodyResult(result);
         }
 
         [Test]
         public void GameConfig_ResponseTest()
         {
-            var result = controller.GameConfig().Result;
+            var result = _controller.GameConfig().Result;
             CommonTest_MustBeBSGSuccessBodyResult(result);
         }
 
         [Test]
         public void TemplateItems_ResponseTest()
         {
-            var result = controller.TemplateItems(-1, -1).Result;
+            var result = _controller.TemplateItems(-1, -1).Result;
             CommonTest_MustBeBSGSuccessBodyResult(result);
         }
 
         [Test]
         public void Globals_ResponseTest()
         {
-            var result = controller.Globals();
+            var result = _controller.Globals();
+            CommonTest_MustBeBSGSuccessBodyResult(result);
+        }
+
+        [Test]
+        public void ItemsMoving_ResponseTest()
+        {
+            var data = new JObject();
+            data.Add("data", new JArray
+            {
+                new JObject
+                {
+                    ["Action"] = "Move",
+                    ["Item"] = "5c0f2b1d86f7744a9c0e8b3d", // Example item ID
+                    ["From"] = "main", // Example source location
+                    ["To"] = "stash" // Example destination location
+                }
+            });
+            var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(data.ToJson()));
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Body = stream;
+            httpContext.Request.ContentLength = stream.Length;
+
+            var controllerContext = new ControllerContext()
+            {
+                HttpContext = httpContext,
+            };
+
+            var controller = new GameController(_saveProvider, configuration, new TestsGlobalsService())
+            {
+                ControllerContext = controllerContext
+            };
+            var result = controller.ItemsMoving().Result;
+
             CommonTest_MustBeBSGSuccessBodyResult(result);
         }
 
