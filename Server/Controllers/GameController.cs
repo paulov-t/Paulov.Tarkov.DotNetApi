@@ -720,7 +720,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/putMetrics")]
         [HttpPost]
-        public async Task<IActionResult> PutMetrics()
+        public IActionResult PutMetrics()
+        {
+            return new BSGSuccessBodyResult(new JObject());
+        }
+
+        [Route("client/putHWMetrics")]
+        [HttpPost]
+        public IActionResult PutHWMetrics()
         {
             return new BSGSuccessBodyResult(new JObject());
         }
