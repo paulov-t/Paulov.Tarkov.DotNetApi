@@ -51,7 +51,6 @@ namespace SIT.WebServer
 
             app.UseAuthorization();
             app.UseSession(new SessionOptions() { IdleTimeout = new TimeSpan(1, 1, 1, 1) });
-            app.UseWebSockets();
 
             app.MapControllers();
 
