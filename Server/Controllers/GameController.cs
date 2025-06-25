@@ -381,32 +381,30 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("/client/game/profile/items/moving")]
         [HttpPost]
-        public async Task<IActionResult> ItemsMoving(int? retry, bool? debug)
+        public async Task<IActionResult> ItemsMoving()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            JObject resultData = new JObject();
-
-            var profileChanges = new Dictionary<string, JObject>();
-
-            resultData["ProfileChanges"] = JToken.FromObject(profileChanges);
-            resultData["InventoryWarnings"] = new JArray();
-
-            profileChanges.Add(SessionId, JObject.FromObject(
-            new
+            if (requestBody == null || !requestBody.ContainsKey("data") || requestBody["data"] == null)
             {
-                Experience = 0,
-                HideoutAreaStashes = new Dictionary<EFT.EAreaType, EFT.HideoutAreaStashInfo>(),
-                //Production = new Dictionary<string, EFT.Hideout.ProductionData>(),
-                Quests = Array.Empty<RawQuestClass>(),
-                RagFairOffers = new EFT.UI.Ragfair.Offer[0],
-                RepeatableQuests = Array.Empty<DailyQuestClass>(),
-                Stash = new { change = Array.Empty<object>(), del = Array.Empty<object>(), @new = Array.Empty<object>() },
-                TradersData = new Dictionary<string, EFT.TraderData>(),
-                UnlockedRecipes = new Dictionary<string, bool>()
-            }));
+                return new BSGErrorBodyResult(400, "Invalid request body");
+            }
 
-            return new BSGSuccessBodyResult(null);
+            JArray commands = JArray.Parse(requestBody["data"].ToString());
+            var sessionId = "";
+#if !DEBUG
+            sessionId = SessionId;
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                Response.StatusCode = 412; // Precondition
+                return StatusCode(500);
+            }
+#else
+            sessionId = _saveProvider?.GetProfiles().First().Key;
+#endif
+
+
+            return new BSGSuccessBodyResult(await (new ActionCommandService().ExecuteCommandAsync(commands, sessionId)));
         }
 
         //private void DoItemsMovingAction_Move(QueueData queueData, JToken actionData)
