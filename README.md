@@ -45,13 +45,22 @@ This app can support the following databases:
 
 ### Requirements
 
-This project has been built in [Visual Studio Community Edition](https://visualstudio.microsoft.com/vs/community/) using [.NET 8](https://dotnet.microsoft.com/en-us/)
+- This project was conceptualized and built in [Visual Studio Community Edition](https://visualstudio.microsoft.com/vs/community/)
+- This project can also be opened and built in [JetBrains Rider](https://www.jetbrains.com/rider/)
+- [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+
+### Initial Setup
+
+1. Download and install the [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
+2. Clone the repository using [Git](https://git-scm.com/) `git clone https://github.com/paulov-t/Paulov.Tarkov.DotNetApi.git`
+3. Open `Paulov.Tarkov.WebServer.DOTNET.sln` Visual Studio or Rider
+4. `Build > Build Solution (CTRL + SHIFT + B)`
+5. Setup the Database using one of the solutions offered in [Docs/DatabaseProvider](Docs/DatabaseProvider.md)
+6. Run the server project
 
 ## License
 
 - This project is licensed under the Attribution-NonCommercial-NoDerivatives 4.0 International License. See [LICENSE](LICENSE.md)
-- This project uses SP-Tarkov's Database. SP-Tarkov is licensed under NCSA Open Source. [LICENSE](https://github.com/sp-tarkov/server/blob/master/LICENSE.md)
-
 
 <!-- MARKDOWN LINKS & IMAGES -->
 [contributors-shield]: https://img.shields.io/github/contributors/paulov-t/Paulov.Tarkov.DotNetApi.svg?style=for-the-badge
