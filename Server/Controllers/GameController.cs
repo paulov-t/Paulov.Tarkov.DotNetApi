@@ -378,140 +378,27 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            //TradingBackend.QueueData queueData = new();
-            //queueData.ProfileChanges = new();
-            //queueData.InventoryWarnings = Array.Empty<TradingBackend.InventoryWarning>();
+            JObject resultData = new JObject();
 
-            ////try
-            ////{
-            ////    var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
-            ////    var sessionId = SessionId;
-            ////    var saveProvider = new SaveProvider();
-            //var pmcProfile = saveProvider.GetPmcProfile(SessionId);
+            var profileChanges = new Dictionary<string, JObject>();
 
+            resultData["ProfileChanges"] = JToken.FromObject(profileChanges);
+            resultData["InventoryWarnings"] = new JArray();
 
-            //if (!queueData.ProfileChanges.ContainsKey(SessionId))
-            //    queueData.ProfileChanges.Add(SessionId, new Changes()
-            //    {
-            //        Experience = 0,
-            //        HideoutAreaStashes = new Dictionary<EFT.EAreaType, EFT.HideoutAreaStashInfo>(),
-            //        //Production = new Dictionary<string, EFT.Hideout.ProductionData>(),
-            //        Quests = Array.Empty<RawQuestClass>(),
-            //        RagFairOffers = new EFT.UI.Ragfair.Offer[0],
-            //        RepeatableQuests = Array.Empty<DailyQuestClass>(),
-            //        Stash = new StashChanges() { change = new FlatItem[0], del = new FlatItem[0], @new = new FlatItem[0] },
-            //        TradersData = new Dictionary<string, EFT.TraderData>(),
-            //        UnlockedRecipes = new Dictionary<string, bool>()
-            //    });
+            profileChanges.Add(SessionId, JObject.FromObject(
+            new
+            {
+                Experience = 0,
+                HideoutAreaStashes = new Dictionary<EFT.EAreaType, EFT.HideoutAreaStashInfo>(),
+                //Production = new Dictionary<string, EFT.Hideout.ProductionData>(),
+                Quests = Array.Empty<RawQuestClass>(),
+                RagFairOffers = new EFT.UI.Ragfair.Offer[0],
+                RepeatableQuests = Array.Empty<DailyQuestClass>(),
+                Stash = new { change = Array.Empty<object>(), del = Array.Empty<object>(), @new = Array.Empty<object>() },
+                TradersData = new Dictionary<string, EFT.TraderData>(),
+                UnlockedRecipes = new Dictionary<string, bool>()
+            }));
 
-
-
-            //JArray data = (JArray)requestBody["data"];
-            //foreach (var actionData in data)
-            //{
-            //    var action = actionData["Action"].ToString();
-
-            //    string type = null;
-            //    if (actionData["type"] != null)
-            //        type = actionData["type"].ToString();
-
-            //    JToken item;
-            //    if (actionData["item"] != null)
-            //        item = actionData["item"];
-
-            //    JToken to;
-            //    if (actionData["to"] != null)
-            //        to = actionData["to"];
-
-            //    IEnumerable<JToken> items = null;
-            //    if (actionData["items"] != null)
-            //        items = actionData["items"].ToArray();
-
-            //    switch (action)
-            //    {
-            //        case "Move":
-            //            //DoItemsMovingAction_Move(queueData, actionData);
-
-            //            break;
-            //        // Buying Selling from Trader
-            //        case "TradingConfirm":
-            //            if (items == null)
-            //                break;
-
-            //            switch (type)
-            //            {
-            //                case "sell_to_trader":
-
-            //                    var processSellTradeData = actionData.ToObject<ProcessSellTradeRequestData>();
-
-            //                    //queueData.ProfileChanges.Add(new MongoID(true), new Changes() { Stash = new StashChanges() { del = new List<Items>() } });
-
-            //                    for (var iIt = 0; iIt < processSellTradeData.items.Count(); iIt++)
-            //                    //foreach (var it in processSellTradeData.items)
-            //                    {
-            //                        var it = processSellTradeData.items[iIt];
-            //                        var itemIdToFind = it.id.Trim();
-            //                        var inv = (JToken)pmcProfile["Inventory"];
-            //                        var invItems = (JArray)inv["items"];
-            //                        //foreach (var invItem in invItems)
-            //                        var deletedItemsCount = 0;
-            //                        for (var iInvItem = 0; iInvItem < invItems.Count; iInvItem++)
-            //                        {
-            //                            var invItem = invItems[iInvItem];
-            //                            var _id = invItem["_id"].ToString().Trim();
-            //                            var _tpl = invItem["_tpl"].ToString().Trim();
-            //                            if (_id == itemIdToFind || _id == itemIdToFind)
-            //                            {
-            //                                Debug.WriteLine($"selling {_id} {_tpl}");
-
-            //                                queueData.ProfileChanges[SessionId].Stash = new StashChanges()
-            //                                {
-            //                                    @new = new FlatItem[0],
-            //                                    change = new FlatItem[0],
-            //                                    del = new FlatItem[processSellTradeData.items.Length]
-            //                                };
-
-            //                                var l = new UnparsedData() { JToken = invItem["location"] };
-            //                                //var delItem = (new Items() { _id = itemIdToFind, _tpl = _tpl, location = l, parentId = invItem["parentId"].ToString(), slotId = invItem["slotId"].ToString() });
-            //                                var delItem = (new FlatItem() { _id = itemIdToFind });
-            //                                queueData.ProfileChanges[SessionId].Stash.del[iIt] = delItem;
-            //                                deletedItemsCount++;
-            //                                if (deletedItemsCount == processSellTradeData.items.Length)
-            //                                    break;
-            //                            }
-            //                        }
-            //                    }
-            //                    break;
-            //                default:
-            //                    break;
-            //            }
-
-            //            break;
-            //        // Buying an Offer from Flea
-            //        case "RagFairBuyOffer":
-            //            break;
-            //        // The Sell All button after a Scav Raid
-            //        case "SellAllFromSavage":
-            //            break;
-            //    }
-
-            //}
-
-
-            //foreach (var kvpProfileChanges in queueData.ProfileChanges)
-            //{
-            //    saveProvider.ProcessProfileChanges(kvpProfileChanges.Key, kvpProfileChanges.Value);
-            //}
-
-
-            ////}
-            ////catch (Exception e)
-            ////{
-            ////    Debug.WriteLine(e);
-            ////}
-
-            ////var queueDataJson = JsonConvert.SerializeObject(queueData);
-            ////await HttpBodyConverters.CompressIntoResponseBodyBSG(queueDataJson, Request, Response);
             return new BSGSuccessBodyResult(null);
         }
 
@@ -713,7 +600,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/putMetrics")]
         [HttpPost]
-        public async Task<IActionResult> PutMetrics()
+        public IActionResult PutMetrics()
+        {
+            return new BSGSuccessBodyResult(new JObject());
+        }
+
+        [Route("client/putHWMetrics")]
+        [HttpPost]
+        public IActionResult PutHWMetrics()
         {
             return new BSGSuccessBodyResult(new JObject());
         }
