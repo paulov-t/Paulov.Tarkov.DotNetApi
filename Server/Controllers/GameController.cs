@@ -7,7 +7,6 @@ using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
-using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
@@ -19,13 +18,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
     {
         private TradingProvider tradingProvider { get; } = new TradingProvider();
 
-        private JsonFileSaveProvider _saveProvider;
+        private ISaveProvider _saveProvider;
         private IConfiguration configuration;
         private IGlobalsService _globalsService;
 
         public GameController(ISaveProvider saveProvider, IConfiguration configuration, IGlobalsService globalsService)
         {
-            this._saveProvider = saveProvider as JsonFileSaveProvider;
+            this._saveProvider = saveProvider;
             this.configuration = configuration;
             this._globalsService = globalsService;
         }
