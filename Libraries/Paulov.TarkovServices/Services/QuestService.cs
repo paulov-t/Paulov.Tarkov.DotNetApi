@@ -36,7 +36,7 @@ namespace Paulov.TarkovServices.Services
 
             if (_saveProvider.GetPmcProfile(account).QuestsData == null)
             {
-                _saveProvider.GetPmcProfile(account).QuestsData = new List<QuestDataClass>();
+                _saveProvider.GetPmcProfile(account).QuestsData = new List<QuestsQuestStatusData>();
             }
 
             var entryStream = _dbProvider.GetEntryStream("database/templates/quests.json");
@@ -69,7 +69,7 @@ namespace Paulov.TarkovServices.Services
             var allQuestsJObject = JObject.Parse(jsonDocumentText);
             _ = allQuestsJObject;
 
-            var questsToAddToProfile = new List<QuestDataClass>();
+            var questsToAddToProfile = new List<QuestsQuestStatusData>();
 
             foreach (var questKVP in allQuestsKVP)
             {
@@ -84,7 +84,7 @@ namespace Paulov.TarkovServices.Services
                 // if it has no conditions just add
                 if (rawQuest.Conditions[EFT.Quests.EQuestStatus.AvailableForStart].Count == 0)
                 {
-                    var questData = new QuestDataClass
+                    var questData = new QuestsQuestStatusData
                     {
                         Id = questKVP.Key,
                         AvailableAfter = 0,
@@ -98,7 +98,7 @@ namespace Paulov.TarkovServices.Services
                 }
             }
 
-            Singleton<GInterface425>.Create(new HandbookSingletonForQuests());
+            Singleton<IHandbookCategorization>.Create(new HandbookSingletonForQuests());
 
             var profileQuestData = _saveProvider.GetPmcProfile(account).QuestsData;
             foreach (var questToAdd in questsToAddToProfile)
@@ -122,7 +122,7 @@ namespace Paulov.TarkovServices.Services
 
     }
 
-    public class HandbookSingletonForQuests : GInterface425
+    public class HandbookSingletonForQuests : IHandbookCategorization
     {
         public bool IsCategory(string testId)
         {
