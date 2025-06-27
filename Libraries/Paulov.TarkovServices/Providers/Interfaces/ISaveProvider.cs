@@ -5,6 +5,7 @@ namespace Paulov.TarkovServices.Providers.Interfaces
     public interface ISaveProvider
     {
         public string CreateAccount(Dictionary<string, object> parameters);
+        public string CreateAccount(AccountCreationModel creationModel);
 
         public void SaveProfile(string sessionId, Account profileModel = null);
 
