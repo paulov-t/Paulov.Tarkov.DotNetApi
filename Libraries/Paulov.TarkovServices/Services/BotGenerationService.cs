@@ -8,7 +8,7 @@ using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 using System.Text;
 using static EFT.InventoryLogic.Weapon;
-using FlatItem = GClass1354;
+using FlatItem = GClass1382;
 
 namespace Paulov.TarkovServices.Services
 {
@@ -356,7 +356,7 @@ namespace Paulov.TarkovServices.Services
                     {
                         for (var i = 0; i < items.Count; i++)
                         {
-                            var item = items[i].DeepClone().ToObject<GClass1354>();
+                            var item = items[i].DeepClone().ToObject<FlatItem>();
                             if (i == 0)
                             {
                                 item.slotId = slotId;
