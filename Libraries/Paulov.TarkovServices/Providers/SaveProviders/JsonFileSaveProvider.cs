@@ -1,8 +1,14 @@
 ﻿using EFT;
 using Newtonsoft.Json;
 using Paulov.TarkovModels;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services;
+
+/**
+ * This does too much stuff and needs to be refactored into other classes and providers. 
+ * For example, the profile/account management should be in a separate provider, and the inventory management should be in another provider.
+ */
 
 namespace Paulov.TarkovServices.Providers.SaveProviders
 {
@@ -26,48 +32,10 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
         /// </summary>
         public JsonFileSaveProvider()
         {
-            //var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters };
-
-            //var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
-            //var profileFiles = Directory.GetFiles(userProfileDirectory);
-
-            //var profilesToDelete = new List<string>();
-            //foreach (var profileFilePath in profileFiles)
-            //{
-            //    var fileInfo = new FileInfo(profileFilePath);
-            //    if (fileInfo == null)
-            //        continue;
-
-            //    var fileText = File.ReadAllText(profileFilePath);
-            //    if (fileText == null)
-            //        continue;
-
-            //    try
-            //    {
-            //        var model = fileText.ParseJsonTo<Account>();
-            //        //var model = JsonConvert.DeserializeObject<Account>(fileText, jsonSettings);
-            //        Profiles.Add(fileInfo.Name.Replace(".json", ""), model);
-            //    }
-            //    catch
-            //    {
-            //        profilesToDelete.Add(profileFilePath);
-            //    }
-            //}
-
-            //foreach (var item in profilesToDelete)
-            //{
-            //    File.Delete(item);
-            //}
         }
-
-        //private Dictionary<string, Account> Profiles { get; } = new Dictionary<string, Account>();
 
         public Dictionary<string, Account> GetProfiles()
         {
-            // AccountProfileCharacter requires Globals to be loaded, so we load them here.
-            //GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
-
-            //return Profiles;
             var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters };
 
             var userProfileDirectory = Path.Combine(AppContext.BaseDirectory, "user", "profiles");
@@ -126,6 +94,27 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return sessionId;
         }
 
+        public string CreateAccount(AccountCreationModel creationModel)
+        {
+            if (creationModel == null)
+                return null;
+
+            var sessionId = new MongoID(true).ToString();
+            var newProfileDetails = new Account()
+            {
+                AccountId = sessionId,
+                Username = creationModel.Username.ToString(),
+                Password = creationModel.Password.ToString(), // TODO: Needs to be Hashed!
+                Edition = creationModel.Edition.ToString()
+            };
+
+            CreateProfile(newProfileDetails);
+            var account = LoadProfile(sessionId);
+            SaveProfile(sessionId, account);
+
+            return sessionId;
+        }
+
         public void SaveProfile(string sessionId, Account accountModel)
         {
             if (string.IsNullOrEmpty(sessionId))
@@ -138,7 +127,7 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             Directory.CreateDirectory(userProfileDirectory);
             var filePath = Path.Combine(userProfileDirectory, $"{sessionId}.json");
 
-            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters };
+            var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseHelpers.CachedSerializer.Converters };
 
             var serializedProfile = JsonConvert.SerializeObject(accountModel, Formatting.Indented, jsonSettings);
 
