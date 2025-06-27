@@ -1,5 +1,4 @@
 ﻿using BSGHelperLibrary.ResponseModels;
-using ChatShared;
 using EFT;
 using EFT.Hideout;
 using Microsoft.AspNetCore.Mvc;
@@ -27,11 +26,13 @@ namespace Paulov.Tarkov.Web.Api.Controllers
     {
         private ISaveProvider _saveProvider;
         private IGlobalsService _globalsService;
+        private AccountService _accountService;
 
-        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService)
+        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService, AccountService accountService)
         {
             _saveProvider = saveProvider;
             _globalsService = globalsService;
+            _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService), "AccountService cannot be null.");
         }
 
         private string SessionId
@@ -312,50 +313,55 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
         }
 
+        /// <summary>
+        /// Called when the client searches for profiles in the game.
+        /// </summary>
+        /// <returns></returns>
         [Route("client/game/profile/search")]
         [HttpPost]
         public async Task<IActionResult> ProfileSearch()
         {
+            /*
+             * Expects json object with nickname defined as a string
+             */
+
+
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
-            var profile = _saveProvider.LoadProfile(SessionId);
-            if (profile == null)
-            {
-                Response.StatusCode = 500;
-                return new NotFoundResult();
-            }
+            var sessionId = SessionId;
+
+            //var profile = _saveProvider.LoadProfile(sessionId);
+            //if (profile == null)
+            //{
+            //    Response.StatusCode = 500;
+            //    return new NotFoundResult();
+            //}
 
             var allProfiles = _saveProvider.GetProfiles();
 
             List<Dictionary<string, object>> chatMembers = new();
             foreach (var p in allProfiles)
             {
-                var pmc = _saveProvider.GetPmcProfile(p.Value);
-                var info = new UpdatableChatMember.UpdatableChatMemberInfo();
-                info.Nickname = pmc.Info.Nickname;// pmc["Info"]["Nickname"].ToString();
-                info.Side = EFT.EChatMemberSide.Usec;
-                info.Banned = false;
-                info.Ignored = false;
-                info.Level = 1;
-                info.MemberCategory = EMemberCategory.Default;
-                info.SelectedMemberCategory = EMemberCategory.Default;
+                var m = _accountService.GetUpdatableChatMember(p.Value, "PVE");
+                chatMembers.Add(m);
 
-                var member = new Dictionary<string, object>();
-                member.Add("Id", p.Key);
-                member.Add("Info", info);
-                chatMembers.Add(member);
+                //var pmc = _saveProvider.GetPmcProfile(p.Value);
+                //var info = new UpdatableChatMember.UpdatableChatMemberInfo();
+                //info.Nickname = pmc.Info.Nickname;// pmc["Info"]["Nickname"].ToString();
+                //info.Side = EFT.EChatMemberSide.Usec;
+                //info.Banned = false;
+                //info.Ignored = false;
+                //info.Level = 1;
+                //info.MemberCategory = EMemberCategory.Default;
+                //info.SelectedMemberCategory = EMemberCategory.Default;
+
+                //var member = new Dictionary<string, object>();
+                //member.Add("AccountId", p.Key);
+                //member.Add("_id", p.Key);
+                //member.Add("aid", p.Key);
+                //member.Add("Info", info);
+                //chatMembers.Add(member);
             }
-            //UpdatableChatMember[] chatMembers = saveProvider
-            //    .GetProfiles()
-            //    .Values
-            //    .SelectMany(profile =>
-            //    {
-            //        new UpdatableChatMember(profile.AccountId.ToString())
-            //        {
-            //            AccountId = profile.AccountId.ToString()
-            //        };
-            //    })
-            //    .ToArray();
 
             return new BSGSuccessBodyResult(chatMembers.ToArray());
 

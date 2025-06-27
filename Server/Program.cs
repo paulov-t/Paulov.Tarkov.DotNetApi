@@ -73,7 +73,8 @@ namespace SIT.WebServer
                 modAssemblyDirectory.EnumerateFiles("*.dll").Select(x => Assembly.LoadFile(x.FullName));
             foreach (Assembly assembly in modAssemblies)
             {
-                if (!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase)))) return;
+                if (!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase))))
+                    continue;
 
                 Console.WriteLine($" - {assembly.GetName().Name}");
                 mvcBuilder.AddApplicationPart(assembly);
@@ -99,10 +100,11 @@ namespace SIT.WebServer
                 .AddSwaggerGen(ConfigureSwaggerGen)
                 .AddDistributedMemoryCache()
                 .AddSession()
-                //.AddSingleton<IGlobalsService, GlobalsService>()
                 .AddSingleton<ISaveProvider, JsonFileSaveProvider>()
                 .AddSingleton<IInventoryService, InventoryService>()
                 .AddSingleton<IPasswordService, PasswordService>();
+
+            services.AddSingleton(typeof(AccountService), new AccountService(new JsonFileSaveProvider()));
 
 
 
