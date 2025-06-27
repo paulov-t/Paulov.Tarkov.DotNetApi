@@ -7,10 +7,10 @@ namespace WebApiTests
     {
         Account Account { get; set; } = new Account()
         {
-            AccountId = "00000000000000000000001",
+            AccountId = "60a6aaad42fd2735e4000001",
             Username = "TestUser",
             Password = "Password123",
-            Edition = "Edge_Of_Darkness",
+            Edition = "Edge Of Darkness",
             CurrentMode = "PVE",
             Modes = new AccountProfileModes()
             {
@@ -24,6 +24,11 @@ namespace WebApiTests
         }
 
         public string CreateAccount(Dictionary<string, object> parameters)
+        {
+            return Account.AccountId; // Return a dummy account ID
+        }
+
+        public string CreateAccount(AccountCreationModel creationModel)
         {
             return Account.AccountId; // Return a dummy account ID
         }
@@ -74,5 +79,7 @@ namespace WebApiTests
         {
             return new Dictionary<string, Account> { { Account.AccountId, Account } }; // Return a list containing the single account
         }
+
+
     }
 }
