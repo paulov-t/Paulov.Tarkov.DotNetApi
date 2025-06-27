@@ -5,10 +5,8 @@ using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Reflection;
-using Paulov.TarkovServices.Models;
 
 namespace SIT.WebServer
 {
@@ -31,19 +29,12 @@ namespace SIT.WebServer
 
             var app = builder.Build();
 
-            //foreach (var c in builder.Configuration.AsEnumerable())
-            //{
-            //    Console.WriteLine(c.Key + " = " + c.Value);
-            //}
-
-
             app.UseWebSockets(new WebSocketOptions()
             {
                 KeepAliveInterval = TimeSpan.FromMinutes(2)
             });
 
             app.UseMiddleware<WebsocketMiddleware>();
-            app.UseMiddleware<RequestLoggingMiddleware>();
             app.UseMiddleware<RequestLoggingMiddleware>();
 
             app.UseSwagger();
@@ -63,6 +54,7 @@ namespace SIT.WebServer
         /// </summary>
         private static void ConfigureServices(WebApplicationBuilder builder)
         {
+            // This is for logging what configuration settings are loaded
             foreach (var c in builder.Configuration.AsEnumerable())
             {
                 Console.WriteLine(c.Key + " = " + c.Value);
@@ -70,14 +62,10 @@ namespace SIT.WebServer
 
 
             var services = builder.Services;
-            /*
-            services.AddRequestDecompression(options =>
-            {
-                options.DecompressionProviders.Add("zlibdecompressionprovider", new ZLibDecompressionProvider());
-            });
-            */
+
 
             //MVC building
+            Console.WriteLine("Loading Mods:");
             IMvcBuilder mvcBuilder = services.AddMvc().AddSessionStateTempDataProvider();
             const string modAssemblyFolderName = "Mods";
             DirectoryInfo modAssemblyDirectory = new(Path.Combine(AppContext.BaseDirectory, modAssemblyFolderName));
@@ -86,6 +74,8 @@ namespace SIT.WebServer
             foreach (Assembly assembly in modAssemblies)
             {
                 if (!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase)))) return;
+
+                Console.WriteLine($" - {assembly.GetName().Name}");
                 mvcBuilder.AddApplicationPart(assembly);
             }
 
@@ -94,12 +84,15 @@ namespace SIT.WebServer
 
             // Get the database provider from configuration and register it
             IDatabaseProvider dbProvider = DatabaseService.GetDatabaseProviderByConfiguration(builder.Configuration);
+            Console.WriteLine($"Loading DbProvider: {dbProvider.GetType().Name}");
             services.AddSingleton(typeof(IDatabaseProvider), dbProvider);
 
             // Register the GlobalsService and DatabaseService as singletons
+            Console.WriteLine($"Loading GlobalsService. This can take a few seconds...");
             services.AddSingleton(typeof(IGlobalsService), new GlobalsService(dbProvider));
+            Console.WriteLine($"Loading DatabaseService");
             services.AddSingleton(typeof(IDatabaseService), (new DatabaseService(builder.Configuration, dbProvider)));
-
+            Console.WriteLine($"Loading QuestService");
             services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider));
 
             services
