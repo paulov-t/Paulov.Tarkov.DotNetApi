@@ -216,9 +216,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         }
 
 
-
-
-
         [Route("client/weather")]
         [HttpPost]
         public async Task<IActionResult> Weather(int? retry)
@@ -231,7 +228,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 Cloudness = 0.01f
             };
             var locationWeatherTime = new LocationWeatherTime(weather, 1, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToShortTimeString());
-            locationWeatherTime.SeasonsSettings = new GClass2448();
+            locationWeatherTime.SeasonsSettings = new();
             Debug.WriteLine(locationWeatherTime.ToJson());
 
             return new BSGSuccessBodyResult(locationWeatherTime.ToJson());
