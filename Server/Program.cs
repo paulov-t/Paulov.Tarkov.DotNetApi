@@ -5,15 +5,12 @@ using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Net.WebSockets;
 using System.Reflection;
 
 namespace SIT.WebServer
 {
     public class Program
     {
-        public static Dictionary<string, WebSocket> WebSockets { get; } = new Dictionary<string, WebSocket>();
-
         public static void Main(string[] args)
         {
             var assemblyMods = new List<Assembly>();
@@ -34,7 +31,7 @@ namespace SIT.WebServer
                 KeepAliveInterval = TimeSpan.FromMinutes(2)
             });
 
-            app.UseMiddleware<WebsocketMiddleware>();
+            app.UseMiddleware<WebSocketMiddleware>(builder.Services);
             app.UseMiddleware<RequestLoggingMiddleware>();
 
             app.UseSwagger();
@@ -104,8 +101,14 @@ namespace SIT.WebServer
                 .AddSingleton<IInventoryService, InventoryService>()
                 .AddSingleton<IPasswordService, PasswordService>();
 
+            Console.WriteLine($"Loading AccountService");
             services.AddSingleton(typeof(AccountService), new AccountService(new JsonFileSaveProvider()));
 
+            Console.WriteLine($"Loading FriendshipService");
+            services.AddSingleton<IFriendshipService, FriendshipService>();
+
+            Console.WriteLine($"Loading WebSocketService");
+            services.AddSingleton(typeof(IWebSocketService), new WebSocketService());
 
 
         }

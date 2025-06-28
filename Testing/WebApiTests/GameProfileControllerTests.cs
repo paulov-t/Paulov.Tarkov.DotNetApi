@@ -78,7 +78,7 @@ namespace WebApiTests
             };
 
             // Act: Create an instance of the GameProfileController and call the ProfileCreate method
-            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService())
+            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new AccountService(_saveProvider))
             {
                 ControllerContext = controllerContext
             };

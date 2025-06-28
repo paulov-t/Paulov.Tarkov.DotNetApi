@@ -292,30 +292,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packetResult), Request, Response);
         }
 
-        [Route("client/friend/request/list/inbox")]
-        [HttpPost]
-        public async void FriendRequestInbox(int? retry, bool? debug)
-        {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
-        }
 
-        [Route("client/friend/request/list/outbox")]
-        [HttpPost]
-        public async void FriendRequestOutbox(int? retry, bool? debug)
-        {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
-        }
-
-        [Route("client/friend/list")]
-        [HttpPost]
-        public async Task<IActionResult> FriendList(int? retry, bool? debug)
-        {
-            JObject packet = new();
-            packet.Add("Friends", new JArray());
-            packet.Add("Ignore", new JArray());
-            packet.Add("InIgnoreList", new JArray());
-            return new BSGSuccessBodyResult(packet);
-        }
 
         [Route("client/server/list")]
         [HttpPost]
