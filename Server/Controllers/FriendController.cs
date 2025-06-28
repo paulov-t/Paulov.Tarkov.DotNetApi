@@ -1,12 +1,10 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
-using System.Text;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -71,18 +69,18 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "");
             }
 
-            _websocketService.GetWebSocket(SessionId)?
-                .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"FriendRequestSent\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+            //_websocketService.GetWebSocket(SessionId)?
+            //    .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"FriendRequestSent\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
 
-            _websocketService.GetWebSocket(toId)?
-              .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"friendListNewRequest\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+            //_websocketService.GetWebSocket(toId)?
+            //  .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"friendListNewRequest\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
 
-
-            return new BSGSuccessBodyResult(new
+            JObject result = new JObject()
             {
-                requestId = requestId,
-                status = "None"
-            });
+                { "requestId", requestId.ToString() },
+                { "status", "None" }
+            };
+            return new BSGSuccessBodyResult(result);
 
         }
 
@@ -116,9 +114,30 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/friend/request/list/outbox")]
         [HttpPost]
-        public async void FriendRequestOutbox(int? retry, bool? debug)
+        public async Task<IActionResult> FriendRequestOutbox(int? retry, bool? debug)
         {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            var account = _saveProvider.LoadProfile(SessionId);
+            var accountProfileMode = _saveProvider.GetAccountProfileMode(account);
+
+            JArray friendRequests = new JArray();
+            foreach (var request in accountProfileMode.SocialNetwork.FriendRequestOutbox)
+            {
+                var toAccount = _saveProvider.LoadProfile(request.ToId);
+
+                var friendRequest = new JObject
+                {
+                    ["_id"] = request.FriendRequestId.ToString(),
+                    ["from"] = request.FromId,
+                    ["to"] = request.ToId,
+                    ["date"] = 0,
+                    ["profile"] = JObject.FromObject(_friendshipService.CreateUpdatableChatMemberJObject(toAccount, null))
+                };
+                friendRequests.Add(friendRequest);
+            }
+
+            return new BSGSuccessBodyResult(friendRequests);
         }
 
 
