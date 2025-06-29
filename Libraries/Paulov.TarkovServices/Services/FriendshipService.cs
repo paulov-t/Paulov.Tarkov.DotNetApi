@@ -69,6 +69,50 @@ namespace Paulov.TarkovServices.Services
             return requestId;
         }
 
+        public void DeclineFriendRequest(string fromId, string toId, MongoID requestId)
+        {
+            var accountFrom = _saveProvider.LoadProfile(fromId);
+            if (accountFrom == null)
+                return;
+            var mode = accountFrom.CurrentMode;
+            var accountTo = _saveProvider.LoadProfile(toId);
+            if (accountTo == null)
+                return;
+            AccountProfileMode accountProfileModeFrom = null;
+            AccountProfileMode accountProfileModeTo = null;
+            switch (mode.ToUpperInvariant())
+            {
+                case "REGULAR":
+                    accountProfileModeFrom = accountFrom.Modes.Regular;
+                    accountProfileModeTo = accountTo.Modes.Regular;
+                    break;
+                case "PVE":
+                    accountProfileModeFrom = accountFrom.Modes.PVE;
+                    accountProfileModeTo = accountTo.Modes.PVE;
+                    break;
+                case "ARENA":
+                    accountProfileModeFrom = accountFrom.Modes.Arena;
+                    accountProfileModeTo = accountTo.Modes.Arena;
+                    break;
+                default:
+                    return; // Invalid mode
+            }
+            if (accountProfileModeFrom == null || accountProfileModeTo == null)
+                return;
+            var requestOutbox = accountProfileModeFrom.SocialNetwork.FriendRequestOutbox.FirstOrDefault(x => x.FriendRequestId == requestId && x.ToId == toId && x.FromId == fromId);
+            if (requestOutbox != null)
+            {
+                accountProfileModeFrom.SocialNetwork.FriendRequestOutbox.Remove(requestOutbox);
+            }
+            var requestInbox = accountProfileModeTo.SocialNetwork.FriendRequestInbox.FirstOrDefault(x => x.FriendRequestId == requestId && x.ToId == fromId && x.FromId == toId);
+            if (requestInbox != null)
+            {
+                accountProfileModeTo.SocialNetwork.FriendRequestInbox.Remove(requestInbox);
+            }
+            _saveProvider.SaveProfile(accountFrom.AccountId, accountFrom);
+            _saveProvider.SaveProfile(accountTo.AccountId, accountTo);
+        }
+
         public JObject CreateUpdatableChatMemberJObject(Account account, string gameMode = null)
         {
 
