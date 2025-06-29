@@ -1,4 +1,5 @@
 ﻿using BSGHelperLibrary.ResponseModels;
+using ChatShared;
 using EFT;
 using EFT.Hideout;
 using Microsoft.AspNetCore.Mvc;
@@ -325,42 +326,30 @@ namespace Paulov.Tarkov.Web.Api.Controllers
              * Expects json object with nickname defined as a string
              */
 
-
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            // If the request body is null or does not contain the "nickname" key, return an error response.
+            if (requestBody == null || !requestBody.ContainsKey("nickname"))
+            {
+                return new BSGErrorBodyResult(402, "Request Body cannot be found or nickname is not provided!");
+            }
 
             var sessionId = SessionId;
-
-            //var profile = _saveProvider.LoadProfile(sessionId);
-            //if (profile == null)
-            //{
-            //    Response.StatusCode = 500;
-            //    return new NotFoundResult();
-            //}
 
             var allProfiles = _saveProvider.GetProfiles();
 
             List<Dictionary<string, object>> chatMembers = new();
+            // TODO: This needs refactoring. If we had a lot of profiles on this server then this could take a long period of time.
             foreach (var p in allProfiles)
             {
                 var m = _accountService.GetUpdatableChatMember(p.Value, "PVE");
-                chatMembers.Add(m);
+                if (m == null)
+                    continue;
 
-                //var pmc = _saveProvider.GetPmcProfile(p.Value);
-                //var info = new UpdatableChatMember.UpdatableChatMemberInfo();
-                //info.Nickname = pmc.Info.Nickname;// pmc["Info"]["Nickname"].ToString();
-                //info.Side = EFT.EChatMemberSide.Usec;
-                //info.Banned = false;
-                //info.Ignored = false;
-                //info.Level = 1;
-                //info.MemberCategory = EMemberCategory.Default;
-                //info.SelectedMemberCategory = EMemberCategory.Default;
-
-                //var member = new Dictionary<string, object>();
-                //member.Add("AccountId", p.Key);
-                //member.Add("_id", p.Key);
-                //member.Add("aid", p.Key);
-                //member.Add("Info", info);
-                //chatMembers.Add(member);
+                var mInfo = m["Info"] as UpdatableChatMember.UpdatableChatMemberInfo;
+                if (mInfo.Nickname.Contains(requestBody["nickname"].ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    chatMembers.Add(m);
+                }
             }
 
             return new BSGSuccessBodyResult(chatMembers.ToArray());
