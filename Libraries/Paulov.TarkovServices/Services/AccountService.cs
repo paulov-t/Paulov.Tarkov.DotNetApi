@@ -47,6 +47,9 @@ namespace Paulov.TarkovServices.Services
             }
 
             var pmc = accountProfileMode.Characters.PMC;
+            if (pmc == null)
+                return null;
+
             var info = new UpdatableChatMember.UpdatableChatMemberInfo();
             info.Nickname = pmc.Info.Nickname;
             info.Side = EFT.EChatMemberSide.Usec;
