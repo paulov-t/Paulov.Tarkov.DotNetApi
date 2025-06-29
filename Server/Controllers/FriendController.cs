@@ -5,6 +5,7 @@ using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
+using System.Text;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -69,11 +70,15 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "");
             }
 
-            //_websocketService.GetWebSocket(SessionId)?
-            //    .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"FriendRequestSent\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
-
-            //_websocketService.GetWebSocket(toId)?
-            //  .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"friendListNewRequest\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+            if (_websocketService != null)
+            {
+                // Notify the sender about the sent request
+                _websocketService.GetWebSocket(SessionId)?
+                    .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"FriendRequestSent\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+                // Notify the receiver about the new friend request
+                _websocketService.GetWebSocket(toId)?
+                  .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"friendListNewRequest\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+            }
 
             JObject result = new JObject()
             {

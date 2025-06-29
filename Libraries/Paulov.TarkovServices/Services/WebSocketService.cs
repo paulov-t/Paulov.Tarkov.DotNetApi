@@ -1,5 +1,6 @@
 ﻿using Paulov.TarkovServices.Services.Interfaces;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net.WebSockets;
 
 namespace Paulov.TarkovServices.Services
@@ -41,6 +42,13 @@ namespace Paulov.TarkovServices.Services
 
         public WebSocket GetWebSocket(string sessionId)
         {
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                Debug.WriteLine("Session ID is null or empty. Cannot retrieve WebSocket.");
+                Console.WriteLine("Session ID is null or empty. Cannot retrieve WebSocket.");
+                return null;
+            }
+
             return WebSockets.TryGetValue(sessionId, out var webSocket) ? webSocket : null;
         }
     }
