@@ -87,6 +87,35 @@ namespace WebApiTests
 
             // TODO: Add assertions to verify the profile creation logic
         }
+
+        [Test]
+        public void ProfileSearchTest()
+        {
+            // Arrange: Create a JSON object with the required fields for profile creation (This comes from the client)
+            var data = new JObject();
+            data.Add("nickname", "Dev");
+            var requestBodyStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(data.ToJson()));
+
+            // Set up the HttpContext with the request body and session
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Body = requestBodyStream;
+            httpContext.Request.ContentLength = requestBodyStream.Length;
+            httpContext.Session = new SessionForGameProfileControllerTests();
+            var controllerContext = new ControllerContext()
+            {
+                HttpContext = httpContext,
+            };
+
+            // Act: Create an instance of the GameProfileController and call the ProfileCreate method
+            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new AccountService(_saveProvider))
+            {
+                ControllerContext = controllerContext
+            };
+            var result = controller.ProfileSearch().Result;
+            _ = result;
+
+            // TODO: Add assertions to verify the profile creation logic
+        }
     }
 
     public class SessionForGameProfileControllerTests : Microsoft.AspNetCore.Http.ISession
