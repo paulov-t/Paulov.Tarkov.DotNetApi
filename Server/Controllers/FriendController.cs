@@ -9,6 +9,21 @@ using System.Text;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
+    /**
+     * TODO: All of the functionality enclosed here needs to be refactored into FriendshipService
+     */
+
+
+    /// <summary>
+    /// Provides functionality for managing friendships, including adding friends, sending and handling friend requests,
+    /// and retrieving friend lists. This controller interacts with the social network features of user accounts.
+    /// </summary>
+    /// <remarks>The <see cref="FriendController"/> class exposes endpoints for managing friendships in a
+    /// social network context.  It supports operations such as adding friends, sending friend requests, accepting or
+    /// rejecting requests,  and retrieving lists of friends or pending requests. The controller relies on injected
+    /// services for  persistence, friendship management, and WebSocket notifications.  This controller is designed to
+    /// handle HTTP POST requests and is intended to be used in a web application  environment. It assumes the presence
+    /// of a valid session ID for identifying the current user.</remarks>
     public class FriendController : Controller
     {
         private ISaveProvider _saveProvider;
@@ -185,6 +200,65 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 _saveProvider.SaveProfile(requestBody["profileId"].ToString(), otherAccount);
             }
 
+            return new BSGSuccessBodyResult("OK");
+        }
+
+        [Route("client/friend/request/decline")]
+        [HttpPost]
+        public async Task<IActionResult> FriendRequestReject(int? retry, bool? debug)
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            {
+                var account = _saveProvider.LoadProfile(SessionId);
+                var accountProfileMode = _saveProvider.GetAccountProfileMode(account);
+                var myFriendRequestInboxIndex = accountProfileMode.SocialNetwork.FriendRequestInbox.FindIndex(x => x.FromId == requestBody["profileId"].ToString());
+                if (myFriendRequestInboxIndex != -1)
+                {
+                    // remove from my account friend request inbox
+                    accountProfileMode.SocialNetwork.FriendRequestInbox.RemoveAt(myFriendRequestInboxIndex);
+                }
+                _saveProvider.SaveProfile(SessionId, account);
+            }
+            {
+                var otherAccount = _saveProvider.LoadProfile(requestBody["profileId"].ToString());
+                var otherAccountMode = _saveProvider.GetAccountProfileMode(otherAccount);
+                var otherFriendRequestOutputIndex = otherAccountMode.SocialNetwork.FriendRequestOutbox.FindIndex(x => x.FromId == requestBody["profileId"].ToString());
+                if (otherFriendRequestOutputIndex != -1)
+                {
+                    // remove from other account friend request outbox
+                    otherAccountMode.SocialNetwork.FriendRequestOutbox.RemoveAt(otherFriendRequestOutputIndex);
+                }
+                _saveProvider.SaveProfile(requestBody["profileId"].ToString(), otherAccount);
+            }
+            return new BSGSuccessBodyResult("OK");
+        }
+
+        [Route("client/friend/request/cancel")]
+        public async Task<IActionResult> FriendRequestCancel()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            {
+                var account = _saveProvider.LoadProfile(SessionId);
+                var accountProfileMode = _saveProvider.GetAccountProfileMode(account);
+                var myFriendRequestInboxIndex = accountProfileMode.SocialNetwork.FriendRequestOutbox.FindIndex(x => x.ToId == requestBody["profileId"].ToString());
+                if (myFriendRequestInboxIndex != -1)
+                {
+                    // remove from my account friend request inbox
+                    accountProfileMode.SocialNetwork.FriendRequestOutbox.RemoveAt(myFriendRequestInboxIndex);
+                }
+                _saveProvider.SaveProfile(SessionId, account);
+            }
+            {
+                var otherAccount = _saveProvider.LoadProfile(requestBody["profileId"].ToString());
+                var otherAccountMode = _saveProvider.GetAccountProfileMode(otherAccount);
+                var otherFriendRequestOutputIndex = otherAccountMode.SocialNetwork.FriendRequestInbox.FindIndex(x => x.ToId == requestBody["profileId"].ToString());
+                if (otherFriendRequestOutputIndex != -1)
+                {
+                    // remove from other account friend request outbox
+                    otherAccountMode.SocialNetwork.FriendRequestInbox.RemoveAt(otherFriendRequestOutputIndex);
+                }
+                _saveProvider.SaveProfile(requestBody["profileId"].ToString(), otherAccount);
+            }
             return new BSGSuccessBodyResult("OK");
         }
 
