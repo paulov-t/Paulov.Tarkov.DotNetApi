@@ -341,6 +341,9 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             // TODO: This needs refactoring. If we had a lot of profiles on this server then this could take a long period of time.
             foreach (var p in allProfiles)
             {
+                if (p.Key == sessionId)
+                    continue; // Skip the current profile
+
                 var m = _accountService.GetUpdatableChatMember(p.Value, "PVE");
                 if (m == null)
                     continue;
