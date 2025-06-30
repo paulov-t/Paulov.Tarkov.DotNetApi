@@ -10,10 +10,12 @@ namespace Paulov.TarkovServices.Services
     public sealed class FriendshipService : IFriendshipService
     {
         private ISaveProvider _saveProvider;
+        private IWebSocketService _webSocketService;
 
-        public FriendshipService(ISaveProvider saveProvider)
+        public FriendshipService(ISaveProvider saveProvider, IWebSocketService webSocketService)
         {
             _saveProvider = saveProvider;
+            _webSocketService = webSocketService;
         }
 
         public MongoID? SendFriendRequest(string fromId, string toId)
@@ -111,6 +113,42 @@ namespace Paulov.TarkovServices.Services
             }
             _saveProvider.SaveProfile(accountFrom.AccountId, accountFrom);
             _saveProvider.SaveProfile(accountTo.AccountId, accountTo);
+        }
+
+        public void AcceptFriendRequest(string fromId, string toId)
+        {
+            {
+                var account = _saveProvider.LoadProfile(fromId);
+                var accountProfileMode = _saveProvider.GetAccountProfileMode(account);
+
+                var myFriendRequestInboxIndex = accountProfileMode.SocialNetwork.FriendRequestInbox.FindIndex(x => x.FromId == fromId);
+                if (myFriendRequestInboxIndex != -1)
+                {
+                    // add to my account friend list
+                    var item = accountProfileMode.SocialNetwork.FriendRequestInbox[myFriendRequestInboxIndex];
+                    accountProfileMode.SocialNetwork.Friends.Add(item.FromId);
+                    accountProfileMode.SocialNetwork.FriendRequestInbox.RemoveAt(myFriendRequestInboxIndex);
+                }
+
+                _saveProvider.SaveProfile(fromId, account);
+
+            }
+
+            {
+                var otherAccount = _saveProvider.LoadProfile(toId);
+                var otherAccountMode = _saveProvider.GetAccountProfileMode(otherAccount);
+
+                var otherFriendRequestOutputIndex = otherAccountMode.SocialNetwork.FriendRequestOutbox.FindIndex(x => x.FromId == fromId);
+                if (otherFriendRequestOutputIndex != -1)
+                {
+                    // add to other account friend list
+                    var item = otherAccountMode.SocialNetwork.FriendRequestOutbox[otherFriendRequestOutputIndex];
+                    otherAccountMode.SocialNetwork.Friends.Add(item.ToId);
+                    otherAccountMode.SocialNetwork.FriendRequestOutbox.RemoveAt(otherFriendRequestOutputIndex);
+                }
+
+                _saveProvider.SaveProfile(toId, otherAccount);
+            }
         }
 
         public JObject CreateUpdatableChatMemberJObject(Account account, string gameMode = null)

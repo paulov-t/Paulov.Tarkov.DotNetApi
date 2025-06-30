@@ -61,7 +61,7 @@ namespace WebApiTests
             };
 
             // Create an instance of FriendController with the necessary dependencies
-            var controller = new FriendController(_saveProvider, new FriendshipService(_saveProvider), new WebSocketService())
+            var controller = new FriendController(_saveProvider, new FriendshipService(_saveProvider, new WebSocketService()), new WebSocketService())
             {
                 ControllerContext = controllerContext
             };

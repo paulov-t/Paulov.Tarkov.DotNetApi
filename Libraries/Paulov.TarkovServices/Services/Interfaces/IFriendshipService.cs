@@ -8,6 +8,8 @@ namespace Paulov.TarkovServices.Services.Interfaces
     {
         public MongoID? SendFriendRequest(string fromId, string toId);
 
+        public void AcceptFriendRequest(string fromId, string toId);
+
         public JObject CreateUpdatableChatMemberJObject(Account account, string gameMode = null);
 
 

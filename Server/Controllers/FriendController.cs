@@ -5,7 +5,6 @@ using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
-using System.Text;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
@@ -87,12 +86,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             if (_websocketService != null)
             {
-                // Notify the sender about the sent request
-                _websocketService.GetWebSocket(SessionId)?
-                    .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"FriendRequestSent\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
                 // Notify the receiver about the new friend request
-                _websocketService.GetWebSocket(toId)?
-                  .SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes($"{{\"type\":\"friendListNewRequest\",\"eventId\":\"friendListNewRequest\"}}")), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+                _websocketService.SendNotificationToWebSocket(toId
+                    , EFT.Communications.ENotificationType.FriendsListNewRequest
+                    , new JObject()
+                    {
+                        { "profile", JObject.FromObject(_friendshipService.CreateUpdatableChatMemberJObject(_saveProvider.LoadProfile(SessionId))) }
+                    }
+                    );
             }
 
             JObject result = new JObject()
@@ -160,10 +161,27 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             return new BSGSuccessBodyResult(friendRequests);
         }
 
+        [Route("client/friend/request/accept-all")]
+        [HttpPost]
+        public async Task<IActionResult> FriendRequestAcceptAll()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            var account = _saveProvider.LoadProfile(SessionId);
+            var accountProfileMode = _saveProvider.GetAccountProfileMode(account);
+
+            foreach (var friendRequest in accountProfileMode.SocialNetwork.FriendRequestInbox)
+            {
+                _friendshipService.AcceptFriendRequest(friendRequest.FromId, friendRequest.ToId);
+            }
+
+            return new BSGSuccessBodyResult("OK");
+        }
+
 
         [Route("client/friend/request/accept")]
         [HttpPost]
-        public async Task<IActionResult> FriendRequestAccept(int? retry, bool? debug)
+        public async Task<IActionResult> FriendRequestAccept()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
 
@@ -178,6 +196,15 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                     var item = accountProfileMode.SocialNetwork.FriendRequestInbox[myFriendRequestInboxIndex];
                     accountProfileMode.SocialNetwork.Friends.Add(item.FromId);
                     accountProfileMode.SocialNetwork.FriendRequestInbox.RemoveAt(myFriendRequestInboxIndex);
+
+                    // Notify the receiver about the added friend
+                    _websocketService.SendNotificationToWebSocket(item.FromId
+                        , EFT.Communications.ENotificationType.FriendsListAccept
+                        , new JObject()
+                        {
+                        { "profile", JObject.FromObject(_friendshipService.CreateUpdatableChatMemberJObject(_saveProvider.LoadProfile(SessionId))) }
+                        }
+                        );
                 }
 
                 _saveProvider.SaveProfile(SessionId, account);
@@ -276,9 +303,15 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 friendsArray.Add(_friendshipService.CreateUpdatableChatMemberJObject(_saveProvider.LoadProfile(fId)));
             }
 
+            JArray ignoreArray = new JArray();
+            foreach (var ignoreId in accountProfileMode.SocialNetwork.Ignore)
+            {
+                ignoreArray.Add(_friendshipService.CreateUpdatableChatMemberJObject(_saveProvider.LoadProfile(ignoreId)));
+            }
+
             JObject packet = new();
             packet.Add("Friends", friendsArray);
-            packet.Add("Ignore", new JArray());
+            packet.Add("Ignore", ignoreArray);
             packet.Add("InIgnoreList", new JArray());
             return await Task.FromResult(new BSGSuccessBodyResult(packet));
         }
