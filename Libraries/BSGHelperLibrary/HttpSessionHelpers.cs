@@ -34,11 +34,19 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware
                     if (!HeaderCookie.ContainsKey(cookieSplitComma.Split("=")[0]))
                         HeaderCookie.Add(cookieSplitComma.Split("=")[0], cookieSplitComma.Split("=")[1]);
                 }
+                cookieSplit = Cookie.Split(';');
+                foreach (var cookieSplitComma in cookieSplit)
+                {
+                    var splitageKey = cookieSplitComma.Split("=")[0].Trim();
+                    var splitageValue = cookieSplitComma.Split("=")[1].Trim();
+                    if (!HeaderCookie.ContainsKey(splitageKey))
+                        HeaderCookie.Add(splitageKey, splitageValue);
+                }
 
                 if (context != null && context.Session != null && HeaderCookie.ContainsKey("PHPSESSID"))
                 {
-                    if (!context.Session.TryGetValue("SessionId", out _))
-                        context.Session?.SetString("SessionId", HeaderCookie["PHPSESSID"]);
+                    //if (!context.Session.TryGetValue("SessionId", out _))
+                    context.Session?.SetString("SessionId", HeaderCookie["PHPSESSID"]);
                 }
 
                 if (HeaderCookie.ContainsKey("PHPSESSID"))
