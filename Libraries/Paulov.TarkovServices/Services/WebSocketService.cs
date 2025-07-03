@@ -1,4 +1,5 @@
-﻿using EFT.Communications;
+﻿using EFT;
+using EFT.Communications;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Collections.Concurrent;
@@ -72,7 +73,11 @@ namespace Paulov.TarkovServices.Services
             var type = attribute.Name;
             JObject jobj = new JObject();
             jobj.Add("type", type);
-            jobj.Add("eventId", type);
+
+            // if we havent been provided an eventId, generate one
+            if (!additionalParams.ContainsKey("eventId"))
+                jobj.Add("eventId", MongoID.Generate(false).ToString());
+
             foreach (var param in additionalParams)
             {
                 jobj.Add(param.Key, param.Value);
@@ -81,6 +86,9 @@ namespace Paulov.TarkovServices.Services
             if (WebSockets.TryGetValue(sessionId, out var webSocket) && webSocket.State == WebSocketState.Open)
             {
                 var stringJson = jobj.ToJson();
+#if DEBUG
+                var prettyJson = jobj.ToPrettyJson();
+#endif
                 var buffer = System.Text.Encoding.UTF8.GetBytes(stringJson);
                 var segment = new ArraySegment<byte>(buffer);
                 webSocket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None).Wait();
