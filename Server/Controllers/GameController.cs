@@ -302,16 +302,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packets), Request, Response);
         }
 
-        [Route("client/match/group/current")]
-        [HttpPost]
-        public async Task<IActionResult> GroupCurrent(int? retry, bool? debug)
-        {
-            JObject packet = new();
-            packet.Add("squad", new JArray());
-            //packet.Add("raidSettings", new JObject());
-
-            return new BSGSuccessBodyResult(packet);
-        }
 
         [Route("client/quest/list")]
         [HttpPost]
@@ -478,9 +468,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 _saveProvider.SaveProfile(SessionId, account);
             }
 
-            //await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
-            //    new Dictionary<string, object>() { { "gameMode", mode }, { "backendUrl", ip } }
-            //    , Request, Response);
+            // When the game is started in a specific mode, we need to recreate the matching group for that mode. This would be true whenever the game is started or switched modes.
+            _saveProvider.GetAccountProfileMode(account).MatchingGroup = new TarkovModels.MatchingGroup();
+            // Resave
+            _saveProvider.SaveProfile(SessionId, account);
 
             return new BSGSuccessBodyResult(JObject.FromObject(new { gameMode = mode, backendUrl = ip }));
         }
