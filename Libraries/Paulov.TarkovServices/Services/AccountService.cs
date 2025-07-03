@@ -1,10 +1,11 @@
 ﻿using ChatShared;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices.Providers.Interfaces;
+using Paulov.TarkovServices.Services.Interfaces;
 
 namespace Paulov.TarkovServices.Services
 {
-    public class AccountService
+    public class AccountService : IAccountService
     {
         private ISaveProvider _saveProvider;
 
@@ -13,6 +14,21 @@ namespace Paulov.TarkovServices.Services
             _saveProvider = saveProvider ?? throw new ArgumentNullException(nameof(saveProvider));
         }
 
+        public Account GetAccountByAID(string aid)
+        {
+            if (string.IsNullOrEmpty(aid))
+            {
+                throw new ArgumentException("Account ID cannot be null or empty.", nameof(aid));
+            }
+            var profiles = _saveProvider.GetProfiles();
+            if (profiles == null || !profiles.Any())
+            {
+                return null;
+            }
+            return profiles.Values
+                .Where(x => _saveProvider.GetAccountProfileMode(x).Characters.PMC.AccountId == aid)
+                .FirstOrDefault();
+        }
 
         public Dictionary<string, object> GetUpdatableChatMember(Account account, string gameMode = null)
         {
@@ -65,6 +81,30 @@ namespace Paulov.TarkovServices.Services
             member.Add("aid", pmc.AccountId);
             member.Add("Info", info);
             return member;
+        }
+
+        public MatchingGroupMember GetMatchingGroupMember(Account account, bool isLeader, bool isReady, string gameMode = null)
+        {
+            if (account == null)
+            {
+                throw new ArgumentNullException(nameof(account), "Account cannot be null.");
+            }
+            var updatableChatMember = GetUpdatableChatMember(account, gameMode);
+            if (updatableChatMember == null)
+            {
+                return null;
+            }
+
+            var accountMode = _saveProvider.GetAccountProfileMode(account);
+            var info = accountMode.Characters.PMC.Info;
+
+            return new MatchingGroupMember(
+                account.AccountId,
+                accountMode.Characters.PMC.AccountId,
+                info,
+                isLeader,
+                isReady
+            );
         }
     }
 }

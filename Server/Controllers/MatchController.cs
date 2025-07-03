@@ -9,7 +9,6 @@ using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
 using Paulov.TarkovModels.Responses;
 using Paulov.TarkovServices.Providers.Interfaces;
-using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
@@ -18,16 +17,167 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class MatchController : ControllerBase
     {
-        private JsonFileSaveProvider _saveProvider;
+        private ISaveProvider _saveProvider;
         private IInventoryService _inventoryService;
         private IGlobalsService _globalsService;
+        private IAccountService _accountService;
+        private IWebSocketService _webSocketService;
 
-        public MatchController(ISaveProvider saveProvider, IInventoryService inventoryService, IGlobalsService globalsService)
+        public MatchController(ISaveProvider saveProvider, IInventoryService inventoryService, IGlobalsService globalsService, IAccountService accountService, IWebSocketService webSocketService)
         {
-            _saveProvider = saveProvider as JsonFileSaveProvider;
+            _saveProvider = saveProvider;
             _inventoryService = inventoryService;
             _globalsService = globalsService;
+            _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
+            _webSocketService = webSocketService ?? throw new ArgumentNullException(nameof(webSocketService));
         }
+
+        private string SessionId
+        {
+            get
+            {
+                return HttpSessionHelpers.GetSessionId(Request, HttpContext);
+            }
+        }
+
+        [Route("client/match/group/current")]
+        [HttpPost]
+        public async Task<IActionResult> MatchingGroupCurrent(int? retry, bool? debug)
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            var account = _saveProvider.LoadProfile(SessionId);
+            if (account == null)
+            {
+                return new BSGErrorBodyResult(500, "Account not found");
+            }
+
+            if (_saveProvider.GetAccountProfileMode(account).MatchingGroup == null)
+                _saveProvider.GetAccountProfileMode(account).MatchingGroup = new MatchingGroup()
+                {
+                    MatchingGroupId = MongoID.Generate(false).ToString(),
+                    Members = new List<string>() { account.AccountId },
+                    SquadLeaderId = account.AccountId
+                };
+
+            var matchGroup = _saveProvider.GetAccountProfileMode(account).MatchingGroup;
+
+            var members = new JArray();
+            foreach (var memberId in matchGroup.Members)
+            {
+                members.Add(JObject.FromObject(_accountService.GetMatchingGroupMember(_saveProvider.LoadProfile(memberId), memberId == SessionId, false, null)));
+            }
+
+            JObject packet = new();
+            packet.Add("squad", members);
+            packet.Add("raidSettings", new JObject());
+
+            return new BSGSuccessBodyResult(packet);
+        }
+
+        [Route("client/match/group/invite/send")]
+        [HttpPost]
+        public async Task<IActionResult> MatchGroupingInviteSend()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(500, "");
+
+            var fromAccount = _saveProvider.LoadProfile(SessionId);
+            if (fromAccount == null)
+            {
+                return new BSGErrorBodyResult(500, "Own account not found");
+            }
+
+            var toAccountId = requestBody["to"].ToString();
+            var inLobby = bool.Parse(requestBody["inLobby"].ToString());
+
+            var toAccount = _accountService.GetAccountByAID(toAccountId);
+            if (toAccount == null)
+            {
+                return new BSGErrorBodyResult(500, "Other account not found");
+            }
+
+            // if user is not logged in. send not logged in error.
+            if (_webSocketService.GetWebSocket(toAccount.AccountId) == null)
+            {
+                return new BSGErrorBodyResult(502014, "Player is not Online");
+            }
+
+            if (_saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup == null)
+            {
+                _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup = new MatchingGroup()
+                {
+                    MatchingGroupId = MongoID.Generate(false).ToString(),
+                    Members = new List<string>() { fromAccount.AccountId, toAccountId }
+                };
+            }
+
+            if (_saveProvider.GetAccountProfileMode(toAccount).MatchingGroup == null)
+                _saveProvider.GetAccountProfileMode(toAccount).MatchingGroup = new MatchingGroup();
+
+            var matchGroup = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
+            matchGroup.SquadLeaderId = fromAccount.AccountId;
+
+            if (!matchGroup.Members.Any(x => x == fromAccount.AccountId))
+                matchGroup.Members.Add(fromAccount.AccountId);
+
+            if (!matchGroup.Members.Any(x => x == toAccount.AccountId))
+                matchGroup.Members.Add(toAccount.AccountId);
+
+            _saveProvider.GetAccountProfileMode(toAccount).MatchingGroup = matchGroup;
+            _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup = matchGroup;
+
+            var members = new JArray();
+
+            foreach (var memberId in matchGroup.Members)
+            {
+                members.Add(JObject.FromObject(_accountService.GetMatchingGroupMember(_saveProvider.LoadProfile(memberId), memberId == SessionId, inLobby, null)));
+            }
+
+            var requestId = MongoID.Generate(false).ToString();
+            _webSocketService.SendNotificationToWebSocket(toAccount.AccountId, EFT.Communications.ENotificationType.GroupMatchInviteSend, new JObject()
+            {
+                { "eventId", requestId },
+                { "requestId", requestId },
+                { "from", _saveProvider.GetPmcProfile(fromAccount).AccountId.ToString() },
+                { "members", members },
+                { "isLeader", true },
+                { "isReady", inLobby },
+            });
+
+            _saveProvider.SaveProfile(toAccount.AccountId, toAccount);
+            _saveProvider.SaveProfile(fromAccount.AccountId, fromAccount);
+
+            return new BSGSuccessBodyResult(requestId);
+        }
+
+        [Route("client/match/group/invite/accept")]
+        [HttpPost]
+        public async Task<IActionResult> MatchGroupingInviteAccept()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(500, "");
+
+            var fromAccount = _saveProvider.LoadProfile(SessionId);
+            if (fromAccount == null)
+            {
+                return new BSGErrorBodyResult(500, "Own account not found");
+            }
+
+            var group = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
+
+            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMember(_saveProvider.LoadProfile(memberId), memberId == group.SquadLeaderId, false, null));
+
+            foreach (var member in squadMembers)
+            {
+                _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchInviteAccept, JObject.FromObject(member));
+            }
+
+            return new BSGSuccessBodyResult(JArray.FromObject(squadMembers));
+        }
+
 
 
         [Route("client/match/group/invite/cancel-all")]

@@ -27,13 +27,15 @@ namespace Paulov.Tarkov.Web.Api.Controllers
     {
         private ISaveProvider _saveProvider;
         private IGlobalsService _globalsService;
-        private AccountService _accountService;
+        private IAccountService _accountService;
+        private IInventoryService _inventoryService;
 
-        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService, AccountService accountService)
+        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService, IAccountService accountService, IInventoryService inventoryService)
         {
             _saveProvider = saveProvider;
             _globalsService = globalsService;
             _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService), "AccountService cannot be null.");
+            _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService), "InventoryService cannot be null.");
         }
 
         private string SessionId
@@ -244,7 +246,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             pmcData2.Info.MemberCategory = EMemberCategory.Default;
             pmcData2.Info.SelectedMemberCategory = EMemberCategory.Default;
             // TODO: Remap GClass2032 to HideoutAreaDescriptor
-            pmcData2.Hideout.Areas = template["Hideout"]["Areas"].ToObject<GClass2032[]>();
+            pmcData2.Hideout.Areas = template["Hideout"]["Areas"].ToObject<AreaInfo[]>();
             pmcData2.Hideout.GlobalCustomization = template["Hideout"]["Customization"].ToObject<Dictionary<EHideoutCustomizationType, MongoID?>>();
             //pmcData2.Hideout = new HideoutDescriptor();
 
@@ -435,6 +437,71 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             return new BSGSuccessBodyResult(obj);
 
         }
+
+        [Route("client/profile/view")]
+        [HttpPost]
+        public async Task<IActionResult> ProfileView()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(402, "Request Body cannot be found!");
+
+            if (!requestBody.ContainsKey("accountId"))
+            {
+                return new BSGErrorBodyResult(402, "accountId is not provided!");
+            }
+            var accountAID = requestBody["accountId"].ToString();
+            var otherAccount = _accountService.GetAccountByAID(accountAID);
+            var pmcCharacter = _saveProvider.GetPmcProfile(otherAccount);
+            var scavCharacter = _saveProvider.GetScavProfile(otherAccount);
+
+            var favoriteItems = new JArray();
+            var id = pmcCharacter.Id.ToString();
+            var aid = accountAID;
+            var info = JObject.FromObject(pmcCharacter.Info);
+            var achievements = JObject.FromObject(pmcCharacter.AchievementsData);
+            var customization = JObject.FromObject(pmcCharacter.Customization);
+            var equipment = new JObject()
+            {
+                { "Id", _inventoryService.GetEquipmentId(pmcCharacter) },
+                { "Items", JArray.FromObject(_inventoryService.GetInventoryItems(pmcCharacter), DatabaseHelpers.CachedSerializer) },
+            };
+            var pmcStats = JObject.FromObject(pmcCharacter.Stats);
+            var scavStats = JObject.FromObject(pmcCharacter.Stats);
+            var skills = JObject.FromObject(pmcCharacter.Skills);
+            var hideout = JObject.FromObject(pmcCharacter.Hideout);
+            var customizationStash = _inventoryService.GetHideoutCustomizationStashId(pmcCharacter);
+            var hideoutAreaStashes = _inventoryService.GetHideoutAreaStashes(pmcCharacter);
+
+            // Get the hideoutKeys
+            var hideoutKeys = hideoutAreaStashes.Keys.Select(x => x.ToString()).ToList();
+            hideoutKeys.Add(_inventoryService.GetHideoutCustomizationStashId(pmcCharacter));
+
+            var itemsToReturn = new JArray();
+
+            var profileView = new JObject()
+            {
+                { "favoriteItems", favoriteItems },
+                { "id", id },
+                { "aid", aid },
+                { "info", info },
+                { "achievements", achievements },
+                { "customization", customization },
+                { "equipment", equipment },
+                { "pmcStats", pmcStats },
+                //{ "scavStats", JObject.FromObject(scavCharacter.Stats) },
+                { "scavStats", pmcStats },
+                { "skills", skills },
+                { "hideout", hideout },
+                { "customizationStash", customizationStash },
+                { "hideoutAreaStashes", JObject.FromObject(hideoutAreaStashes, DatabaseHelpers.CachedSerializer) },
+                { "items", itemsToReturn }
+            };
+
+            return new BSGSuccessBodyResult(profileView);
+
+        }
+
     }
 
 
