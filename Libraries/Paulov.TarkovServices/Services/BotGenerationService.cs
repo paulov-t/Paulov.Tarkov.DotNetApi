@@ -8,7 +8,7 @@ using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 using System.Text;
 using static EFT.InventoryLogic.Weapon;
-using FlatItem = GClass1382;
+using FlatItem = FlatItems;
 
 namespace Paulov.TarkovServices.Services
 {
