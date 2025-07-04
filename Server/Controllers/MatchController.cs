@@ -116,6 +116,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (_saveProvider.GetAccountProfileMode(toAccount).MatchingGroup == null)
                 _saveProvider.GetAccountProfileMode(toAccount).MatchingGroup = new MatchingGroup();
 
+            if (_saveProvider.GetAccountProfileMode(fromAccount).GroupInviteRequests.Contains(toAccount.AccountId))
+                _saveProvider.GetAccountProfileMode(fromAccount).GroupInviteRequests.Add(toAccount.AccountId);
+
+            if (_saveProvider.GetAccountProfileMode(toAccount).GroupInviteRequests.Contains(fromAccount.AccountId))
+                _saveProvider.GetAccountProfileMode(toAccount).GroupInviteRequests.Add(fromAccount.AccountId);
+
             var matchGroup = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
             matchGroup.SquadLeaderId = fromAccount.AccountId;
 
@@ -136,7 +142,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
 
             var requestId = MongoID.Generate(false).ToString();
-            _webSocketService.SendNotificationToWebSocket(toAccount.AccountId, EFT.Communications.ENotificationType.GroupMatchInviteSend, new JObject()
+            await _webSocketService.SendNotificationToWebSocket(toAccount.AccountId, EFT.Communications.ENotificationType.GroupMatchInviteSend, new JObject()
             {
                 { "eventId", requestId },
                 { "requestId", requestId },
@@ -168,11 +174,15 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             var group = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
 
+            var acceptingRequestAccountMember = _accountService.GetMatchingGroupMemberWithHealthAndPVR(fromAccount, false, false, null);
+            acceptingRequestAccountMember.Add("requestId", requestBody["requestId"].ToString());
+
             var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMember(_saveProvider.LoadProfile(memberId), memberId == group.SquadLeaderId, false, null));
 
             foreach (var member in squadMembers)
             {
-                _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchInviteAccept, JObject.FromObject(member));
+                await _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchInviteAccept, acceptingRequestAccountMember);
+                await Task.Delay(100); // To prevent flooding the WebSocket with messages
             }
 
             return new BSGSuccessBodyResult(JArray.FromObject(squadMembers));
@@ -184,6 +194,15 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> CancelAllGroupInvites()
         {
+            var fromAccount = _saveProvider.LoadProfile(SessionId);
+            if (fromAccount == null)
+            {
+                return new BSGErrorBodyResult(500, "Own account not found");
+            }
+
+            _saveProvider.GetAccountProfileMode(fromAccount).GroupInviteRequests.Clear();
+            _saveProvider.SaveProfile(fromAccount.AccountId, fromAccount);
+
             return new BSGSuccessBodyResult(new { });
         }
 
