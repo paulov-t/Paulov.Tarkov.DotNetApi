@@ -32,5 +32,11 @@ namespace Paulov.TarkovModels
         /// </summary>
         [JsonProperty("grouping")]
         public MatchingGroup MatchingGroup { get; set; } = new MatchingGroup();
+
+        /// <summary>
+        /// Gets or sets the social network information associated with the account profile.
+        /// </summary>
+        [JsonProperty("groupInviteRequests")]
+        public HashSet<string> GroupInviteRequests { get; set; } = new();
     }
 }
