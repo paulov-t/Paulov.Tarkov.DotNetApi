@@ -164,6 +164,9 @@ namespace Paulov.TarkovServices.Services
             }
 
             var pmc = _saveProvider.GetPmcProfile(account);
+            if (pmc == null)
+                return null;
+
             var jobj = new JObject();
             jobj.Add("AccountId", pmc.AccountId);
             jobj.Add("_id", pmc.Id.ToString());

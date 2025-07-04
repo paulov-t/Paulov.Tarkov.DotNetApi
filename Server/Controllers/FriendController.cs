@@ -87,13 +87,17 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (_websocketService != null)
             {
                 // Notify the receiver about the new friend request
-                _websocketService.SendNotificationToWebSocket(toId
-                    , EFT.Communications.ENotificationType.FriendsListNewRequest
-                    , new JObject()
-                    {
-                        { "profile", JObject.FromObject(_friendshipService.CreateUpdatableChatMemberJObject(_saveProvider.LoadProfile(SessionId))) }
-                    }
-                    );
+                var updatableChatMember = _friendshipService.CreateUpdatableChatMemberJObject(_saveProvider.LoadProfile(SessionId));
+                if (updatableChatMember != null)
+                {
+                    _websocketService.SendNotificationToWebSocket(toId
+                        , EFT.Communications.ENotificationType.FriendsListNewRequest
+                        , new JObject()
+                        {
+                        { "profile", JObject.FromObject(updatableChatMember) }
+                        }
+                        );
+                }
             }
 
             JObject result = new JObject()
