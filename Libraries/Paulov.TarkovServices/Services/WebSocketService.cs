@@ -55,7 +55,7 @@ namespace Paulov.TarkovServices.Services
             return WebSockets.TryGetValue(sessionId, out var webSocket) ? webSocket : null;
         }
 
-        public void SendNotificationToWebSocket(string sessionId, ENotificationType notificationType, JObject additionalParams)
+        public async Task SendNotificationToWebSocket(string sessionId, ENotificationType notificationType, JObject additionalParams)
         {
             if (string.IsNullOrEmpty(sessionId))
             {
@@ -91,7 +91,7 @@ namespace Paulov.TarkovServices.Services
 #endif
                 var buffer = System.Text.Encoding.UTF8.GetBytes(stringJson);
                 var segment = new ArraySegment<byte>(buffer);
-                webSocket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None).Wait();
+                await webSocket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
             }
             else
             {

@@ -12,6 +12,6 @@ namespace Paulov.TarkovServices.Services.Interfaces
         public void AddWebSocket(string sessionId, WebSocket webSocket);
         public WebSocket GetWebSocket(string sessionId);
         public void DeleteWebSocket(string sessionId);
-        public void SendNotificationToWebSocket(string sessionId, ENotificationType notificationType, JObject additionalParams);
+        public Task SendNotificationToWebSocket(string sessionId, ENotificationType notificationType, JObject additionalParams);
     }
 }
