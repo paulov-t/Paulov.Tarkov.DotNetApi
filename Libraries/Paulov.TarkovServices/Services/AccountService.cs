@@ -1,5 +1,7 @@
 ﻿using ChatShared;
+using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
 
@@ -68,12 +70,13 @@ namespace Paulov.TarkovServices.Services
 
             var info = new UpdatableChatMember.UpdatableChatMemberInfo();
             info.Nickname = pmc.Info.Nickname;
-            info.Side = EFT.EChatMemberSide.Usec;
+            info.Side = pmc.Info.Side == EFT.EPlayerSide.Usec ? EFT.EChatMemberSide.Usec : EFT.EChatMemberSide.Bear;
             info.Banned = false;
             info.Ignored = false;
-            info.Level = 1;
-            info.MemberCategory = EMemberCategory.Default;
-            info.SelectedMemberCategory = EMemberCategory.Default;
+            info.Level = pmc.Info.Level;
+            info.PrestigeLevel = pmc.Info.PrestigeLevel;
+            info.MemberCategory = pmc.Info.MemberCategory;
+            info.SelectedMemberCategory = pmc.Info.SelectedMemberCategory;
 
             var member = new Dictionary<string, object>();
             member.Add("AccountId", pmc.AccountId);
@@ -98,6 +101,7 @@ namespace Paulov.TarkovServices.Services
             var accountMode = _saveProvider.GetAccountProfileMode(account);
             var info = accountMode.Characters.PMC.Info;
 
+
             return new MatchingGroupMember(
                 account.AccountId,
                 accountMode.Characters.PMC.AccountId,
@@ -106,5 +110,23 @@ namespace Paulov.TarkovServices.Services
                 isReady
             );
         }
+
+        public JObject GetMatchingGroupMemberWithHealthAndPVR(Account account, bool isLeader, bool isReady, string gameMode)
+        {
+            var matchingGroupMember = GetMatchingGroupMember(account, isLeader, isReady, gameMode);
+
+            var obj = JObject.FromObject(matchingGroupMember, DatabaseHelpers.CachedSerializer);
+            var pmcProfile = _saveProvider.GetPmcProfile(account);
+            if (pmcProfile == null)
+            {
+                throw new ArgumentNullException(nameof(pmcProfile), "PMC profile cannot be null.");
+            }
+            obj["Info"]["Health"] = JObject.FromObject(pmcProfile.Health, DatabaseHelpers.CachedSerializer);
+            obj["PlayerVisualRepresentation"] = null;
+
+
+            return obj;
+        }
+
     }
 }

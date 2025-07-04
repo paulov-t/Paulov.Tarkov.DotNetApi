@@ -1,4 +1,5 @@
-﻿using Paulov.TarkovModels;
+﻿using Newtonsoft.Json.Linq;
+using Paulov.TarkovModels;
 
 namespace Paulov.TarkovServices.Services.Interfaces
 {
@@ -23,6 +24,7 @@ namespace Paulov.TarkovServices.Services.Interfaces
         public Account GetAccountByAID(string aid);
 
         public MatchingGroupMember GetMatchingGroupMember(Account account, bool isLeader, bool isReady, string gameMode);
+        public JObject GetMatchingGroupMemberWithHealthAndPVR(Account account, bool isLeader, bool isReady, string gameMode);
 
     }
 }
