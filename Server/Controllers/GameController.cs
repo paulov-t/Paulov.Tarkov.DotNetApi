@@ -469,7 +469,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
 
             // When the game is started in a specific mode, we need to recreate the matching group for that mode. This would be true whenever the game is started or switched modes.
-            _saveProvider.GetAccountProfileMode(account).MatchingGroup = new TarkovModels.MatchingGroup();
+            _saveProvider.GetAccountProfileMode(account).MatchingGroup = new();
+            // When the game is started in a specific mode, we need to reset the group invites.
+            _saveProvider.GetAccountProfileMode(account).GroupInviteRequests = new();
             // Resave
             _saveProvider.SaveProfile(SessionId, account);
 
