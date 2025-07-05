@@ -34,6 +34,8 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
         {
         }
 
+        object lockObject = new object();
+
         public Dictionary<string, Account> GetProfiles()
         {
             var jsonSettings = new JsonSerializerSettings() { Converters = DatabaseService.CachedSerializer.Converters };
@@ -50,18 +52,21 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
                 if (fileInfo == null)
                     continue;
 
-                var fileText = File.ReadAllText(profileFilePath);
-                if (fileText == null)
-                    continue;
+                lock (lockObject)
+                {
+                    var fileText = File.ReadAllText(profileFilePath);
+                    if (fileText == null)
+                        continue;
 
-                try
-                {
-                    var model = fileText.ParseJsonTo<Account>();
-                    profiles.Add(fileInfo.Name.Replace(".json", ""), model);
-                }
-                catch
-                {
-                    profilesToDelete.Add(profileFilePath);
+                    try
+                    {
+                        var model = fileText.ParseJsonTo<Account>();
+                        profiles.Add(fileInfo.Name.Replace(".json", ""), model);
+                    }
+                    catch
+                    {
+                        profilesToDelete.Add(profileFilePath);
+                    }
                 }
             }
 
@@ -131,7 +136,10 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
 
             var serializedProfile = JsonConvert.SerializeObject(accountModel, Formatting.Indented, jsonSettings);
 
-            File.WriteAllText(filePath, serializedProfile);
+            lock (lockObject)
+            {
+                File.WriteAllText(filePath, serializedProfile);
+            }
         }
 
         public Account LoadProfile(string sessionId)
