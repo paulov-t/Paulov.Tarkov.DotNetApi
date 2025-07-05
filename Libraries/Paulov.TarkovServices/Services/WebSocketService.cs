@@ -1,6 +1,7 @@
 ﻿using EFT;
 using EFT.Communications;
 using Newtonsoft.Json.Linq;
+using Paulov.TarkovModels.NotificationModels;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -83,6 +84,42 @@ namespace Paulov.TarkovServices.Services
                 jobj.Add(param.Key, param.Value);
             }
 
+            await SendDataToWebSocket(sessionId, jobj);
+        }
+
+
+
+        public async Task SendNotificationToWebSocket(string sessionId, BaseNotificationModel notificationModel, JObject additionalParams)
+        {
+            if (notificationModel == null)
+            {
+                throw new ArgumentNullException(nameof(notificationModel), "Notification model cannot be null.");
+            }
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                Debug.WriteLine("Session ID is null or empty. Cannot send notification.");
+                Console.WriteLine("Session ID is null or empty. Cannot send notification.");
+                return;
+            }
+            var jobj = JObject.FromObject(notificationModel);
+            if (!jobj.ContainsKey("type"))
+                jobj.Add("type", notificationModel.Type.ToString());
+
+            if (additionalParams != null)
+            {
+                // if we havent been provided an eventId, generate one
+                if (!additionalParams.ContainsKey("eventId"))
+                    jobj.Add("eventId", MongoID.Generate(false).ToString());
+                foreach (var param in additionalParams)
+                {
+                    jobj.Add(param.Key, param.Value);
+                }
+            }
+            await SendDataToWebSocket(sessionId, jobj);
+        }
+
+        private async Task SendDataToWebSocket(string sessionId, JObject jobj)
+        {
             if (WebSockets.TryGetValue(sessionId, out var webSocket) && webSocket.State == WebSocketState.Open)
             {
                 var stringJson = jobj.ToJson();
@@ -99,5 +136,6 @@ namespace Paulov.TarkovServices.Services
                 Console.WriteLine($"WebSocket for session ID {sessionId} is not open or does not exist.");
             }
         }
+
     }
 }
