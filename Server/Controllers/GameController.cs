@@ -16,8 +16,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
     [ApiController]
     public class GameController : ControllerBase
     {
-        private TradingProvider tradingProvider { get; } = new TradingProvider();
-
         private ISaveProvider _saveProvider;
         private IConfiguration configuration;
         private IGlobalsService _globalsService;

@@ -31,7 +31,7 @@ namespace WebApiTests
             configuration = new ConfigurationBuilder().Build();
             databaseService = new DatabaseService(configuration, databaseProvider);
             _globalsService = new TestsGlobalsService();
-            _accountService = new AccountService(_saveProvider);
+            _accountService = new AccountService(_saveProvider, _inventoryService, databaseService);
             _inventoryService = new InventoryService();
         }
 
@@ -83,7 +83,7 @@ namespace WebApiTests
             };
 
             // Act: Create an instance of the GameProfileController and call the ProfileCreate method
-            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new AccountService(_saveProvider), _inventoryService)
+            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new AccountService(_saveProvider, _inventoryService, databaseService), _inventoryService)
             {
                 ControllerContext = controllerContext
             };
@@ -112,7 +112,7 @@ namespace WebApiTests
             };
 
             // Act: Create an instance of the GameProfileController and call the ProfileCreate method
-            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new AccountService(_saveProvider), _inventoryService)
+            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new AccountService(_saveProvider, _inventoryService, databaseService), _inventoryService)
             {
                 ControllerContext = controllerContext
             };

@@ -7,7 +7,10 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovModels;
+using Paulov.TarkovModels.GroupingModels;
+using Paulov.TarkovModels.NotificationModels;
 using Paulov.TarkovModels.Responses;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
@@ -433,6 +436,118 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [Route("client/match/group/exit_from_menu")]
         [HttpPost]
         public async Task<IActionResult> ExitFromMenu()
+        {
+            return new BSGSuccessBodyResult(new { });
+        }
+
+        [Route("client/match/group/status")]
+        [HttpPost]
+        public async Task<IActionResult> MatchGroupStatus()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToString(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(500, "");
+
+            var fromAccount = _saveProvider.LoadProfile(SessionId);
+            if (fromAccount == null)
+            {
+                return new BSGErrorBodyResult(500, "Own account not found");
+            }
+
+            var group = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
+            if (group == null)
+            {
+                return new BSGErrorBodyResult(500, "Matching group not found");
+            }
+
+            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(SessionId), SessionId == group.SquadLeaderId, SessionId == group.SquadLeaderId, null);
+            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(memberId), memberId == group.SquadLeaderId, false, null)).ToList();
+
+            JObject dataToSend = new JObject
+            {
+                { "isLeader", SessionId == group.SquadLeaderId },
+                { "isReady", true },
+                { "extendedProfile", JObject.FromObject(groupMember, DatabaseHelpers.CachedSerializer) }
+            };
+
+            //foreach (var member in squadMembers)
+            //{
+            //    if (member.Id != SessionId)
+            //    {
+            //        await _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchRaidReady, dataToSend);
+            //        await Task.Delay(100); // To prevent flooding the WebSocket with messages
+            //    }
+            //}
+
+            MatchGroupStatusResponse response = new MatchGroupStatusResponse(squadMembers, false);
+            return new BSGSuccessBodyResult(response.ToJson(DatabaseHelpers.CachedSerializer.Converters.ToArray()));
+        }
+
+        [Route("client/match/raid/ready")]
+        [HttpPost]
+        public async Task<IActionResult> MatchRaidReady()
+        {
+            var fromAccount = _saveProvider.LoadProfile(SessionId);
+            if (fromAccount == null)
+            {
+                return new BSGErrorBodyResult(500, "Own account not found");
+            }
+
+            var group = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
+            if (group == null)
+            {
+                return new BSGErrorBodyResult(500, "Matching group not found");
+            }
+
+            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(SessionId), SessionId == group.SquadLeaderId, true, null);
+            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(memberId), memberId == group.SquadLeaderId, true, null)).ToList();
+            JObject dataToSend = new JObject
+            {
+                //{ "isLeader", SessionId == group.SquadLeaderId },
+                //{ "isReady", true },
+                { "extendedProfile", JObject.FromObject(groupMember, DatabaseHelpers.CachedSerializer) }
+            };
+
+            foreach (var member in squadMembers)
+            {
+                if (member.Id != SessionId)
+                {
+                    await _webSocketService.SendNotificationToWebSocket(member.Id, new GroupMatchRaidSettingsModel(_saveProvider.GetAccountProfileMode(fromAccount).RaidConfiguration), null);
+                    await Task.Delay(1500); // To prevent flooding the WebSocket with messages
+
+
+                    await _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchRaidReady, dataToSend);
+                    await Task.Delay(1500); // To prevent flooding the WebSocket with messages
+                }
+            }
+
+            return new BSGSuccessBodyResult(new { });
+        }
+
+        [Route("client/match/raid/not-ready")]
+        [HttpPost]
+        public async Task<IActionResult> MatchRaidNotReady()
+        {
+            return new BSGSuccessBodyResult(new { });
+        }
+
+        [Route("client/match/group/leave")]
+        [HttpPost]
+        public async Task<IActionResult> MatchGroupLeave()
+        {
+            return new BSGSuccessBodyResult(new { });
+        }
+
+        [Route("client/match/group/invite/cancel")]
+        [HttpPost]
+        public async Task<IActionResult> MatchGroupInviteCancel()
+        {
+            return new BSGSuccessBodyResult(new { });
+        }
+
+        [Route("client/match/group/player/remove")]
+        [HttpPost]
+        public async Task<IActionResult> MatchGroupPlayerRemove()
         {
             return new BSGSuccessBodyResult(new { });
         }
