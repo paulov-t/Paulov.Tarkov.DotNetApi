@@ -102,7 +102,8 @@ namespace SIT.WebServer
                 .AddSingleton<IPasswordService, PasswordService>();
 
             Console.WriteLine($"Loading AccountService");
-            services.AddSingleton(typeof(IAccountService), new AccountService(new JsonFileSaveProvider()));
+            //services.AddSingleton(typeof(IAccountService), new AccountService(new JsonFileSaveProvider(), ));
+            services.AddSingleton<IAccountService, AccountService>();
 
             Console.WriteLine($"Loading FriendshipService");
             services.AddSingleton<IFriendshipService, FriendshipService>();
