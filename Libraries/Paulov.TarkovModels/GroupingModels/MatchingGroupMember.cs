@@ -2,18 +2,10 @@
 using Newtonsoft.Json;
 using System.Text.Json.Serialization;
 
-namespace Paulov.TarkovModels
+namespace Paulov.TarkovModels.GroupingModels
 {
     public class MatchingGroupMember
     {
-        /*
-         *        { "_id", _saveProvider.GetPmcProfile(fromAccount).Id.ToString() },
-                    { "aid", _saveProvider.GetPmcProfile(fromAccount).AccountId.ToString() },
-                    { "Info", JObject.FromObject(_saveProvider.GetPmcProfile(fromAccount).Info) },
-                    { "isLeader", true },
-                    { "isReady", inLobby },
-         */
-
         [JsonProperty("_id")]
         [JsonPropertyName("_id")]
         public string Id { get; set; } = MongoID.Generate(false);
@@ -24,7 +16,7 @@ namespace Paulov.TarkovModels
 
         [JsonProperty("Info")]
         [JsonPropertyName("Info")]
-        public ProfileInfoDescriptor Info { get; set; } = new ProfileInfoDescriptor();
+        public MatchingGroupPlayerInfoModel Info { get; set; }
 
         [JsonProperty("isLeader")]
         [JsonPropertyName("isLeader")]
@@ -34,13 +26,17 @@ namespace Paulov.TarkovModels
         [JsonPropertyName("isReady")]
         public bool IsReady { get; set; }
 
-        public MatchingGroupMember(string id, string aid, ProfileInfoDescriptor info, bool isLeader, bool isReady)
+        [JsonProperty("lookingGroup")]
+        public bool LookingForGroup;
+
+        public MatchingGroupMember(string id, string aid, MatchingGroupPlayerInfoModel info, bool isLeader, bool isReady, bool lookingForGroup)
         {
             Id = id;
             AID = aid;
             Info = info;
             IsLeader = isLeader;
             IsReady = isReady;
+            LookingForGroup = lookingForGroup;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using EFT;
 
-namespace Paulov.TarkovModels
+namespace Paulov.TarkovModels.GroupingModels
 {
     public class MatchingGroup
     {

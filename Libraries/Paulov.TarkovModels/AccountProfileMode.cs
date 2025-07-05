@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using EFT;
+using Newtonsoft.Json;
+using Paulov.TarkovModels.GroupingModels;
 
 namespace Paulov.TarkovModels
 {
@@ -24,7 +26,7 @@ namespace Paulov.TarkovModels
         public SocialNetwork SocialNetwork { get; set; } = new SocialNetwork();
 
         [JsonProperty("raidConfiguration")]
-        public dynamic RaidConfiguration { get; set; }
+        public RaidSettings? RaidConfiguration { get; set; }
 
 
         /// <summary>
