@@ -1,6 +1,7 @@
 ﻿using ChatShared;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
+using Paulov.TarkovModels.GroupingModels;
 using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
@@ -10,10 +11,14 @@ namespace Paulov.TarkovServices.Services
     public class AccountService : IAccountService
     {
         private ISaveProvider _saveProvider;
+        private IInventoryService _inventoryService;
+        private IDatabaseService _databaseService;
 
-        public AccountService(ISaveProvider saveProvider)
+        public AccountService(ISaveProvider saveProvider, IInventoryService inventoryService, IDatabaseService databaseService)
         {
             _saveProvider = saveProvider ?? throw new ArgumentNullException(nameof(saveProvider));
+            _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
+            _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
         }
 
         public Account GetAccountByAID(string aid)
@@ -99,15 +104,15 @@ namespace Paulov.TarkovServices.Services
             }
 
             var accountMode = _saveProvider.GetAccountProfileMode(account);
-            var info = accountMode.Characters.PMC.Info;
-
+            var info = new MatchingGroupPlayerInfoModel(accountMode.Characters.PMC);
 
             return new MatchingGroupMember(
                 account.AccountId,
                 accountMode.Characters.PMC.AccountId,
                 info,
                 isLeader,
-                isReady
+                isReady,
+                false
             );
         }
 
@@ -126,6 +131,23 @@ namespace Paulov.TarkovServices.Services
 
 
             return obj;
+        }
+
+        public SquadPlayerModel GetMatchingGroupMemberSquadPlayer(Account account, bool isLeader, bool isReady, string gameMode, bool pmc = true)
+        {
+            AccountProfileCharacter accountProfileCharacter = pmc ? _saveProvider.GetPmcProfile(account) : _saveProvider.GetScavProfile(account);
+
+            var pvrObj = new PlayerVisualRepresentationModel(
+                new MatchingGroupPlayerInfoModel(accountProfileCharacter)
+                , accountProfileCharacter.Customization
+                , new PlayerVisualRepresentationModel.PlayerVisualRepresentationModelEquipmentModel(
+                    _inventoryService.GetEquipmentId(accountProfileCharacter)
+                    , JArray.FromObject(_inventoryService.GetInventoryItems(accountProfileCharacter), DatabaseHelpers.CachedSerializer)
+                    )
+                );
+
+            var squadPlayer = new SquadPlayerModel(accountProfileCharacter.AccountId, accountProfileCharacter.Id, false, isLeader, isReady, new MatchingGroupPlayerInfoModel(accountProfileCharacter), null);
+            return squadPlayer;
         }
 
     }

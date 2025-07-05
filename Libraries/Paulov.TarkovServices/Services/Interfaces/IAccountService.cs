@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
+using Paulov.TarkovModels.GroupingModels;
 
 namespace Paulov.TarkovServices.Services.Interfaces
 {
@@ -25,6 +26,8 @@ namespace Paulov.TarkovServices.Services.Interfaces
 
         public MatchingGroupMember GetMatchingGroupMember(Account account, bool isLeader, bool isReady, string gameMode);
         public JObject GetMatchingGroupMemberWithHealthAndPVR(Account account, bool isLeader, bool isReady, string gameMode);
+
+        public SquadPlayerModel GetMatchingGroupMemberSquadPlayer(Account account, bool isLeader, bool isReady, string gameMode, bool pmc = true);
 
     }
 }
