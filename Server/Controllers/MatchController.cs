@@ -551,5 +551,113 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             return new BSGSuccessBodyResult(new { });
         }
+
+        [Route("client/match/available")]
+        [HttpPost]
+        public async Task<IActionResult> MatchAvailable()
+        {
+            return new BSGSuccessBodyResult(true.ToString());
+        }
+
+        [Route("client/match/join")]
+        [HttpPost]
+        public async Task<IActionResult> MatchJoin()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToString(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(500, "");
+
+            var myAccount = _saveProvider.LoadProfile(SessionId);
+            if (myAccount == null)
+                return new BSGErrorBodyResult(500, "Own account not found");
+
+            var myAccountProfile = _saveProvider.GetAccountProfileMode(myAccount);
+            var raidConfig = myAccountProfile.RaidConfiguration;
+
+            var response = new ProfileStatusResponse(false
+                , new List<ProfileStatusModel>());
+
+            if (raidConfig == null)
+                return new BSGSuccessBodyResult(response.ToJson());
+
+            var pmcStatus = new ProfileStatusModel(myAccountProfile.Characters.PMC.Id, "Busy", "127.0.0.1", "17000");
+            var scavStatus = new ProfileStatusModel(myAccountProfile.Characters.Scav.Id, "Busy", "127.0.0.1", "17000");
+
+            if (raidConfig.Side == ESideType.Pmc)
+            {
+                // From what I can gather from Client
+                // MatchWait or Free will immediately abort the matching
+                // So we must set it to "Busy"
+                pmcStatus.Status = "Busy";
+                pmcStatus.Ip = "Busy";
+                pmcStatus.Port = "Busy";
+                pmcStatus.Sid = "PMC001";
+                pmcStatus.ShortId = "PMC001";
+            }
+            else
+            {
+                scavStatus.Status = "Busy";
+                scavStatus.Ip = "Busy";
+                scavStatus.Port = "Busy";
+                scavStatus.Sid = "PMC001";
+                scavStatus.ShortId = "PMC001";
+            }
+
+            response.profiles.Add(scavStatus);
+            response.profiles.Add(pmcStatus);
+
+            return new BSGSuccessBodyResult(response.ToJson());
+        }
+
+        [Route("client/match/group/start_game")]
+        [HttpPost]
+        public async Task<IActionResult> MatchGroupStartGame()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToString(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(500, "");
+
+            var myAccount = _saveProvider.LoadProfile(SessionId);
+            if (myAccount == null)
+                return new BSGErrorBodyResult(500, "Own account not found");
+
+            var myAccountProfile = _saveProvider.GetAccountProfileMode(myAccount);
+
+            var group = _saveProvider.GetAccountProfileMode(myAccount).MatchingGroup;
+            if (group == null)
+                return new BSGErrorBodyResult(500, "Matching group not found");
+
+            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(SessionId), SessionId == group.SquadLeaderId, true, null);
+            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(memberId), memberId == group.SquadLeaderId, true, null)).ToList();
+            JObject dataToSend = new JObject
+            {
+                //{ "isLeader", SessionId == group.SquadLeaderId },
+                //{ "isReady", true },
+                //{ "extendedProfile", JObject.FromObject(groupMember, DatabaseHelpers.CachedSerializer) }
+            };
+
+            foreach (var member in squadMembers)
+            {
+                if (member.Id != SessionId)
+                {
+                    await _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchStartGame, dataToSend);
+                    await Task.Delay(1500); // To prevent flooding the WebSocket with messages
+                }
+            }
+
+
+            // Response
+            var dbobject = new JObject()
+            {
+                { "ProfileId", myAccountProfile.Characters.PMC.Id.ToString() },
+                { "IpAddress", "127.0.0.1" },
+                { "Port", "17000" },
+                { "LocationId", myAccountProfile.RaidConfiguration.LocationId }
+            };
+
+            return new BSGSuccessBodyResult(dbobject.ToJson());
+        }
+
+
     }
 }
