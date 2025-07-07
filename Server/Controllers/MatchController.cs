@@ -43,32 +43,36 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
         }
 
+        private Account GetSessionAccount()
+        {
+            var sessionAccount = _saveProvider.LoadProfile(SessionId);
+            return sessionAccount;
+        }
+
         [Route("client/match/group/current")]
         [HttpPost]
         public async Task<IActionResult> MatchingGroupCurrent(int? retry, bool? debug)
         {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
-
-            var account = _saveProvider.LoadProfile(SessionId);
-            if (account == null)
+            var sessionAccount = GetSessionAccount();
+            if (sessionAccount == null)
             {
                 return new BSGErrorBodyResult(500, "Account not found");
             }
 
-            if (_saveProvider.GetAccountProfileMode(account).MatchingGroup == null)
-                _saveProvider.GetAccountProfileMode(account).MatchingGroup = new MatchingGroup()
+            if (_saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup == null)
+                _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup = new MatchingGroup()
                 {
                     MatchingGroupId = MongoID.Generate(false).ToString(),
-                    Members = new List<string>() { account.AccountId },
-                    SquadLeaderId = account.AccountId
+                    Members = new List<string>() { sessionAccount.AccountId },
+                    SquadLeaderId = sessionAccount.AccountId
                 };
 
-            var matchGroup = _saveProvider.GetAccountProfileMode(account).MatchingGroup;
+            var matchGroup = _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup;
 
             var members = new JArray();
             foreach (var memberId in matchGroup.Members)
             {
-                members.Add(JObject.FromObject(_accountService.GetMatchingGroupMember(_saveProvider.LoadProfile(memberId), memberId == SessionId, false, null)));
+                members.Add(JObject.FromObject(_accountService.GetMatchingGroupMember(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == matchGroup.SquadLeaderId, isReady: false, gameMode: null)));
             }
 
             JObject packet = new();
@@ -141,7 +145,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             foreach (var memberId in matchGroup.Members)
             {
-                members.Add(JObject.FromObject(_accountService.GetMatchingGroupMember(_saveProvider.LoadProfile(memberId), memberId == SessionId, inLobby, null)));
+                members.Add(JObject.FromObject(_accountService.GetMatchingGroupMember(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == matchGroup.SquadLeaderId, isReady: false, gameMode: null)));
             }
 
             var requestId = MongoID.Generate(false).ToString();
@@ -180,7 +184,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var acceptingRequestAccountMember = _accountService.GetMatchingGroupMemberWithHealthAndPVR(fromAccount, false, false, null);
             acceptingRequestAccountMember.Add("requestId", requestBody["requestId"].ToString());
 
-            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMember(_saveProvider.LoadProfile(memberId), memberId == group.SquadLeaderId, false, null));
+            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMember(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == group.SquadLeaderId, isReady: false, gameMode: null));
 
             foreach (var member in squadMembers)
             {
@@ -444,17 +448,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchGroupStatus()
         {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToString(Request);
-            if (requestBody == null)
-                return new BSGErrorBodyResult(500, "");
-
-            var fromAccount = _saveProvider.LoadProfile(SessionId);
-            if (fromAccount == null)
+            var sessionAccount = GetSessionAccount();
+            if (sessionAccount == null)
             {
                 return new BSGErrorBodyResult(500, "Own account not found");
             }
 
-            var group = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
+            var group = _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup;
             if (group == null)
             {
                 return new BSGErrorBodyResult(500, "Matching group not found");
@@ -470,15 +470,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 { "extendedProfile", JObject.FromObject(groupMember, DatabaseHelpers.CachedSerializer) }
             };
 
-            //foreach (var member in squadMembers)
-            //{
-            //    if (member.Id != SessionId)
-            //    {
-            //        await _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchRaidReady, dataToSend);
-            //        await Task.Delay(100); // To prevent flooding the WebSocket with messages
-            //    }
-            //}
-
             MatchGroupStatusResponse response = new MatchGroupStatusResponse(squadMembers, false);
             return new BSGSuccessBodyResult(response.ToJson(DatabaseHelpers.CachedSerializer.Converters.ToArray()));
         }
@@ -487,20 +478,20 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchRaidReady()
         {
-            var fromAccount = _saveProvider.LoadProfile(SessionId);
-            if (fromAccount == null)
+            var sessionAccount = GetSessionAccount();
+            if (sessionAccount == null)
             {
                 return new BSGErrorBodyResult(500, "Own account not found");
             }
 
-            var group = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
+            var group = _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup;
             if (group == null)
             {
                 return new BSGErrorBodyResult(500, "Matching group not found");
             }
 
-            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(SessionId), SessionId == group.SquadLeaderId, true, null);
-            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(memberId), memberId == group.SquadLeaderId, true, null)).ToList();
+            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(account: _saveProvider.LoadProfile(SessionId), isLeader: SessionId == group.SquadLeaderId, isReady: true, gameMode: null);
+            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == group.SquadLeaderId, isReady: true, gameMode: null)).ToList();
             JObject dataToSend = new JObject
             {
                 //{ "isLeader", SessionId == group.SquadLeaderId },
@@ -512,7 +503,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             {
                 if (member.Id != SessionId)
                 {
-                    await _webSocketService.SendNotificationToWebSocket(member.Id, new GroupMatchRaidSettingsModel(_saveProvider.GetAccountProfileMode(fromAccount).RaidConfiguration), null);
+                    await _webSocketService.SendNotificationToWebSocket(member.Id, new GroupMatchRaidSettingsModel(_saveProvider.GetAccountProfileMode(sessionAccount).RaidConfiguration), null);
                     await Task.Delay(1500); // To prevent flooding the WebSocket with messages
 
 
@@ -563,10 +554,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchJoin()
         {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToString(Request);
-            if (requestBody == null)
-                return new BSGErrorBodyResult(500, "");
-
             var myAccount = _saveProvider.LoadProfile(SessionId);
             if (myAccount == null)
                 return new BSGErrorBodyResult(500, "Own account not found");
@@ -580,32 +567,28 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (raidConfig == null)
                 return new BSGSuccessBodyResult(response.ToJson());
 
-            var pmcStatus = new ProfileStatusModel(myAccountProfile.Characters.PMC.Id, "Busy", "127.0.0.1", "17000");
-            var scavStatus = new ProfileStatusModel(myAccountProfile.Characters.Scav.Id, "Busy", "127.0.0.1", "17000");
+            // From what I can gather from Client
+            // MatchWait or Free will immediately abort the matching
+            // So we must set it to "Busy"
+            var pmcStatus = new ProfileStatusModel(myAccountProfile.Characters.PMC.Id, EProfileStatus.Busy, "127.0.0.1", "17000");
+            var scavStatus = new ProfileStatusModel(myAccountProfile.Characters.Scav.Id, EProfileStatus.Busy, "127.0.0.1", "17000");
 
             if (raidConfig.Side == ESideType.Pmc)
             {
-                // From what I can gather from Client
-                // MatchWait or Free will immediately abort the matching
-                // So we must set it to "Busy"
-                pmcStatus.Status = "Busy";
-                pmcStatus.Ip = "Busy";
-                pmcStatus.Port = "Busy";
+                pmcStatus.Ip = "127.0.0.1";
+                pmcStatus.Port = "17000";
                 pmcStatus.Sid = "PMC001";
                 pmcStatus.ShortId = "PMC001";
             }
             else
             {
-                scavStatus.Status = "Busy";
-                scavStatus.Ip = "Busy";
-                scavStatus.Port = "Busy";
+                scavStatus.Ip = "127.0.0.1";
+                scavStatus.Port = "17000";
                 scavStatus.Sid = "PMC001";
                 scavStatus.ShortId = "PMC001";
             }
 
-            response.profiles.Add(scavStatus);
-            response.profiles.Add(pmcStatus);
-
+            response = new ProfileStatusResponse(false, pmcStatus, scavStatus);
             return new BSGSuccessBodyResult(response.ToJson());
         }
 
