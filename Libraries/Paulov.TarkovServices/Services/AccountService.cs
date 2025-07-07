@@ -146,7 +146,7 @@ namespace Paulov.TarkovServices.Services
                     )
                 );
 
-            var squadPlayer = new SquadPlayerModel(accountProfileCharacter.AccountId, accountProfileCharacter.Id, false, isLeader, isReady, new MatchingGroupPlayerInfoModel(accountProfileCharacter), null);
+            var squadPlayer = new SquadPlayerModel(accountProfileCharacter.AccountId, accountProfileCharacter.Id, false, isLeader, isReady, new MatchingGroupPlayerInfoModel(accountProfileCharacter), pvrObj);
             return squadPlayer;
         }
 
