@@ -30,10 +30,10 @@ namespace Paulov.TarkovModels.GroupingModels
             [JsonProperty("Items")]
             public JArray Items { get; set; }
 
-            public PlayerVisualRepresentationModelEquipmentModel(string id, JArray items)
+            public PlayerVisualRepresentationModelEquipmentModel(string equipmentId, JArray inventoryItemsArray)
             {
-                Id = id ?? throw new ArgumentNullException(nameof(id), "Id cannot be null.");
-                Items = items ?? throw new ArgumentNullException(nameof(items), "Items cannot be null.");
+                Id = equipmentId ?? throw new ArgumentNullException(nameof(equipmentId), "Id cannot be null.");
+                Items = inventoryItemsArray ?? throw new ArgumentNullException(nameof(inventoryItemsArray), "Items cannot be null.");
             }
         }
     }
