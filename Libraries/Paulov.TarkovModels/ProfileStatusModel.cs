@@ -10,7 +10,7 @@ namespace Paulov.TarkovModels
         [JsonProperty("profileToken")]
         public string ProfileToken { get; set; } = Guid.NewGuid().ToString();
         [JsonProperty("status")]
-        public string Status { get; set; } = "Free";
+        public string Status { get; protected set; } = EProfileStatus.Free.ToString();
         [JsonProperty("ip")]
         public string Ip { get; set; } = "";
         [JsonProperty("port")]
@@ -36,11 +36,11 @@ namespace Paulov.TarkovModels
             AdditionalInfo = new List<string>();
         }
 
-        public ProfileStatusModel(string profileId, string status, string ip, string port)
+        public ProfileStatusModel(string profileId, EProfileStatus status, string ip, string port)
         {
             ProfileId = profileId;
             ProfileToken = Guid.NewGuid().ToString();
-            Status = status;
+            Status = status.ToString();
             Ip = ip;
             Port = port;
             //Sid = sid;
@@ -52,11 +52,13 @@ namespace Paulov.TarkovModels
             //AdditionalInfo = additionalInfo;
         }
 
-        public ProfileStatusModel(string profileId, string profileToken, string status, string ip, string port, string sid, string version, string location, string raidMode, string mode, string shortId, List<string> additionalInfo)
+        public ProfileStatusModel
+            (string profileId, string profileToken, EProfileStatus status, string ip, string port, string sid, string version, string location, string raidMode, string mode, string shortId, List<string> additionalInfo)
+            : this(profileId, status, ip, port)
         {
             ProfileId = profileId;
             ProfileToken = profileToken;
-            Status = status;
+            Status = status.ToString();
             Ip = ip;
             Port = port;
             Sid = sid;
