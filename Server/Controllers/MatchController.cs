@@ -49,6 +49,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             return sessionAccount;
         }
 
+        private MatchingGroup GetSessionAccountMatchingGroup()
+        {
+            var sessionAccount = GetSessionAccount();
+            var group = _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup;
+            return group;
+        }
+
         [Route("client/match/group/current")]
         [HttpPost]
         public async Task<IActionResult> MatchingGroupCurrent(int? retry, bool? debug)
@@ -519,6 +526,22 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchRaidNotReady()
         {
+            var matchGroup = GetSessionAccountMatchingGroup();
+            if (matchGroup == null)
+            {
+                return new BSGErrorBodyResult(500, "Matching group not found");
+            }
+
+            var squadMembers = matchGroup.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == matchGroup.SquadLeaderId, isReady: false, gameMode: null)).ToList();
+            foreach (var member in squadMembers)
+            {
+                if (member.Id != SessionId)
+                {
+                    await _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchRaidNotReady, JObject.FromObject(new { }));
+                    await Task.Delay(1500); // To prevent flooding the WebSocket with messages
+                }
+            }
+
             return new BSGSuccessBodyResult(new { });
         }
 
@@ -554,6 +577,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchJoin()
         {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToJObject(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(500, "");
+
             var myAccount = _saveProvider.LoadProfile(SessionId);
             if (myAccount == null)
                 return new BSGErrorBodyResult(500, "Own account not found");
@@ -589,7 +616,16 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
 
             response = new ProfileStatusResponse(false, pmcStatus, scavStatus);
-            return new BSGSuccessBodyResult(response.ToJson());
+
+            JObject result = new JObject()
+            {
+                { "ProfileId", myAccountProfile.Characters.PMC.Id.ToString() },
+                { "IpAddress", "127.0.0.1" },
+                { "Port", "17000" },
+                { "LocationId", requestBody["location"].ToString() }
+            };
+
+            return new BSGSuccessBodyResult(result.ToJson());
         }
 
         [Route("client/match/group/start_game")]
