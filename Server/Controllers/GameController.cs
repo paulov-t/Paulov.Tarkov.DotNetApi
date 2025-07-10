@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
+using Paulov.TarkovModels.ServerModels;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services;
@@ -294,10 +295,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
         [Route("client/server/list")]
         [HttpPost]
-        public async void ServerList(int? retry, bool? debug)
+        public async Task<IActionResult> ServerList(int? retry, bool? debug)
         {
-            var packets = new List<Dictionary<string, object>>();
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packets), Request, Response);
+            JArray result = new JArray();
+            result.Add(JObject.FromObject(new ServerItemModel("127.0.0.1", 17000, EServerItemStatus.Offline, DateTime.Now, 1)));
+
+            return new BSGSuccessBodyResult(result.ToJson());
         }
 
 
