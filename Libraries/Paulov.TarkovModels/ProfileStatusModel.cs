@@ -22,7 +22,7 @@ namespace Paulov.TarkovModels
         [JsonProperty("location")]
         public string Location { get; set; }
         [JsonProperty("raidMode")]
-        public string RaidMode { get; set; }
+        public string RaidMode { get; set; } = "deathmatch";
         [JsonProperty("mode")]
         public string Mode { get; set; }
         [JsonProperty("shortId")]
