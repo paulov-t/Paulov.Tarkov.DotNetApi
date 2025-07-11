@@ -21,12 +21,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private ISaveProvider _saveProvider;
         private IConfiguration configuration;
         private IGlobalsService _globalsService;
+        private readonly IInventoryService _inventoryService;
 
-        public GameController(ISaveProvider saveProvider, IConfiguration configuration, IGlobalsService globalsService)
+        public GameController(ISaveProvider saveProvider, IConfiguration configuration, IGlobalsService globalsService, IInventoryService inventoryService)
         {
             this._saveProvider = saveProvider;
             this.configuration = configuration;
             this._globalsService = globalsService;
+            this._inventoryService = inventoryService;
         }
 
         private string SessionId
@@ -583,7 +585,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             List<WaveInfoClass> list = JsonConvert.DeserializeObject<List<WaveInfoClass>>(strConditions);
 
-            var bots = new BotGenerationService().GenerateBots(list);
+            var bots = new BotGenerationService(_globalsService, _inventoryService).GenerateBots(list);
 
             ITraceWriter traceWriter = new MemoryTraceWriter();
 
