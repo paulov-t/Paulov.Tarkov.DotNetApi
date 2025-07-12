@@ -50,6 +50,9 @@
     <None Update="database\globals.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="database\templates\customization.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="database\templates\items.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
