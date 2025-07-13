@@ -29,6 +29,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
         private IGlobalsService _globalsService;
         private IAccountService _accountService;
         private IInventoryService _inventoryService;
+        private Dictionary<string, MongoID> Voices = new();
 
         public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService, IAccountService accountService, IInventoryService inventoryService)
         {
