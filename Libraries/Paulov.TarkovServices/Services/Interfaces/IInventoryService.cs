@@ -1,6 +1,5 @@
 ﻿using EFT;
 using Paulov.TarkovModels;
-using FlatItem = FlatItems;
 
 namespace Paulov.TarkovServices.Services.Interfaces
 {

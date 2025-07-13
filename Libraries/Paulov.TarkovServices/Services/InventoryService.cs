@@ -1,7 +1,7 @@
 ﻿using EFT;
 using Paulov.TarkovModels;
 using Paulov.TarkovServices.Services.Interfaces;
-using FlatItem = FlatItems;
+using System.Diagnostics;
 
 namespace Paulov.TarkovServices.Services
 {
@@ -21,6 +21,15 @@ namespace Paulov.TarkovServices.Services
             if (!string.IsNullOrEmpty(slotId) && Enum.TryParse<EFT.InventoryLogic.EquipmentSlot>(slotId, out _) && items.Any(x => x.slotId == slotId))
             {
                 throw new Exception($"Item already exists in Inventory in {slotId}");
+            }
+
+            if (!string.IsNullOrEmpty(slotId) && items.Any(x => x.slotId == slotId && x.parentId == item.parentId))
+            {
+                //throw new Exception($"Item already exists in Inventory in {slotId} with parent {item.parentId}");
+#if DEBUG
+                Debug.WriteLine($"Item already exists in Inventory in {slotId} with parent {item.parentId}");
+#endif
+                return;
             }
 
             items.Add(item);

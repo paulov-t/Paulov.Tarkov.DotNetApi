@@ -28,7 +28,7 @@ namespace WebApiTests
             _saveProvider = new SimpleSaveProvider();
             configuration = new ConfigurationBuilder().Build();
             databaseService = new DatabaseService(configuration, databaseProvider);
-            _controller = new GameController(_saveProvider, configuration, new TestsGlobalsService());
+            _controller = new GameController(_saveProvider, configuration, new TestsGlobalsService(), new InventoryService());
         }
 
         [SetUp]
@@ -116,7 +116,7 @@ namespace WebApiTests
                 HttpContext = httpContext,
             };
 
-            var controller = new GameController(_saveProvider, configuration, new TestsGlobalsService())
+            var controller = new GameController(_saveProvider, configuration, new TestsGlobalsService(), new InventoryService())
             {
                 ControllerContext = controllerContext
             };

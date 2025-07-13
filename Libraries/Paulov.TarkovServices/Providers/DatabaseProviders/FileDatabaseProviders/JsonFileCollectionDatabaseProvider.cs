@@ -1,12 +1,21 @@
 ﻿using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Providers.Interfaces;
 using System.Data;
+using System.Reflection;
 
 namespace Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders
 {
     public sealed class JsonFileCollectionDatabaseProvider : IDatabaseProvider
     {
         public List<EntryModel> Entries { get; } = new List<EntryModel>();
+
+        string parentPath;
+
+        public JsonFileCollectionDatabaseProvider()
+        {
+            parentPath = Directory.GetParent(Assembly.GetExecutingAssembly().Location).FullName;
+            Connect(parentPath);
+        }
 
         public void Connect(string connectionString)
         {
@@ -16,10 +25,18 @@ namespace Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProvider
             {
                 throw new DirectoryNotFoundException($"The directory '{connectionString}' does not exist.");
             }
+
+            if (parentPath != connectionString)
+                parentPath = connectionString;
+
             var jsonFiles = directory.GetFiles("*.json", new EnumerationOptions() { RecurseSubdirectories = true });
             foreach (var file in jsonFiles)
             {
-                Entries.Add(new EntryModel(file.Name, file.FullName.Replace(connectionString, "").Replace("\\", "/"), this));
+                var fullName = file.FullName.Replace(connectionString, "").Replace("\\", "/");
+                if (fullName.StartsWith('/'))
+                    fullName = fullName.Substring(1, fullName.Length - 1);
+
+                Entries.Add(new EntryModel(file.Name, fullName, this));
             }
         }
 
@@ -50,7 +67,7 @@ namespace Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProvider
             }
 
 
-            return new MemoryStream(File.ReadAllBytes(entry.FullName));
+            return new MemoryStream(File.ReadAllBytes(Path.Combine(parentPath, entry.FullName)));
         }
     }
 }
