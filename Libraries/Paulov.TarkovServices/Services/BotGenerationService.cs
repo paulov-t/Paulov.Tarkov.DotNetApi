@@ -23,6 +23,8 @@ namespace Paulov.TarkovServices.Services
 
         private Dictionary<string, MongoID> Voices = new Dictionary<string, MongoID>();
 
+        private string _lastGeneratedNickname;
+
         public BotGenerationService()
         {
             //GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
@@ -183,16 +185,22 @@ namespace Paulov.TarkovServices.Services
                 bot.Info.Settings.Experience = 275;
             }
 
-            // Generate the bot's Nickname
-            var firstnames = botDatabaseData["firstName"].ToArray();
-            bot.Info.Nickname = firstnames[Randomizer.Next(firstnames.Length - 1)].ToString();
-            if (botDatabaseData.ContainsKey("lastName") && botDatabaseData["lastName"].ToArray().Length > 0)
+            // Generate the bot's Nickname. Ensure the generated nickname is not the same as the previous. (this can occur!)
+            do
             {
-                var lastnames = botDatabaseData["lastName"].ToArray();
-                var lastName = lastnames[Randomizer.Next(lastnames.Length - 1)].ToString();
-                if (lastName != "Durkey")
-                    bot.Info.Nickname = bot.Info.Nickname + " " + lastName;
+                var firstnames = botDatabaseData["firstName"].ToArray();
+                bot.Info.Nickname = firstnames[Randomizer.Next(firstnames.Length - 1)].ToString();
+                if (botDatabaseData.ContainsKey("lastName") && botDatabaseData["lastName"].ToArray().Length > 0)
+                {
+                    var lastnames = botDatabaseData["lastName"].ToArray();
+                    var lastName = lastnames[Randomizer.Next(lastnames.Length - 1)].ToString();
+                    if (lastName != "Durkey")
+                        bot.Info.Nickname = bot.Info.Nickname + " " + lastName;
+                }
             }
+            while (_lastGeneratedNickname == bot.Info.Nickname);
+            _lastGeneratedNickname = bot.Info.Nickname;
+
             bot.Info.MainProfileNickname = null;
             bot.Info.MemberCategory = EMemberCategory.Default;
             bot.Info.SelectedMemberCategory = EMemberCategory.Default;
@@ -263,7 +271,6 @@ namespace Paulov.TarkovServices.Services
             var botDatabaseDataInventory = botDatabaseData["inventory"];
             var botDatabaseDataInventoryEquipment = botDatabaseDataInventory["equipment"];
 
-
             InventoryService.RemoveItemFromSlot(bot, "Headwear");
 
             InventoryService.RemoveItemFromSlot(bot, "FirstPrimaryWeapon");
@@ -280,6 +287,11 @@ namespace Paulov.TarkovServices.Services
             var holsterKeys = ((JObject)botDatabaseDataInventoryEquipment["Holster"]).Properties().Select(p => p.Name).ToArray();
             if (holsterKeys.Length > 0)
                 AddRandomItemToSlot(bot, "Holster", holsterKeys);
+
+            InventoryService.RemoveItemFromSlot(bot, "Pockets");
+            var pocketsKeys = ((JObject)botDatabaseDataInventoryEquipment["Pockets"]).Properties().Select(p => p.Name).ToArray();
+            if (pocketsKeys.Length > 0)
+                AddRandomItemToSlot(bot, "Pockets", pocketsKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "pocket1");
 
@@ -409,9 +421,12 @@ namespace Paulov.TarkovServices.Services
 
                 // Get an ammo type for the weapon and add the ammo to the inventory
                 var weaponTemplate = DatabaseService.GetTemplateItemById(_templates, weaponItem._tpl);
-                var newItems = CreateMagazineWithAmmoForWeapon(weaponItem, allAddedItems.Find(x => x.slotId == "mod_magazine"));
+                var magazine = allAddedItems.Find(x => x.slotId == "mod_magazine");
+                var newItems = CreateMagazineWithAmmoForWeapon(weaponItem, magazine);
                 foreach (var item in newItems)
+                {
                     InventoryService.AddItemToInventory(bot, item);
+                }
 
             }
 
@@ -503,7 +518,7 @@ namespace Paulov.TarkovServices.Services
                 { "Nickname", bot.Info.Nickname },
                 { "Side", bot.Info.Side.ToString() },
                 { "Level", bot.Info.Level },
-                { "Time", DateTime.UtcNow.ToString() },
+                { "Time", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
                 { "Status", "Killed by " },
                 { "KillerAccountId", "Unknown" },
                 { "KillerProfileId", "Unknown" },
