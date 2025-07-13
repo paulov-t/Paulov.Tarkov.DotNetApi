@@ -31,8 +31,8 @@ namespace WebApiTests
             configuration = new ConfigurationBuilder().Build();
             databaseService = new DatabaseService(configuration, databaseProvider);
             _globalsService = new TestsGlobalsService();
-            _accountService = new AccountService(_saveProvider, _inventoryService, databaseService);
             _inventoryService = new InventoryService();
+            _accountService = new AccountService(_saveProvider, _inventoryService, databaseService);
         }
 
         [SetUp]
