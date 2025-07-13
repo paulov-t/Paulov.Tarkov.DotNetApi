@@ -83,7 +83,7 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             {
                 AccountId = sessionId,
                 Username = parameters["username"].ToString(),
-                Password = parameters["password"].ToString(), // Needs to be Hashed!
+                Password = parameters["password"]?.ToString(), // Needs to be Hashed!
                 Edition = parameters["edition"].ToString()
             };
 

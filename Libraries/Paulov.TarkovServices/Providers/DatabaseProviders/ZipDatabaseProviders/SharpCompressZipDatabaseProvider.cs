@@ -12,7 +12,7 @@ namespace Paulov.TarkovServices.Providers.DatabaseProviders.ZipDatabaseProviders
     {
         public static Stream DatabaseAssetStream { get { return EmbeddedResourceHelper.GetEmbeddedResourceByName("database.zip"); } }
 
-        public static IReader DatabaseAssetZipReader
+        public static SharpCompress.Readers.IReader DatabaseAssetZipReader
         {
             get
             {

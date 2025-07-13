@@ -27,11 +27,30 @@ namespace Paulov.Tarkov.Web.Api.Controllers
     {
         private ISaveProvider _saveProvider;
         private IGlobalsService _globalsService;
+        private readonly IInventoryService _inventoryService;
 
-        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService)
+        private Dictionary<string, MongoID> Voices = new Dictionary<string, MongoID>();
+
+
+        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService, IInventoryService inventoryService)
         {
             _saveProvider = saveProvider;
             _globalsService = globalsService;
+            _inventoryService = inventoryService;
+
+            if (DatabaseService.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            {
+                foreach (var j in customizationTemplates)
+                {
+                    var key = j.Key;
+                    var value = j.Value;
+                    // get the voices from the customization templates (5fc100cf95572123ae738483 is the parent id)
+                    if (value["_parent"]?.ToString() == "5fc100cf95572123ae738483")
+                    {
+                        Voices.Add(value["_name"].ToString(), j.Key);
+                    }
+                }
+            }
         }
 
         private string SessionId
@@ -236,24 +255,24 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             pmcData2.Id = sessionId;
             pmcData2.Info.Nickname = requestBody["nickname"].ToString();
             pmcData2.Info.RegistrationDate = new Random().Next(100000, 500000);
-            pmcData2.Info.Voice = customizationTemplates[requestBody["voiceId"].ToString()]["_name"].ToString();
+            pmcData2.Customization[EBodyModelPart.Voice] = requestBody["voiceId"].ToString();
             pmcData2.Stats = blankStatGroup;
             pmcData2.WishList = new Dictionary<MongoID, byte>();
             pmcData2.Info.MemberCategory = EMemberCategory.Default;
             pmcData2.Info.SelectedMemberCategory = EMemberCategory.Default;
-            // TODO: Remap GClass2032 to HideoutAreaDescriptor
-            pmcData2.Hideout.Areas = template["Hideout"]["Areas"].ToObject<GClass2032[]>();
+            // TODO: Remap GClass2034 to HideoutAreaDescriptor
+            pmcData2.Hideout.Areas = template["Hideout"]["Areas"].ToObject<AreaInfo[]>();
             pmcData2.Hideout.GlobalCustomization = template["Hideout"]["Customization"].ToObject<Dictionary<EHideoutCustomizationType, MongoID?>>();
             //pmcData2.Hideout = new HideoutDescriptor();
 
             template["Customization"]["Head"] = requestBody["headId"].ToString();
+            template["Customization"]["Voice"] = requestBody["voiceId"].ToString();
             template["_id"] = sessionId;
             template["aid"] = accountIdString;
             template["savage"] = null;
             template["Info"]["Nickname"] = requestBody["nickname"].ToString();
             template["Info"]["LowerNickname"] = requestBody["nickname"].ToString().ToLower();
             template["Info"]["RegistrationDate"] = new Random().Next(100000, 500000);
-            template["Info"]["Voice"] = customizationTemplates[requestBody["voiceId"].ToString()]["_name"];
             template["Stats"] = JToken.FromObject(blankStatGroup);
             template["WishList"] = JToken.FromObject(new Dictionary<MongoID, byte>());
             template["Hideout"]["Seed"] = "";
@@ -277,7 +296,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 account.CurrentMode = gameMode;
 
             // Create scav -------------------------------------------------------------------------------------------
-            var scavData = new BotGenerationService().GenerateBot(new WaveInfoClass(1, WildSpawnType.assault, BotDifficulty.normal));
+            var scavData = new BotGenerationService(_globalsService, _inventoryService).GenerateBot(new WaveInfoClass(1, WildSpawnType.assault, BotDifficulty.normal));
             scavData.Id = MongoID.Generate();
             pmcData.PetId = scavData.Id;
 
