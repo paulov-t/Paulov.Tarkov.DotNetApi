@@ -1,6 +1,5 @@
 ﻿using EFT;
 using Newtonsoft.Json;
-using Paulov.TarkovModels.GroupingModels;
 
 namespace Paulov.TarkovModels
 {
@@ -27,13 +26,6 @@ namespace Paulov.TarkovModels
 
         [JsonProperty("raidConfiguration")]
         public RaidSettings? RaidConfiguration { get; set; }
-
-
-        /// <summary>
-        /// Gets or sets the social network information associated with the account profile.
-        /// </summary>
-        [JsonProperty("grouping")]
-        public MatchingGroup MatchingGroup { get; set; } = new MatchingGroup();
 
         /// <summary>
         /// Gets or sets the social network information associated with the account profile.
