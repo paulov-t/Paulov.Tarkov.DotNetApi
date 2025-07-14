@@ -14,12 +14,20 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private ISaveProvider _saveProvider;
         private IAccountService _accountService;
         private IWebSocketService _webSocketService;
+        private IMatchingService _matchingService;
 
-        public RaidController(ISaveProvider saveProvider, IAccountService accountService, IWebSocketService webSocketService)
+        public RaidController
+            (
+            ISaveProvider saveProvider
+            , IAccountService accountService
+            , IWebSocketService webSocketService
+            , IMatchingService matchingService
+            )
         {
             _saveProvider = saveProvider ?? throw new ArgumentNullException(nameof(saveProvider));
             _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
             _webSocketService = webSocketService ?? throw new ArgumentNullException(nameof(webSocketService));
+            _matchingService = matchingService ?? throw new ArgumentNullException(nameof(matchingService));
         }
 
         private string SessionId
@@ -47,7 +55,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             accountProfile.RaidConfiguration = JObject.FromObject(requestBody).ToObject<RaidSettings>();
             _saveProvider.SaveProfile(SessionId, account);
 
-            var group = _saveProvider.GetAccountProfileMode(account).MatchingGroup;
+            var group = _matchingService.GetMatchingGroupBySessionId(SessionId);
 
             // If the player is not in a group, we don't need to send any notifications
             if (group == null)

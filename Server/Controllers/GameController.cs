@@ -17,17 +17,26 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
     [ApiController]
     public class GameController : ControllerBase
     {
-        private ISaveProvider _saveProvider;
-        private IConfiguration configuration;
-        private IGlobalsService _globalsService;
+        private readonly ISaveProvider _saveProvider;
+        private readonly IConfiguration configuration;
+        private readonly IGlobalsService _globalsService;
         private readonly IInventoryService _inventoryService;
+        private readonly IMatchingService _matchingService;
 
-        public GameController(ISaveProvider saveProvider, IConfiguration configuration, IGlobalsService globalsService, IInventoryService inventoryService)
+        public GameController
+            (
+            ISaveProvider saveProvider
+            , IConfiguration configuration
+            , IGlobalsService globalsService
+            , IInventoryService inventoryService
+            , IMatchingService matchingService
+            )
         {
             this._saveProvider = saveProvider;
             this.configuration = configuration;
             this._globalsService = globalsService;
             this._inventoryService = inventoryService;
+            this._matchingService = matchingService;
         }
 
         private string SessionId
@@ -472,7 +481,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
 
             // When the game is started in a specific mode, we need to recreate the matching group for that mode. This would be true whenever the game is started or switched modes.
-            _saveProvider.GetAccountProfileMode(account).MatchingGroup = new();
+            _matchingService.DeleteMatchingGroupBySessionId(SessionId);
+            _matchingService.CreateMatchingGroupBySessionId(SessionId);
             // When the game is started in a specific mode, we need to reset the group invites.
             _saveProvider.GetAccountProfileMode(account).GroupInviteRequests = new();
             // Resave

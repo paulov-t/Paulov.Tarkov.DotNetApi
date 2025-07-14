@@ -25,14 +25,23 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private IGlobalsService _globalsService;
         private IAccountService _accountService;
         private IWebSocketService _webSocketService;
+        private IMatchingService _matchingService;
 
-        public MatchController(ISaveProvider saveProvider, IInventoryService inventoryService, IGlobalsService globalsService, IAccountService accountService, IWebSocketService webSocketService)
+        public MatchController(
+            ISaveProvider saveProvider
+            , IInventoryService inventoryService
+            , IGlobalsService globalsService
+            , IAccountService accountService
+            , IWebSocketService webSocketService
+            , IMatchingService matchingService
+            )
         {
-            _saveProvider = saveProvider;
-            _inventoryService = inventoryService;
-            _globalsService = globalsService;
+            _saveProvider = saveProvider ?? throw new ArgumentNullException(nameof(saveProvider));
+            _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService));
+            _globalsService = globalsService ?? throw new ArgumentNullException(nameof(globalsService));
             _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
             _webSocketService = webSocketService ?? throw new ArgumentNullException(nameof(webSocketService));
+            _matchingService = matchingService ?? throw new ArgumentNullException(nameof(matchingService));
         }
 
         private string SessionId
@@ -52,7 +61,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private MatchingGroup GetSessionAccountMatchingGroup()
         {
             var sessionAccount = GetSessionAccount();
-            var group = _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup;
+            var group = _matchingService.GetMatchingGroupBySessionId(SessionId);
             return group;
         }
 
@@ -66,15 +75,25 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "Account not found");
             }
 
-            if (_saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup == null)
-                _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup = new MatchingGroup()
+            //if (_saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup == null)
+            //    _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup = new MatchingGroup()
+            //    {
+            //        MatchingGroupId = MongoID.Generate(false).ToString(),
+            //        Members = new List<string>() { sessionAccount.AccountId },
+            //        SquadLeaderId = sessionAccount.AccountId
+            //    };
+
+            var matchGroup = GetSessionAccountMatchingGroup();
+            if (matchGroup == null)
+            {
+                matchGroup = new MatchingGroup()
                 {
                     MatchingGroupId = MongoID.Generate(false).ToString(),
                     Members = new List<string>() { sessionAccount.AccountId },
                     SquadLeaderId = sessionAccount.AccountId
                 };
-
-            var matchGroup = _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup;
+                _matchingService.MatchingGroups.Add(matchGroup);
+            }
 
             var members = new JArray();
             foreach (var memberId in matchGroup.Members)
@@ -118,25 +137,23 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(502014, "Player is not Online");
             }
 
-            if (_saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup == null)
+            var myGroup = _matchingService.GetMatchingGroupBySessionId(SessionId);
+            if (myGroup == null)
             {
-                _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup = new MatchingGroup()
+                myGroup = new MatchingGroup()
                 {
                     MatchingGroupId = MongoID.Generate(false).ToString(),
                     Members = new List<string>() { fromAccount.AccountId, toAccountId }
                 };
             }
 
-            if (_saveProvider.GetAccountProfileMode(toAccount).MatchingGroup == null)
-                _saveProvider.GetAccountProfileMode(toAccount).MatchingGroup = new MatchingGroup();
-
-            if (_saveProvider.GetAccountProfileMode(fromAccount).GroupInviteRequests.Contains(toAccount.AccountId))
-                _saveProvider.GetAccountProfileMode(fromAccount).GroupInviteRequests.Add(toAccount.AccountId);
+            //if (myGroup.GroupInviteRequests.Contains(toAccount.AccountId))
+            //    myGroup.GroupInviteRequests.Add(toAccount.AccountId);
 
             if (_saveProvider.GetAccountProfileMode(toAccount).GroupInviteRequests.Contains(fromAccount.AccountId))
                 _saveProvider.GetAccountProfileMode(toAccount).GroupInviteRequests.Add(fromAccount.AccountId);
 
-            var matchGroup = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
+            var matchGroup = GetSessionAccountMatchingGroup();
             matchGroup.SquadLeaderId = fromAccount.AccountId;
 
             if (!matchGroup.Members.Any(x => x == fromAccount.AccountId))
@@ -145,8 +162,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (!matchGroup.Members.Any(x => x == toAccount.AccountId))
                 matchGroup.Members.Add(toAccount.AccountId);
 
-            _saveProvider.GetAccountProfileMode(toAccount).MatchingGroup = matchGroup;
-            _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup = matchGroup;
+            //_saveProvider.GetAccountProfileMode(toAccount).MatchingGroup = matchGroup;
+            //_saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup = matchGroup;
 
             var members = new JArray();
 
@@ -186,12 +203,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "Own account not found");
             }
 
-            var group = _saveProvider.GetAccountProfileMode(fromAccount).MatchingGroup;
+            var myGroup = _matchingService.GetMatchingGroupBySessionId(SessionId);
 
             var acceptingRequestAccountMember = _accountService.GetMatchingGroupMemberWithHealthAndPVR(fromAccount, false, false, null);
             acceptingRequestAccountMember.Add("requestId", requestBody["requestId"].ToString());
 
-            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMember(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == group.SquadLeaderId, isReady: false, gameMode: null));
+            var squadMembers = myGroup.Members.Select(memberId => _accountService.GetMatchingGroupMember(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == myGroup.SquadLeaderId, isReady: false, gameMode: null));
 
             foreach (var member in squadMembers)
             {
@@ -461,18 +478,18 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "Own account not found");
             }
 
-            var group = _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup;
-            if (group == null)
+            var myGroup = _matchingService.GetMatchingGroupBySessionId(SessionId);
+            if (myGroup == null)
             {
                 return new BSGErrorBodyResult(500, "Matching group not found");
             }
 
-            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(SessionId), SessionId == group.SquadLeaderId, SessionId == group.SquadLeaderId, null);
-            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(memberId), memberId == group.SquadLeaderId, false, null)).ToList();
+            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(SessionId), SessionId == myGroup.SquadLeaderId, SessionId == myGroup.SquadLeaderId, null);
+            var squadMembers = myGroup.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(_saveProvider.LoadProfile(memberId), memberId == myGroup.SquadLeaderId, false, null)).ToList();
 
             JObject dataToSend = new JObject
             {
-                { "isLeader", SessionId == group.SquadLeaderId },
+                { "isLeader", SessionId == myGroup.SquadLeaderId },
                 { "isReady", true },
                 { "extendedProfile", JObject.FromObject(groupMember, DatabaseHelpers.CachedSerializer) }
             };
@@ -491,14 +508,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "Own account not found");
             }
 
-            var group = _saveProvider.GetAccountProfileMode(sessionAccount).MatchingGroup;
-            if (group == null)
+            var myGroup = _matchingService.GetMatchingGroupBySessionId(SessionId);
+            if (myGroup == null)
             {
                 return new BSGErrorBodyResult(500, "Matching group not found");
             }
 
-            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(account: _saveProvider.LoadProfile(SessionId), isLeader: SessionId == group.SquadLeaderId, isReady: true, gameMode: null);
-            var squadMembers = group.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == group.SquadLeaderId, isReady: true, gameMode: null)).ToList();
+            var groupMember = _accountService.GetMatchingGroupMemberSquadPlayer(account: _saveProvider.LoadProfile(SessionId), isLeader: SessionId == myGroup.SquadLeaderId, isReady: true, gameMode: null);
+            var squadMembers = myGroup.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == myGroup.SquadLeaderId, isReady: true, gameMode: null)).ToList();
             JObject dataToSend = new JObject
             {
                 //{ "isLeader", SessionId == group.SquadLeaderId },
@@ -549,6 +566,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchGroupLeave()
         {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
             return new BSGSuccessBodyResult(new { });
         }
 
@@ -556,6 +575,38 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchGroupInviteCancel()
         {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+
+            var fromAccount = _saveProvider.LoadProfile(SessionId);
+            if (fromAccount == null)
+            {
+                return new BSGErrorBodyResult(500, "Own account not found");
+            }
+
+            var requestId = requestBody["requestId"].ToString();
+
+            //var toAccount = _accountService.GetAccountByAID(toAccountId);
+            //if (toAccount == null)
+            //{
+            //    return new BSGErrorBodyResult(500, "Other account not found");
+            //}
+
+            //var matchGroup = GetSessionAccountMatchingGroup();
+            //if (matchGroup == null)
+            //{
+            //    return new BSGErrorBodyResult(500, "Matching group not found");
+            //}
+
+            //var squadMembers = matchGroup.Members.Select(memberId => _accountService.GetMatchingGroupMemberSquadPlayer(account: _saveProvider.LoadProfile(memberId), isLeader: memberId == matchGroup.SquadLeaderId, isReady: false, gameMode: null)).ToList();
+            //foreach (var member in squadMembers)
+            //{
+            //    if (member.Id != SessionId)
+            //    {
+            //        await _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchInviteCancel, JObject.FromObject(new { }));
+            //        await Task.Delay(1500); // To prevent flooding the WebSocket with messages
+            //    }
+            //}
+
             return new BSGSuccessBodyResult(new { });
         }
 
@@ -563,6 +614,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchGroupPlayerRemove()
         {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToString(Request);
+
             return new BSGSuccessBodyResult(new { });
         }
 
@@ -632,17 +685,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> MatchGroupStartGame()
         {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToString(Request);
-            if (requestBody == null)
-                return new BSGErrorBodyResult(500, "");
-
             var myAccount = _saveProvider.LoadProfile(SessionId);
             if (myAccount == null)
                 return new BSGErrorBodyResult(500, "Own account not found");
 
             var myAccountProfile = _saveProvider.GetAccountProfileMode(myAccount);
 
-            var group = _saveProvider.GetAccountProfileMode(myAccount).MatchingGroup;
+            var group = GetSessionAccountMatchingGroup();
             if (group == null)
                 return new BSGErrorBodyResult(500, "Matching group not found");
 
@@ -660,7 +709,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 if (member.Id != SessionId)
                 {
                     await _webSocketService.SendNotificationToWebSocket(member.Id, EFT.Communications.ENotificationType.GroupMatchStartGame, dataToSend);
-                    await Task.Delay(1500); // To prevent flooding the WebSocket with messages
+                    await Task.Delay(500); // To prevent flooding the WebSocket with messages
                 }
             }
 
