@@ -25,15 +25,42 @@ namespace Paulov.TarkovModels.ServerModels
         [JsonPropertyName("ping")]
         public int Ping { get; set; }
 
+        [JsonProperty("isGroupLeader")]
+        [JsonPropertyName("isGroupLeader")]
+        public bool IsGroupLeader { get; set; }
+
         public ServerItemModel() { }
 
-        public ServerItemModel(string iPAddress, int port, EServerItemStatus status, DateTime lastUpdate, int ping)
+        public ServerItemModel(
+            string iPAddress
+            , int port
+            , EServerItemStatus status
+            , DateTime lastUpdate
+            , int ping
+            , bool isGroupLeader
+            )
         {
             IPAddress = iPAddress;
             Port = port;
             Status = status.ToString();
             LastUpdate = lastUpdate;
             Ping = ping;
+            IsGroupLeader = isGroupLeader;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is not ServerItemModel other)
+            {
+                return false;
+            }
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+            return IPAddress == other.IPAddress &&
+                   Port == other.Port &&
+                   IsGroupLeader == other.IsGroupLeader;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using EFT;
 using Paulov.TarkovModels.GroupingModels;
+using Paulov.TarkovModels.ServerModels;
 using Paulov.TarkovServices.Services.Interfaces;
 
 namespace Paulov.TarkovServices.Services
@@ -10,6 +11,7 @@ namespace Paulov.TarkovServices.Services
 
         private object LockingObject = new();
         public List<MatchingGroup> MatchingGroups { get; } = new();
+        public List<ServerItemModel> Servers { get; } = new();
 
         public MatchingService(IAccountService accountService)
         {
@@ -98,6 +100,23 @@ namespace Paulov.TarkovServices.Services
                 var request = matchingGroup.GroupInviteRequests.FirstOrDefault(invite => invite.requestId == inviteRequestId);
                 return matchingGroup.GroupInviteRequests.Remove(request);
             }
+        }
+
+        public virtual bool? AddServer(ServerItemModel serverItem)
+        {
+            lock (LockingObject)
+            {
+                Servers.Add(serverItem);
+            }
+            return null;
+        }
+        public virtual bool? RemoveServer(ServerItemModel serverItem)
+        {
+            lock (LockingObject)
+            {
+                Servers.Remove(serverItem);
+            }
+            return null;
         }
     }
 }

@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.TarkovModels.ServerModels;
 using Paulov.TarkovServices;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services;
@@ -309,7 +308,11 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         public async Task<IActionResult> ServerList(int? retry, bool? debug)
         {
             JArray result = new JArray();
-            result.Add(JObject.FromObject(new ServerItemModel("127.0.0.1", 17000, EServerItemStatus.Offline, DateTime.Now, 1)));
+
+            _matchingService.Servers.ForEach(server =>
+            {
+                result.Add(JObject.FromObject(server));
+            });
 
             return new BSGSuccessBodyResult(result.ToJson());
         }
