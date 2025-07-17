@@ -22,9 +22,9 @@ namespace Paulov.TarkovModels
         [JsonProperty("location")]
         public string Location { get; set; }
         [JsonProperty("raidMode")]
-        public string RaidMode { get; set; } = "deathmatch";
+        public ERaidMode RaidMode { get; set; } = ERaidMode.Local;
         [JsonProperty("mode")]
-        public string Mode { get; set; }
+        public string Mode { get; set; } = "deathmatch";
         [JsonProperty("shortId")]
         public string ShortId { get; set; }
         [JsonProperty("additional_info")]
@@ -53,7 +53,7 @@ namespace Paulov.TarkovModels
         }
 
         public ProfileStatusModel
-            (string profileId, string profileToken, EProfileStatus status, string ip, string port, string sid, string version, string location, string raidMode, string mode, string shortId, List<string> additionalInfo)
+            (string profileId, string profileToken, EProfileStatus status, string ip, string port, string sid, string version, string location, ERaidMode raidMode, string mode, string shortId, List<string> additionalInfo)
             : this(profileId, status, ip, port)
         {
             ProfileId = profileId;

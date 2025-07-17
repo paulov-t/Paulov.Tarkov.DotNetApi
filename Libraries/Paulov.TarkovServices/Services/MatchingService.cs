@@ -106,6 +106,10 @@ namespace Paulov.TarkovServices.Services
         {
             lock (LockingObject)
             {
+                if (Servers.Any(x => x.Port == serverItem.Port && x.IPAddress == serverItem.IPAddress))
+                {
+                    return false; // Server already exists
+                }
                 Servers.Add(serverItem);
             }
             return null;

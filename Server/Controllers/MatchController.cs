@@ -653,32 +653,38 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             var pmcStatus = new ProfileStatusModel(myAccountProfile.Characters.PMC.Id, EProfileStatus.Busy, "127.0.0.1", "17000");
             var scavStatus = new ProfileStatusModel(myAccountProfile.Characters.Scav.Id, EProfileStatus.Busy, "127.0.0.1", "17000");
 
-            if (raidConfig.Side == ESideType.Pmc)
+            //if (raidConfig.Side == ESideType.Pmc)
             {
                 pmcStatus.Ip = "127.0.0.1";
                 pmcStatus.Port = "17000";
-                pmcStatus.Sid = "PMC001";
-                pmcStatus.ShortId = "PMC001";
+                //pmcStatus.Sid = "PMC001";
+                //pmcStatus.ShortId = "PMC001";
+                pmcStatus.RaidMode = ERaidMode.Online;
             }
-            else
+            //else
             {
                 scavStatus.Ip = "127.0.0.1";
                 scavStatus.Port = "17000";
-                scavStatus.Sid = "PMC001";
-                scavStatus.ShortId = "PMC001";
+                //scavStatus.Sid = "PMC001";
+                //scavStatus.ShortId = "PMC001";
+                scavStatus.RaidMode = ERaidMode.Online;
             }
 
-            response = new ProfileStatusResponse(false, pmcStatus, scavStatus);
+            //response = new ProfileStatusResponse(false, pmcStatus, scavStatus);
+            response = new MatchJoinResponse(myAccountProfile.Characters.PMC.Id.ToString(), "127.0.0.1", "17000", requestBody["location"].ToString(), false, pmcStatus, scavStatus);
 
-            JObject result = new JObject()
-            {
-                { "ProfileId", myAccountProfile.Characters.PMC.Id.ToString() },
-                { "IpAddress", "127.0.0.1" },
-                { "Port", "17000" },
-                { "LocationId", requestBody["location"].ToString() }
-            };
+            //JObject result = new JObject()
+            //{
+            //    { "ProfileId", myAccountProfile.Characters.PMC.Id.ToString() },
+            //    { "IpAddress", "127.0.0.1" },
+            //    { "Port", "17000" },
+            //    { "LocationId", requestBody["location"].ToString() }
+            //};
 
-            return new BSGSuccessBodyResult(result.ToJson());
+            var responseText = response.ToJson();
+            Debug.WriteLine(responseText);
+
+            return new BSGSuccessBodyResult(responseText);
         }
 
         [Route("client/match/group/start_game")]

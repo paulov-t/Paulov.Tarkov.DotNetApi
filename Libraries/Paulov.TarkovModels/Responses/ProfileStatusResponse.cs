@@ -1,12 +1,19 @@
-﻿namespace Paulov.TarkovModels.Responses
+﻿using Newtonsoft.Json;
+using System.Text.Json.Serialization;
+
+namespace Paulov.TarkovModels.Responses
 {
-    public sealed class ProfileStatusResponse
+    public class ProfileStatusResponse
     {
+        [JsonProperty("maxPveCountExceeded")]
+        [JsonPropertyName("maxPveCountExceeded")]
         public bool maxPveCountExceeded { get; set; } = false;
 
         /// <summary>
         /// The profiles are expected by the client in the following format: 0: Scav, 1 PMC
         /// </summary>
+        [JsonProperty("profiles")]
+        [JsonPropertyName("profiles")]
         public List<ProfileStatusModel> profiles { get; set; } = new();
 
         public ProfileStatusResponse() { }
