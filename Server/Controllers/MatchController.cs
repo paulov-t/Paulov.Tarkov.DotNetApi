@@ -732,6 +732,16 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             return new BSGSuccessBodyResult(dbobject.ToJson());
         }
 
+        [Route("client/match/updatePing")]
+        [HttpPost]
+        public async Task<IActionResult> UpdatePing()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToJObject(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(500, "");
+
+            return new BSGSuccessBodyResult(new { });
+        }
 
     }
 }
