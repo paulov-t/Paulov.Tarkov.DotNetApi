@@ -36,7 +36,7 @@ namespace Paulov.TarkovServices.Services
 
             if (_saveProvider.GetPmcProfile(account).QuestsData == null)
             {
-                _saveProvider.GetPmcProfile(account).QuestsData = new List<QuestsQuestStatusData>();
+                _saveProvider.GetPmcProfile(account).QuestsData = new List<QuestDataClass>();
             }
 
             var entryStream = _dbProvider.GetEntryStream("database/templates/quests.json");
@@ -69,7 +69,7 @@ namespace Paulov.TarkovServices.Services
             var allQuestsJObject = JObject.Parse(jsonDocumentText);
             _ = allQuestsJObject;
 
-            var questsToAddToProfile = new List<QuestsQuestStatusData>();
+            var questsToAddToProfile = new List<QuestDataClass>();
 
             foreach (var questKVP in allQuestsKVP)
             {
@@ -84,7 +84,7 @@ namespace Paulov.TarkovServices.Services
                 // if it has no conditions just add
                 if (rawQuest.Conditions[EFT.Quests.EQuestStatus.AvailableForStart].Count == 0)
                 {
-                    var questData = new QuestsQuestStatusData
+                    var questData = new QuestDataClass
                     {
                         Id = questKVP.Key,
                         AvailableAfter = 0,
