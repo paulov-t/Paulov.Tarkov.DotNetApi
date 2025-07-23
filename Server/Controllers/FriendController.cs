@@ -265,6 +265,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         }
 
         [Route("client/friend/request/cancel")]
+        [HttpPost]
         public async Task<IActionResult> FriendRequestCancel()
         {
             var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
