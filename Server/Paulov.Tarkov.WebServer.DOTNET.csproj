@@ -94,6 +94,9 @@
 	  <None Include="..\Mods\Paulov.Launcher.Support\bin\Debug\net8.0\Paulov.Launcher.Support.dll" Link="Mods\Paulov.Launcher.Support.dll">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	  <None Include="..\Mods\Paulov.MatchmakingSupport\bin\Debug\net8.0\Paulov.MatchmakingSupport.dll" Link="Mods\Paulov.MatchmakingSupport.dll">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 	<ItemGroup>

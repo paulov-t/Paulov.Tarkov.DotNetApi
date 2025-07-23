@@ -58,6 +58,28 @@ This app can support the following databases:
 5. Setup the Database using one of the solutions offered in [Docs/DatabaseProvider](Docs/DatabaseProvider.md)
 6. Run the server project
 
+## Tests
+
+Tests are found in the Testing directory and split into various testing projects targeting various areas
+
+| Test Project | Target |
+|--------------|--------------|
+| Paulov.TarkovServices.Tests | Targets the Paulov.TarkovServices project and tests all the services for expected responses |
+| WebApiTests | Targets the Web Api controllers and tests for expected responses |
+
+## Continuous Integration & Continuous Delivery
+
+CI/CD is found in the [GitHub workflows directory](.github/workflows)
+
+| Workflow | Description |
+|--------------|--------------|
+| [CI](https://github.com/paulov-t/Paulov.Tarkov.DotNetApi/blob/master/.github/workflows/CI.yml) | Continuously builds and run tests |
+| [Deploy-To-Azure-Dev](https://github.com/paulov-t/Paulov.Tarkov.DotNetApi/blob/master/.github/workflows/Deploy-To-Azure-Dev.yml) | Continuously builds, run tests and deploys to Azure Web App (Dev) |
+
+## Contribution
+
+Although contribution is welcome, please be aware of the [LICENSE](LICENSE.md) you are contributing in to. Any code provided to this project cannot be reused elsewhere for the same or similar purpose unless express permission has been provided. I have been caught multiple times by having open licenses which users like to misuse and abuse to their own gain. Therefore the License chosen is the only way to stop such activity going forward.
+
 ## License
 
 - This project is licensed under the Attribution-NonCommercial-NoDerivatives 4.0 International License. See [LICENSE](LICENSE.md)

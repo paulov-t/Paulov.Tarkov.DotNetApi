@@ -27,11 +27,31 @@ namespace Paulov.Tarkov.Web.Api.Controllers
     {
         private ISaveProvider _saveProvider;
         private IGlobalsService _globalsService;
+        private IAccountService _accountService;
+        private IInventoryService _inventoryService;
+        private Dictionary<string, MongoID> Voices = new();
 
-        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService)
+        public GameProfileController(ISaveProvider saveProvider, IGlobalsService globalsService, IAccountService accountService, IInventoryService inventoryService)
         {
             _saveProvider = saveProvider;
             _globalsService = globalsService;
+            _inventoryService = inventoryService;
+
+            if (DatabaseService.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            {
+                foreach (var j in customizationTemplates)
+                {
+                    var key = j.Key;
+                    var value = j.Value;
+                    // get the voices from the customization templates (5fc100cf95572123ae738483 is the parent id)
+                    if (value["_parent"]?.ToString() == "5fc100cf95572123ae738483")
+                    {
+                        Voices.Add(value["_name"].ToString(), j.Key);
+                    }
+                }
+            }
+            _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService), "AccountService cannot be null.");
+            _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService), "InventoryService cannot be null.");
         }
 
         private string SessionId
@@ -236,24 +256,24 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             pmcData2.Id = sessionId;
             pmcData2.Info.Nickname = requestBody["nickname"].ToString();
             pmcData2.Info.RegistrationDate = new Random().Next(100000, 500000);
-            pmcData2.Info.Voice = customizationTemplates[requestBody["voiceId"].ToString()]["_name"].ToString();
+            pmcData2.Customization[EBodyModelPart.Voice] = requestBody["voiceId"].ToString();
             pmcData2.Stats = blankStatGroup;
             pmcData2.WishList = new Dictionary<MongoID, byte>();
             pmcData2.Info.MemberCategory = EMemberCategory.Default;
             pmcData2.Info.SelectedMemberCategory = EMemberCategory.Default;
-            // TODO: Remap GClass2032 to HideoutAreaDescriptor
-            pmcData2.Hideout.Areas = template["Hideout"]["Areas"].ToObject<GClass2032[]>();
+            // TODO: Remap GClass2034 to HideoutAreaDescriptor
+            pmcData2.Hideout.Areas = template["Hideout"]["Areas"].ToObject<AreaInfo[]>();
             pmcData2.Hideout.GlobalCustomization = template["Hideout"]["Customization"].ToObject<Dictionary<EHideoutCustomizationType, MongoID?>>();
             //pmcData2.Hideout = new HideoutDescriptor();
 
             template["Customization"]["Head"] = requestBody["headId"].ToString();
+            template["Customization"]["Voice"] = requestBody["voiceId"].ToString();
             template["_id"] = sessionId;
             template["aid"] = accountIdString;
             template["savage"] = null;
             template["Info"]["Nickname"] = requestBody["nickname"].ToString();
             template["Info"]["LowerNickname"] = requestBody["nickname"].ToString().ToLower();
             template["Info"]["RegistrationDate"] = new Random().Next(100000, 500000);
-            template["Info"]["Voice"] = customizationTemplates[requestBody["voiceId"].ToString()]["_name"];
             template["Stats"] = JToken.FromObject(blankStatGroup);
             template["WishList"] = JToken.FromObject(new Dictionary<MongoID, byte>());
             template["Hideout"]["Seed"] = "";
@@ -277,7 +297,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
                 account.CurrentMode = gameMode;
 
             // Create scav -------------------------------------------------------------------------------------------
-            var scavData = new BotGenerationService().GenerateBot(new WaveInfoClass(1, WildSpawnType.assault, BotDifficulty.normal));
+            var scavData = new BotGenerationService(_globalsService, _inventoryService).GenerateBot(new WaveInfoClass(1, WildSpawnType.assault, BotDifficulty.normal));
             scavData.Id = MongoID.Generate();
             pmcData.PetId = scavData.Id;
 
@@ -312,50 +332,46 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
         }
 
+        /// <summary>
+        /// Called when the client searches for profiles in the game.
+        /// </summary>
+        /// <returns></returns>
         [Route("client/game/profile/search")]
         [HttpPost]
         public async Task<IActionResult> ProfileSearch()
         {
-            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            /*
+             * Expects json object with nickname defined as a string
+             */
 
-            var profile = _saveProvider.LoadProfile(SessionId);
-            if (profile == null)
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            // If the request body is null or does not contain the "nickname" key, return an error response.
+            if (requestBody == null || !requestBody.ContainsKey("nickname"))
             {
-                Response.StatusCode = 500;
-                return new NotFoundResult();
+                return new BSGErrorBodyResult(402, "Request Body cannot be found or nickname is not provided!");
             }
+
+            var sessionId = SessionId;
 
             var allProfiles = _saveProvider.GetProfiles();
 
             List<Dictionary<string, object>> chatMembers = new();
+            // TODO: This needs refactoring. If we had a lot of profiles on this server then this could take a long period of time.
             foreach (var p in allProfiles)
             {
-                var pmc = _saveProvider.GetPmcProfile(p.Value);
-                var info = new UpdatableChatMember.UpdatableChatMemberInfo();
-                info.Nickname = pmc.Info.Nickname;// pmc["Info"]["Nickname"].ToString();
-                info.Side = EFT.EChatMemberSide.Usec;
-                info.Banned = false;
-                info.Ignored = false;
-                info.Level = 1;
-                info.MemberCategory = EMemberCategory.Default;
-                info.SelectedMemberCategory = EMemberCategory.Default;
+                if (p.Key == sessionId)
+                    continue; // Skip the current profile
 
-                var member = new Dictionary<string, object>();
-                member.Add("Id", p.Key);
-                member.Add("Info", info);
-                chatMembers.Add(member);
+                var m = _accountService.GetUpdatableChatMember(p.Value, "PVE");
+                if (m == null)
+                    continue;
+
+                var mInfo = m["Info"] as UpdatableChatMember.UpdatableChatMemberInfo;
+                if (mInfo.Nickname.Contains(requestBody["nickname"].ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    chatMembers.Add(m);
+                }
             }
-            //UpdatableChatMember[] chatMembers = saveProvider
-            //    .GetProfiles()
-            //    .Values
-            //    .SelectMany(profile =>
-            //    {
-            //        new UpdatableChatMember(profile.AccountId.ToString())
-            //        {
-            //            AccountId = profile.AccountId.ToString()
-            //        };
-            //    })
-            //    .ToArray();
 
             return new BSGSuccessBodyResult(chatMembers.ToArray());
 
@@ -437,6 +453,71 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             return new BSGSuccessBodyResult(obj);
 
         }
+
+        [Route("client/profile/view")]
+        [HttpPost]
+        public async Task<IActionResult> ProfileView()
+        {
+            var requestBody = await HttpBodyConverters.DecompressRequestBodyToDictionary(Request);
+            if (requestBody == null)
+                return new BSGErrorBodyResult(402, "Request Body cannot be found!");
+
+            if (!requestBody.ContainsKey("accountId"))
+            {
+                return new BSGErrorBodyResult(402, "accountId is not provided!");
+            }
+            var accountAID = requestBody["accountId"].ToString();
+            var otherAccount = _accountService.GetAccountByAID(accountAID);
+            var pmcCharacter = _saveProvider.GetPmcProfile(otherAccount);
+            var scavCharacter = _saveProvider.GetScavProfile(otherAccount);
+
+            var favoriteItems = new JArray();
+            var id = pmcCharacter.Id.ToString();
+            var aid = accountAID;
+            var info = JObject.FromObject(pmcCharacter.Info);
+            var achievements = JObject.FromObject(pmcCharacter.AchievementsData);
+            var customization = JObject.FromObject(pmcCharacter.Customization);
+            var equipment = new JObject()
+            {
+                { "Id", _inventoryService.GetEquipmentId(pmcCharacter) },
+                { "Items", JArray.FromObject(_inventoryService.GetInventoryItems(pmcCharacter), DatabaseHelpers.CachedSerializer) },
+            };
+            var pmcStats = JObject.FromObject(pmcCharacter.Stats);
+            var scavStats = JObject.FromObject(pmcCharacter.Stats);
+            var skills = JObject.FromObject(pmcCharacter.Skills);
+            var hideout = JObject.FromObject(pmcCharacter.Hideout);
+            var customizationStash = _inventoryService.GetHideoutCustomizationStashId(pmcCharacter);
+            var hideoutAreaStashes = _inventoryService.GetHideoutAreaStashes(pmcCharacter);
+
+            // Get the hideoutKeys
+            var hideoutKeys = hideoutAreaStashes.Keys.Select(x => x.ToString()).ToList();
+            hideoutKeys.Add(_inventoryService.GetHideoutCustomizationStashId(pmcCharacter));
+
+            var itemsToReturn = new JArray();
+
+            var profileView = new JObject()
+            {
+                { "favoriteItems", favoriteItems },
+                { "id", id },
+                { "aid", aid },
+                { "info", info },
+                { "achievements", achievements },
+                { "customization", customization },
+                { "equipment", equipment },
+                { "pmcStats", pmcStats },
+                //{ "scavStats", JObject.FromObject(scavCharacter.Stats) },
+                { "scavStats", pmcStats },
+                { "skills", skills },
+                { "hideout", hideout },
+                { "customizationStash", customizationStash },
+                { "hideoutAreaStashes", JObject.FromObject(hideoutAreaStashes, DatabaseHelpers.CachedSerializer) },
+                { "items", itemsToReturn }
+            };
+
+            return new BSGSuccessBodyResult(profileView);
+
+        }
+
     }
 
 
