@@ -5,15 +5,12 @@ using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Net.WebSockets;
 using System.Reflection;
 
 namespace SIT.WebServer
 {
     public class Program
     {
-        public static Dictionary<string, WebSocket> WebSockets { get; } = new Dictionary<string, WebSocket>();
-
         public static void Main(string[] args)
         {
             var assemblyMods = new List<Assembly>();
@@ -34,7 +31,7 @@ namespace SIT.WebServer
                 KeepAliveInterval = TimeSpan.FromMinutes(2)
             });
 
-            app.UseMiddleware<WebsocketMiddleware>();
+            app.UseMiddleware<WebSocketMiddleware>(builder.Services);
             app.UseMiddleware<RequestLoggingMiddleware>();
 
             app.UseSwagger();
@@ -73,7 +70,8 @@ namespace SIT.WebServer
                 modAssemblyDirectory.EnumerateFiles("*.dll").Select(x => Assembly.LoadFile(x.FullName));
             foreach (Assembly assembly in modAssemblies)
             {
-                if (!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase)))) return;
+                if (!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase))))
+                    continue;
 
                 Console.WriteLine($" - {assembly.GetName().Name}");
                 mvcBuilder.AddApplicationPart(assembly);
@@ -99,12 +97,21 @@ namespace SIT.WebServer
                 .AddSwaggerGen(ConfigureSwaggerGen)
                 .AddDistributedMemoryCache()
                 .AddSession()
-                //.AddSingleton<IGlobalsService, GlobalsService>()
                 .AddSingleton<ISaveProvider, JsonFileSaveProvider>()
                 .AddSingleton<IInventoryService, InventoryService>()
                 .AddSingleton<IPasswordService, PasswordService>();
 
+            Console.WriteLine($"Loading AccountService");
+            services.AddSingleton<IAccountService, AccountService>();
 
+            Console.WriteLine($"Loading FriendshipService");
+            services.AddSingleton<IFriendshipService, FriendshipService>();
+
+            Console.WriteLine($"Loading WebSocketService");
+            services.AddSingleton(typeof(IWebSocketService), new WebSocketService());
+
+            Console.WriteLine($"Loading MatchingService");
+            services.AddSingleton<IMatchingService, MatchingService>();
 
         }
 

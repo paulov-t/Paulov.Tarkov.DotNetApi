@@ -20,6 +20,8 @@ namespace WebApiTests
         private readonly IGlobalsService _globalsService;
         private readonly IDatabaseProvider databaseProvider;
         private readonly IDatabaseService databaseService;
+        private readonly IAccountService _accountService;
+        private readonly IInventoryService _inventoryService;
 
         public GameProfileControllerTests()
         {
@@ -28,6 +30,9 @@ namespace WebApiTests
             _saveProvider = new SimpleSaveProvider();
             configuration = new ConfigurationBuilder().Build();
             databaseService = new DatabaseService(configuration, databaseProvider);
+            _globalsService = new TestsGlobalsService();
+            _inventoryService = new InventoryService();
+            _accountService = new AccountService(_saveProvider, _inventoryService, databaseService);
         }
 
         [SetUp]
@@ -78,11 +83,40 @@ namespace WebApiTests
             };
 
             // Act: Create an instance of the GameProfileController and call the ProfileCreate method
-            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new InventoryService())
+            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new AccountService(_saveProvider, _inventoryService, databaseService), _inventoryService)
             {
                 ControllerContext = controllerContext
             };
             var result = controller.ProfileCreate().Result;
+            _ = result;
+
+            // TODO: Add assertions to verify the profile creation logic
+        }
+
+        [Test]
+        public void ProfileSearchTest()
+        {
+            // Arrange: Create a JSON object with the required fields for profile creation (This comes from the client)
+            var data = new JObject();
+            data.Add("nickname", "Dev");
+            var requestBodyStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(data.ToJson()));
+
+            // Set up the HttpContext with the request body and session
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Body = requestBodyStream;
+            httpContext.Request.ContentLength = requestBodyStream.Length;
+            httpContext.Session = new SessionForGameProfileControllerTests();
+            var controllerContext = new ControllerContext()
+            {
+                HttpContext = httpContext,
+            };
+
+            // Act: Create an instance of the GameProfileController and call the ProfileCreate method
+            var controller = new GameProfileController(_saveProvider, new TestsGlobalsService(), new AccountService(_saveProvider, _inventoryService, databaseService), _inventoryService)
+            {
+                ControllerContext = controllerContext
+            };
+            var result = controller.ProfileSearch().Result;
             _ = result;
 
             // TODO: Add assertions to verify the profile creation logic

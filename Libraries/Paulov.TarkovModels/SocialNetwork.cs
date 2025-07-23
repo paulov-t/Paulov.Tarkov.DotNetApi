@@ -2,9 +2,10 @@
 {
     public class SocialNetwork
     {
-        public FriendRequest[] FriendRequestInbox { get; set; }
-        public FriendRequest[] FriendRequestOutbox { get; set; }
-        public List<string> Friends { get; set; }
-        public List<Dialogue> Dialogues { get; set; }
+        public List<FriendRequest> FriendRequestInbox { get; set; } = new List<FriendRequest>();
+        public List<FriendRequest> FriendRequestOutbox { get; set; } = new List<FriendRequest>();
+        public List<string> Friends { get; set; } = new List<string>();
+        public List<string> Ignore { get; set; } = new List<string>();
+        public List<Dialogue> Dialogues { get; set; } = new List<Dialogue>();
     }
 }
