@@ -1,6 +1,6 @@
 <div align=center style="text-align: center">
 <h1 style="text-align: center"> Paulov.Tarkov.DotNetApi </h1>
-
+A personal project to demonstrate dotnet Web Api against a real-world game example.
 </div>
 
 ---
