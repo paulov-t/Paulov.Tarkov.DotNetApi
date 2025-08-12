@@ -209,15 +209,15 @@ namespace Paulov.TarkovServices.Providers.SaveProviders
             return pmcObject;
         }
 
-        public Dictionary<MongoID, Profile.TraderInfo> GetPmcProfileTradersInfo(Account account)
-        {
-            var pmcProfile = GetPmcProfile(account);
-            if (pmcProfile == null) return null;
+        //public Dictionary<MongoID, Profile.TraderInfo> GetPmcProfileTradersInfo(Account account)
+        //{
+        //    var pmcProfile = GetPmcProfile(account);
+        //    if (pmcProfile == null) return null;
 
-            var objTradersInfo = pmcProfile.GetProfile().TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
+        //    var objTradersInfo = pmcProfile.GetProfile().TradersInfo;// ["TradersInfo"].ToObject<Dictionary<string, EFT.Profile.TraderInfo>>();
 
-            return objTradersInfo;
-        }
+        //    return objTradersInfo;
+        //}
 
         public AccountProfileCharacter GetScavProfile(Account account)
         {

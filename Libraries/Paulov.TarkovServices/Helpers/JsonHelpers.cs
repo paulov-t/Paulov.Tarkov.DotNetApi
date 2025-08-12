@@ -1,4 +1,4 @@
-﻿using EFT;
+using EFT;
 using Newtonsoft.Json;
 
 namespace Paulov.TarkovServices.Helpers

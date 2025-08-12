@@ -7,7 +7,7 @@ using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 
-namespace SIT.WebServer
+namespace Paulov.Tarkov.WebServer.DOTNET
 {
     public class Program
     {
@@ -90,8 +90,9 @@ namespace SIT.WebServer
             services.AddSingleton(typeof(IGlobalsService), new GlobalsService(dbProvider));
             Console.WriteLine($"Loading DatabaseService");
             services.AddSingleton(typeof(IDatabaseService), (new DatabaseService(builder.Configuration, dbProvider)));
+
             Console.WriteLine($"Loading QuestService");
-            services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider));
+            services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider, new JsonFileSaveProvider()));
 
             services
                 .AddSwaggerGen(ConfigureSwaggerGen)
