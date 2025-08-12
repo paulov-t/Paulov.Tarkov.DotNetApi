@@ -181,8 +181,8 @@ namespace Paulov.TarkovServices
 
             var pmcProfile = saveProvider.GetAccountProfileMode(account).Characters.PMC;
             var pmcTradersInfo = pmcProfile.TradersInfo;
-            var tradersInfo = saveProvider.GetPmcProfileTradersInfo(account);
-            var myTraderLevel = tradersInfo.ContainsKey(traderId) ? tradersInfo[traderId].LoyaltyLevel : 1;
+            //var tradersInfo = saveProvider.GetPmcProfileTradersInfo(account);
+            //var myTraderLevel = tradersInfo.ContainsKey(traderId) ? tradersInfo[traderId].LoyaltyLevel : 1;
 
             var resultTraderAssort = new EFT.TraderAssortment();
             //List<FlatItem> list = new();

@@ -7,7 +7,7 @@ using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 
-namespace SIT.WebServer
+namespace Paulov.Tarkov.WebServer.DOTNET
 {
     public class Program
     {

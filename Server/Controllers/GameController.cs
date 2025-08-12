@@ -72,7 +72,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         }
 
         [Route("client/game/version/validate")]
-        [HttpPost]
+        [HttpPost] 
         public async void VersionValidate()
         {
             await HttpBodyConverters.CompressNullIntoResponseBodyBSG(Request, Response);
