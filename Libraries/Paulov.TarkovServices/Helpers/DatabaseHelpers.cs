@@ -5,6 +5,7 @@ using Newtonsoft.Json.Serialization;
 using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Providers.DatabaseProviders.ZipDatabaseProviders;
 using Paulov.TarkovServices.Services;
+using System.Text;
 using System.Text.Json;
 
 namespace Paulov.TarkovServices.Helpers
@@ -47,6 +48,29 @@ namespace Paulov.TarkovServices.Helpers
                 }
                 CachedSerializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
             }
+        }
+
+        public static JsonSerializerSettings GetJsonSerializerSettings()
+        {
+            var tarkovTypes = typeof(TarkovApplication).Assembly.DefinedTypes;
+            var convertersType = tarkovTypes.FirstOrDefault(x => x.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).Any(p => p.Name == "Converters"));
+            if (convertersType != null)
+            {
+                var converters = (JsonConverter[])convertersType.GetField("Converters", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).GetValue(null);
+                return new JsonSerializerSettings
+                {
+                    Converters = converters,
+                    ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
+                    TraceWriter = CachedSerializer.TraceWriter,
+                    ObjectCreationHandling = ObjectCreationHandling.Replace,
+                    TypeNameHandling = TypeNameHandling.All,
+                    MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
+                    ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
+                    Error = (sender, args) => { args.ErrorContext.Handled = true; },
+                };
+            }
+
+            throw new InvalidOperationException("Converters not found in Tarkov assembly.");
         }
 
         /// <summary>
@@ -161,6 +185,86 @@ namespace Paulov.TarkovServices.Helpers
 
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
             return jsonDocument;
+        }
+
+        public static bool TryGetJObject(string databaseFilePath, out JObject result)
+        {
+            var filePath = ConvertPath(databaseFilePath);
+
+            var ms = new MemoryStream();
+
+            var databaseProvider = DatabaseService.GetDatabaseProvider();
+
+            // If the databaseprovider uses entries then attempt to find it there
+            var entry = databaseProvider.Entries.FirstOrDefault(x => x.FullName == filePath);
+            if (entry != null)
+            {
+                var stream = entry.Open();
+                stream.CopyTo(ms);
+                stream.Dispose();
+                stream = null;
+            }
+            // If the databaseprovider doesn't support entries, then attempt to get directly
+            else
+            {
+                databaseProvider.GetEntryStream(filePath).CopyTo(ms);
+            }
+
+            if (ms.Length == 0)
+            {
+                throw new FileNotFoundException($"Database file not found: {filePath}");
+            }
+
+            // Parse the JSON document from the memory stream to a JObject
+            ms.Seek(0, SeekOrigin.Begin);
+            using var textReader = new StreamReader(ms, Encoding.UTF8);
+            result = JsonConvert.DeserializeObject<JObject>(textReader.ReadToEnd(), GetJsonSerializerSettings());
+
+            ms.Dispose();
+            ms = null;
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+            return true;
+        }
+
+        public static T GetObject<T>(string databaseFilePath)
+        {
+            var filePath = ConvertPath(databaseFilePath);
+
+            var ms = new MemoryStream();
+
+            var databaseProvider = DatabaseService.GetDatabaseProvider();
+
+            // If the databaseprovider uses entries then attempt to find it there
+            var entry = databaseProvider.Entries.FirstOrDefault(x => x.FullName == filePath);
+            if (entry != null)
+            {
+                var stream = entry.Open();
+                stream.CopyTo(ms);
+                stream.Dispose();
+                stream = null;
+            }
+            // If the databaseprovider doesn't support entries, then attempt to get directly
+            else
+            {
+                databaseProvider.GetEntryStream(filePath).CopyTo(ms);
+            }
+
+            if (ms.Length == 0)
+            {
+                throw new FileNotFoundException($"Database file not found: {filePath}");
+            }
+
+            // Parse the JSON document from the memory stream to a JObject
+            ms.Seek(0, SeekOrigin.Begin);
+            using var textReader = new StreamReader(ms, Encoding.UTF8);
+            var result = JsonConvert.DeserializeObject<T>(textReader.ReadToEnd(), GetJsonSerializerSettings());
+
+            ms.Dispose();
+            ms = null;
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+            return result;
         }
 
         public static bool TryLoadDatabaseFile(

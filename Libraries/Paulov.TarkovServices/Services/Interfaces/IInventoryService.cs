@@ -1,6 +1,5 @@
 ﻿using EFT;
 using Paulov.TarkovModels;
-using FlatItem = GClass1354;
 
 namespace Paulov.TarkovServices.Services.Interfaces
 {
@@ -11,7 +10,7 @@ namespace Paulov.TarkovServices.Services.Interfaces
 
         public FlatItem AddTemplatedItemToSlot(AccountProfileCharacter profile, string templateId, string slotId, string parentId);
 
-        public IEnumerable<GClass1354> GetChildItemsOfItemId(AccountProfileCharacter profile, string itemId);
+        public IEnumerable<FlatItem> GetChildItemsOfItemId(AccountProfileCharacter profile, string itemId);
 
         /// <summary>
         /// Get the core EquipmentId
@@ -41,7 +40,7 @@ namespace Paulov.TarkovServices.Services.Interfaces
         /// </summary>
         /// <param name="profile"></param>
         /// <returns></returns>
-        public GClass1354[] GetInventoryItems(AccountProfileCharacter profile);
+        public FlatItem[] GetInventoryItems(AccountProfileCharacter profile);
 
 
         public void RemoveItemAndChildItemsFromProfile(AccountProfileCharacter profile, string itemId);

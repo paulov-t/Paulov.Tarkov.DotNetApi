@@ -17,17 +17,26 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
     [ApiController]
     public class GameController : ControllerBase
     {
-        private TradingProvider tradingProvider { get; } = new TradingProvider();
+        private readonly ISaveProvider _saveProvider;
+        private readonly IConfiguration configuration;
+        private readonly IGlobalsService _globalsService;
+        private readonly IInventoryService _inventoryService;
+        private readonly IMatchingService _matchingService;
 
-        private ISaveProvider _saveProvider;
-        private IConfiguration configuration;
-        private IGlobalsService _globalsService;
-
-        public GameController(ISaveProvider saveProvider, IConfiguration configuration, IGlobalsService globalsService)
+        public GameController
+            (
+            ISaveProvider saveProvider
+            , IConfiguration configuration
+            , IGlobalsService globalsService
+            , IInventoryService inventoryService
+            , IMatchingService matchingService
+            )
         {
             this._saveProvider = saveProvider;
             this.configuration = configuration;
             this._globalsService = globalsService;
+            this._inventoryService = inventoryService;
+            this._matchingService = matchingService;
         }
 
         private string SessionId
@@ -64,7 +73,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         }
 
         [Route("client/game/version/validate")]
-        [HttpPost]
+        [HttpPost] 
         public async void VersionValidate()
         {
             await HttpBodyConverters.CompressNullIntoResponseBodyBSG(Request, Response);
@@ -81,16 +90,16 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             string ip = Request?.Host.ToString();
             string backendUrl = $"https://{ip}/";
 
-            var sessionId = "";
+            var sessionId = SessionId;
 #if !DEBUG
-            sessionId = SessionId;
             if (string.IsNullOrEmpty(sessionId))
             {
                 Response.StatusCode = 412; // Precondition
                 return StatusCode(500);
             }
 #else
-            sessionId = _saveProvider?.GetProfiles().First().Key;
+            if (string.IsNullOrEmpty(sessionId))
+                sessionId = _saveProvider?.GetProfiles().First().Key;
 #endif
 
             var profile = _saveProvider?.LoadProfile(sessionId);
@@ -217,9 +226,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         }
 
 
-
-
-
         [Route("client/weather")]
         [HttpPost]
         public async Task<IActionResult> Weather(int? retry)
@@ -232,7 +238,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 Cloudness = 0.01f
             };
             var locationWeatherTime = new LocationWeatherTime(weather, 1, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToShortTimeString());
-            locationWeatherTime.SeasonsSettings = new GClass2448();
+            locationWeatherTime.SeasonsSettings = new();
             Debug.WriteLine(locationWeatherTime.ToJson());
 
             return new BSGSuccessBodyResult(locationWeatherTime.ToJson());
@@ -296,58 +302,24 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packetResult), Request, Response);
         }
 
-        [Route("client/friend/request/list/inbox")]
-        [HttpPost]
-        public async void FriendRequestInbox(int? retry, bool? debug)
-        {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
-        }
 
-        [Route("client/friend/request/list/outbox")]
-        [HttpPost]
-        public async void FriendRequestOutbox(int? retry, bool? debug)
-        {
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
-        }
-
-        [Route("client/friend/list")]
-        [HttpPost]
-        public async Task<IActionResult> FriendList(int? retry, bool? debug)
-        {
-            JObject packet = new();
-            packet.Add("Friends", new JArray());
-            packet.Add("Ignore", new JArray());
-            packet.Add("InIgnoreList", new JArray());
-            return new BSGSuccessBodyResult(packet);
-        }
 
         [Route("client/server/list")]
         [HttpPost]
-        public async void ServerList(int? retry, bool? debug)
+        public async Task<IActionResult> ServerList(int? retry, bool? debug)
         {
-            var packets = new List<Dictionary<string, object>>();
-            await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(packets), Request, Response);
+            JArray result = new JArray();
+
+            _matchingService.Servers.ForEach(server =>
+            {
+                result.Add(JObject.FromObject(server));
+            });
+
+            return new BSGSuccessBodyResult(result.ToJson());
         }
 
-        [Route("client/match/group/current")]
-        [HttpPost]
-        public async Task<IActionResult> GroupCurrent(int? retry, bool? debug)
-        {
-            JObject packet = new();
-            packet.Add("squad", new JArray());
-            //packet.Add("raidSettings", new JObject());
 
-            return new BSGSuccessBodyResult(packet);
-        }
 
-        [Route("client/quest/list")]
-        [HttpPost]
-        public async Task<IActionResult> QuestList(int? retry, bool? debug)
-        {
-            //await HttpBodyConverters.CompressIntoResponseBodyBSG(JsonConvert.SerializeObject(new JArray()), Request, Response);
-
-            return new BSGSuccessBodyResult(new JArray());
-        }
 
         [Route("client/repeatalbeQuests/activityPeriods")]
         [HttpPost]
@@ -505,9 +477,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 _saveProvider.SaveProfile(SessionId, account);
             }
 
-            //await HttpBodyConverters.CompressDictionaryIntoResponseBodyBSG(
-            //    new Dictionary<string, object>() { { "gameMode", mode }, { "backendUrl", ip } }
-            //    , Request, Response);
+            // When the game is started in a specific mode, we need to recreate the matching group for that mode. This would be true whenever the game is started or switched modes.
+            _matchingService.DeleteMatchingGroupBySessionId(SessionId);
+            _matchingService.CreateMatchingGroupBySessionId(SessionId);
+            // When the game is started in a specific mode, we need to reset the group invites.
+            _saveProvider.GetAccountProfileMode(account).GroupInviteRequests = new();
+            // Resave
+            _saveProvider.SaveProfile(SessionId, account);
 
             return new BSGSuccessBodyResult(JObject.FromObject(new { gameMode = mode, backendUrl = ip }));
         }
@@ -587,7 +563,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             List<WaveInfoClass> list = JsonConvert.DeserializeObject<List<WaveInfoClass>>(strConditions);
 
-            var bots = new BotGenerationService().GenerateBots(list);
+            var bots = new BotGenerationService(_globalsService, _inventoryService).GenerateBots(list);
 
             ITraceWriter traceWriter = new MemoryTraceWriter();
 

@@ -1,10 +1,12 @@
 ﻿using EFT;
 using EFT.InventoryLogic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace BSGHelperLibrary
@@ -354,6 +356,87 @@ namespace BSGHelperLibrary
         {
             type = EftTypes.FirstOrDefault(x => GetAllMethodsForType(x).Any(y => y.Name.Equals(methodName, StringComparison.InvariantCulture)));
             methodInfo = GetAllMethodsForType(type).First(y => y.Name.Equals(methodName, StringComparison.InvariantCulture));
+        }
+
+        public static (List<FieldInfo> fields, List<PropertyInfo> properties) GetListOfJsonFieldsAndProperties(Type type)
+        {
+            var fields = new List<FieldInfo>();
+            var properties = new List<PropertyInfo>();
+            // Get all fields with JsonPropertyAttribute
+            fields.AddRange(type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(f => f.GetCustomAttributes(typeof(JsonPropertyAttribute), false).Any()));
+            // Get all properties with JsonPropertyAttribute
+            properties.AddRange(type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(p => p.GetCustomAttributes(typeof(JsonPropertyAttribute), false).Any()));
+            return (fields, properties);
+        }
+
+        public static (List<FieldInfo> fields, List<PropertyInfo> properties) GetListOfJsonFieldsAndProperties(object obj)
+        {
+            return GetListOfJsonFieldsAndProperties(obj.GetType());
+        }
+
+        public static void SetListOfJsonFieldsAndProperties(object obj)
+        {
+            foreach (var field in GetListOfJsonFieldsAndProperties(obj.GetType()).fields)
+            {
+                field.SetValue(obj, GetValueOfJsonProperty(obj, field.Name));
+            }
+
+            foreach (var property in GetListOfJsonFieldsAndProperties(obj.GetType()).properties)
+            {
+                property.SetValue(obj, GetValueOfJsonProperty(obj, property.Name));
+            }
+        }
+
+        public static void SetListOfJsonFieldsAndProperties(JObject fromObj, object toObj)
+        {
+            foreach (var field in GetListOfJsonFieldsAndProperties(toObj.GetType()).fields)
+            {
+                field.SetValue(toObj, fromObj[field.Name]);
+            }
+
+            foreach (var property in GetListOfJsonFieldsAndProperties(toObj.GetType()).properties)
+            {
+                property.SetValue(toObj, fromObj[property.Name]);
+            }
+        }
+
+        public static void SetListOfJsonFieldsAndPropertiesUsingJsonNode(JsonNode fromObj, object toObj)
+        {
+            foreach (var field in GetListOfJsonFieldsAndProperties(toObj.GetType()).fields)
+            {
+                var jsonName = field.GetCustomAttribute<JsonPropertyAttribute>().PropertyName;
+                if (field.FieldType.IsEnum)
+                {
+
+                }
+                else if (field.FieldType.IsArray)
+                {
+
+                }
+                else
+                {
+                    field.SetValue(toObj, fromObj[jsonName].ToString());
+                }
+            }
+
+            foreach (var property in GetListOfJsonFieldsAndProperties(toObj.GetType()).properties)
+            {
+                var jsonName = property.GetCustomAttribute<JsonPropertyAttribute>().PropertyName;
+                if (property.PropertyType.IsEnum)
+                {
+
+                }
+                else if (property.PropertyType.IsArray)
+                {
+
+                }
+                else
+                {
+                    property.SetValue(toObj, fromObj[property.Name]);
+                }
+            }
         }
 
         public static object GetValueOfJsonProperty(object ob, string name)

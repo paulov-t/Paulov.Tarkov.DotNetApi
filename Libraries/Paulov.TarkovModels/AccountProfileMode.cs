@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using EFT;
+using Newtonsoft.Json;
 
 namespace Paulov.TarkovModels
 {
@@ -21,9 +22,15 @@ namespace Paulov.TarkovModels
         /// Gets or sets the social network information associated with the account profile.
         /// </summary>
         [JsonProperty("socialNetwork")]
-        public AccountProfileCharacterSet SocialNetwork { get; set; } = new AccountProfileCharacterSet();
+        public SocialNetwork SocialNetwork { get; set; } = new SocialNetwork();
 
         [JsonProperty("raidConfiguration")]
-        public dynamic RaidConfiguration { get; set; }
+        public RaidSettings? RaidConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the social network information associated with the account profile.
+        /// </summary>
+        [JsonProperty("groupInviteRequests")]
+        public HashSet<string> GroupInviteRequests { get; set; } = new();
     }
 }

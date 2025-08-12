@@ -1,6 +1,6 @@
 <div align=center style="text-align: center">
 <h1 style="text-align: center"> Paulov.Tarkov.DotNetApi </h1>
-
+A personal project to demonstrate dotnet Web Api against a real-world game example.
 </div>
 
 ---
@@ -45,18 +45,44 @@ This app can support the following databases:
 
 ### Requirements
 
-- This project was conceptualized and built in [Visual Studio Community Edition](https://visualstudio.microsoft.com/vs/community/)
-- This project can also be opened and built in [JetBrains Rider](https://www.jetbrains.com/rider/)
-- [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+This project supports for the following Development Environments (IDE):
+- [Visual Studio Community Edition](https://visualstudio.microsoft.com/vs/community/)
+- [JetBrains Rider](https://www.jetbrains.com/rider/)
+- [Visual Studio Code](https://code.visualstudio.com/download)
+
+This project uses .NET (dotnet)
+- [Download .NET 8 Sdk x64](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 ### Initial Setup
 
 1. Download and install the [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
 2. Clone the repository using [Git](https://git-scm.com/) `git clone https://github.com/paulov-t/Paulov.Tarkov.DotNetApi.git`
-3. Open `Paulov.Tarkov.WebServer.DOTNET.sln` Visual Studio or Rider
-4. `Build > Build Solution (CTRL + SHIFT + B)`
+3. Open `Paulov.Tarkov.WebServer.DOTNET.sln` Visual Studio OR open the `Paulov.Tarkov.WebServer.DOTNET.code-workspace` using Visual Studio Code 
+4. In Visual Studio `Build > Build Solution (CTRL + SHIFT + B)` OR in VS Code open the `Terminal` and run `dotnet restore` and then `dotnet build`
 5. Setup the Database using one of the solutions offered in [Docs/DatabaseProvider](Docs/DatabaseProvider.md)
-6. Run the server project
+6. Run the server project by pressing F5
+
+## Tests
+
+Tests are found in the Testing directory and split into various testing projects targeting various areas
+
+| Test Project | Target |
+|--------------|--------------|
+| Paulov.TarkovServices.Tests | Targets the Paulov.TarkovServices project and tests all the services for expected responses |
+| WebApiTests | Targets the Web Api controllers and tests for expected responses |
+
+## Continuous Integration & Continuous Delivery
+
+CI/CD is found in the [GitHub workflows directory](.github/workflows)
+
+| Workflow | Description |
+|--------------|--------------|
+| [CI](https://github.com/paulov-t/Paulov.Tarkov.DotNetApi/blob/master/.github/workflows/CI.yml) | Continuously builds and run tests |
+| [Deploy-To-Azure-Dev](https://github.com/paulov-t/Paulov.Tarkov.DotNetApi/blob/master/.github/workflows/Deploy-To-Azure-Dev.yml) | Continuously builds, run tests and deploys to Azure Web App (Dev) |
+
+## Contribution
+
+Although contribution is welcome, please be aware of the [LICENSE](LICENSE.md) you are contributing in to. Any code provided to this project cannot be reused elsewhere for the same or similar purpose unless express permission has been provided. 
 
 ## License
 

@@ -5,15 +5,12 @@ using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Net.WebSockets;
 using System.Reflection;
 
 namespace Paulov.Tarkov.WebServer.DOTNET
 {
     public class Program
     {
-        public static Dictionary<string, WebSocket> WebSockets { get; } = new Dictionary<string, WebSocket>();
-
         public static void Main(string[] args)
         {
             var assemblyMods = new List<Assembly>();
@@ -29,19 +26,12 @@ namespace Paulov.Tarkov.WebServer.DOTNET
 
             var app = builder.Build();
 
-            //foreach (var c in builder.Configuration.AsEnumerable())
-            //{
-            //    Console.WriteLine(c.Key + " = " + c.Value);
-            //}
-
-
             app.UseWebSockets(new WebSocketOptions()
             {
                 KeepAliveInterval = TimeSpan.FromMinutes(2)
             });
 
-            app.UseMiddleware<WebsocketMiddleware>();
-            app.UseMiddleware<RequestLoggingMiddleware>();
+            app.UseMiddleware<WebSocketMiddleware>(builder.Services);
             app.UseMiddleware<RequestLoggingMiddleware>();
 
             app.UseSwagger();
@@ -61,6 +51,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET
         /// </summary>
         private static void ConfigureServices(WebApplicationBuilder builder)
         {
+            // This is for logging what configuration settings are loaded
             foreach (var c in builder.Configuration.AsEnumerable())
             {
                 Console.WriteLine(c.Key + " = " + c.Value);
@@ -68,14 +59,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET
 
 
             var services = builder.Services;
-            /*
-            services.AddRequestDecompression(options =>
-            {
-                options.DecompressionProviders.Add("zlibdecompressionprovider", new ZLibDecompressionProvider());
-            });
-            */
+
 
             //MVC building
+            Console.WriteLine("Loading Mods:");
             IMvcBuilder mvcBuilder = services.AddMvc().AddSessionStateTempDataProvider();
             const string modAssemblyFolderName = "Mods";
             DirectoryInfo modAssemblyDirectory = new(Path.Combine(AppContext.BaseDirectory, modAssemblyFolderName));
@@ -83,7 +70,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET
                 modAssemblyDirectory.EnumerateFiles("*.dll").Select(x => Assembly.LoadFile(x.FullName));
             foreach (Assembly assembly in modAssemblies)
             {
-                if (!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase)))) return;
+                if (!assembly.GetTypes().Any(x => x.IsSubclassOf(typeof(ControllerBase))))
+                    continue;
+
+                Console.WriteLine($" - {assembly.GetName().Name}");
                 mvcBuilder.AddApplicationPart(assembly);
             }
 
@@ -92,24 +82,44 @@ namespace Paulov.Tarkov.WebServer.DOTNET
 
             // Get the database provider from configuration and register it
             IDatabaseProvider dbProvider = DatabaseService.GetDatabaseProviderByConfiguration(builder.Configuration);
+            Console.WriteLine($"Loading DbProvider: {dbProvider.GetType().Name}");
             services.AddSingleton(typeof(IDatabaseProvider), dbProvider);
 
             // Register the GlobalsService and DatabaseService as singletons
+            Console.WriteLine($"Loading GlobalsService. This can take a few seconds...");
             services.AddSingleton(typeof(IGlobalsService), new GlobalsService(dbProvider));
+            Console.WriteLine($"Loading DatabaseService");
             services.AddSingleton(typeof(IDatabaseService), (new DatabaseService(builder.Configuration, dbProvider)));
 
-            services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider));
+            Console.WriteLine($"Loading QuestService");
+            services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider, new JsonFileSaveProvider()));
 
             services
                 .AddSwaggerGen(ConfigureSwaggerGen)
                 .AddDistributedMemoryCache()
                 .AddSession()
-                //.AddSingleton<IGlobalsService, GlobalsService>()
                 .AddSingleton<ISaveProvider, JsonFileSaveProvider>()
                 .AddSingleton<IInventoryService, InventoryService>()
                 .AddSingleton<IPasswordService, PasswordService>();
 
 
+            Console.WriteLine($"Loading LootGenerationService");
+            services.AddSingleton<ILootGenerationService, LootGenerationService>();
+
+            Console.WriteLine($"Loading LocationService");
+            services.AddSingleton<ILocationService, LocationService>();
+
+            Console.WriteLine($"Loading AccountService");
+            services.AddSingleton<IAccountService, AccountService>();
+
+            Console.WriteLine($"Loading FriendshipService");
+            services.AddSingleton<IFriendshipService, FriendshipService>();
+
+            Console.WriteLine($"Loading WebSocketService");
+            services.AddSingleton(typeof(IWebSocketService), new WebSocketService());
+
+            Console.WriteLine($"Loading MatchingService");
+            services.AddSingleton<IMatchingService, MatchingService>();
 
         }
 

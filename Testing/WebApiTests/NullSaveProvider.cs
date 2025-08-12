@@ -10,6 +10,11 @@ namespace WebApiTests
             return "00000000000000000000001"; // Return a dummy account ID
         }
 
+        public string CreateAccount(AccountCreationModel creationModel)
+        {
+            return "00000000000000000000001"; // Return a dummy account ID
+        }
+
         public AccountProfileMode GetAccountProfileMode(Account account)
         {
             return null;

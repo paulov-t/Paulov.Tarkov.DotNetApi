@@ -30,6 +30,9 @@
     <Reference Include="Comfort.Unity">
       <HintPath>..\..\Server\References\Comfort.Unity.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\..\..\..\Paulov.Tarkov.MP2\Source\References\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UIElementsModule">
       <HintPath>..\..\Server\References\UnityEngine.UIElementsModule.dll</HintPath>
     </Reference>

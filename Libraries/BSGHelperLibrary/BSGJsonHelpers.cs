@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using EFT;
+using Newtonsoft.Json;
 using SIT.Core.Misc;
 using System;
 using System.Collections.Generic;
@@ -12,15 +13,15 @@ namespace SIT.BSGHelperLibrary
     {
         public static Newtonsoft.Json.JsonConverter[] JsonConverterDefault { get; private set; }
 
-
-        public static Newtonsoft.Json.JsonConverter[] GetJsonConvertersBSG()
+        public static JsonConverter[] GetJsonConvertersBSG()
         {
-            if (JsonConverterDefault == null)
-            {
-                JsonConverterDefault = GClass1661.Converters;
-            }
-
-            return JsonConverterDefault;
+            var tarkovTypes = typeof(TarkovApplication).Assembly.DefinedTypes;
+            var convertersType = tarkovTypes.FirstOrDefault(x => x.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).Any(p => p.Name == "Converters"));
+            List<Newtonsoft.Json.JsonConverter> converters = new List<Newtonsoft.Json.JsonConverter>();
+            if (convertersType != null)
+                converters.AddRange((Newtonsoft.Json.JsonConverter[])convertersType.GetField("Converters", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).GetValue(null));
+            converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+            return converters.ToArray();
         }
 
         public static List<Newtonsoft.Json.JsonConverter> GetJsonConvertersPaulov()
@@ -28,11 +29,8 @@ namespace SIT.BSGHelperLibrary
             var converters = new List<Newtonsoft.Json.JsonConverter>();
             converters.Add(new DateTimeOffsetJsonConverter());
             converters.Add(new SimpleCharacterControllerJsonConverter());
-            //converters.Add(new CollisionFlagsJsonConverter());
             converters.Add(new PlayerJsonConverter());
             converters.Add(new NotesJsonConverter());
-            converters.Add(new ProfileConverter());
-            //converters.Add(new InventoryConverter());
             return converters;
         }
 

@@ -9,7 +9,6 @@ using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
 using System.Text;
 using static EFT.InventoryLogic.Weapon;
-using FlatItem = GClass1354;
 
 namespace Paulov.TarkovServices.Services
 {
@@ -23,6 +22,10 @@ namespace Paulov.TarkovServices.Services
 
         private JObject _templates;
 
+        private Dictionary<string, MongoID> Voices = new Dictionary<string, MongoID>();
+
+        private string _lastGeneratedNickname;
+
         public BotGenerationService()
         {
             //GlobalsService.Instance.LoadGlobalsIntoComfortSingleton();
@@ -32,6 +35,19 @@ namespace Paulov.TarkovServices.Services
 
         public BotGenerationService(IGlobalsService globalsService, IInventoryService inventoryService)
         {
+            if (DatabaseHelpers.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            {
+                foreach (var j in customizationTemplates)
+                {
+                    var key = j.Key;
+                    var value = j.Value;
+                    // get the voices from the customization templates (5fc100cf95572123ae738483 is the parent id)
+                    if (value["_parent"]?.ToString() == "5fc100cf95572123ae738483")
+                    {
+                        Voices.Add(value["_name"].ToString(), j.Key);
+                    }
+                }
+            }
             globalsService.LoadGlobalsIntoComfortSingleton();
             InventoryService = inventoryService;
             CreateBaseBot();
@@ -170,16 +186,22 @@ namespace Paulov.TarkovServices.Services
                 bot.Info.Settings.Experience = 275;
             }
 
-            // Generate the bot's Nickname
-            var firstnames = botDatabaseData["firstName"].ToArray();
-            bot.Info.Nickname = firstnames[Randomizer.Next(firstnames.Length - 1)].ToString();
-            if (botDatabaseData.ContainsKey("lastName") && botDatabaseData["lastName"].ToArray().Length > 0)
+            // Generate the bot's Nickname. Ensure the generated nickname is not the same as the previous. (this can occur!)
+            do
             {
-                var lastnames = botDatabaseData["lastName"].ToArray();
-                var lastName = lastnames[Randomizer.Next(lastnames.Length - 1)].ToString();
-                if (lastName != "Durkey")
-                    bot.Info.Nickname = bot.Info.Nickname + " " + lastName;
+                var firstnames = botDatabaseData["firstName"].ToArray();
+                bot.Info.Nickname = firstnames[Randomizer.Next(firstnames.Length - 1)].ToString();
+                if (botDatabaseData.ContainsKey("lastName") && botDatabaseData["lastName"].ToArray().Length > 0)
+                {
+                    var lastnames = botDatabaseData["lastName"].ToArray();
+                    var lastName = lastnames[Randomizer.Next(lastnames.Length - 1)].ToString();
+                    if (lastName != "Durkey")
+                        bot.Info.Nickname = bot.Info.Nickname + " " + lastName;
+                }
             }
+            while (_lastGeneratedNickname == bot.Info.Nickname);
+            _lastGeneratedNickname = bot.Info.Nickname;
+
             bot.Info.MainProfileNickname = null;
             bot.Info.MemberCategory = EMemberCategory.Default;
             bot.Info.SelectedMemberCategory = EMemberCategory.Default;
@@ -233,14 +255,22 @@ namespace Paulov.TarkovServices.Services
                 bot.Customization[EBodyModelPart.Hands] = new MongoID(id: handKeys.RandomElement());
 
                 // get and apply a random voice key
-                var voiceKeys = ((JObject)botDatabaseData["appearance"]["voice"]).Properties().Select(p => p.Name).ToArray();
-                bot.Info.Voice = voiceKeys.RandomElement();
+                var voiceKeys = ((JObject)botDatabaseData["appearance"]["voice"])
+                    .Properties()
+                    .Select(p =>
+                    {
+                        return p.Name;
+                    })
+                    .ToArray();
+                _ = voiceKeys;
+                var randomVoiceKey = voiceKeys.RandomElement();
+                _ = randomVoiceKey;
+                bot.Customization[EBodyModelPart.Voice] = Voices[randomVoiceKey];
             }
 
 
             var botDatabaseDataInventory = botDatabaseData["inventory"];
             var botDatabaseDataInventoryEquipment = botDatabaseDataInventory["equipment"];
-
 
             InventoryService.RemoveItemFromSlot(bot, "Headwear");
 
@@ -258,6 +288,11 @@ namespace Paulov.TarkovServices.Services
             var holsterKeys = ((JObject)botDatabaseDataInventoryEquipment["Holster"]).Properties().Select(p => p.Name).ToArray();
             if (holsterKeys.Length > 0)
                 AddRandomItemToSlot(bot, "Holster", holsterKeys);
+
+            InventoryService.RemoveItemFromSlot(bot, "Pockets");
+            var pocketsKeys = ((JObject)botDatabaseDataInventoryEquipment["Pockets"]).Properties().Select(p => p.Name).ToArray();
+            if (pocketsKeys.Length > 0)
+                AddRandomItemToSlot(bot, "Pockets", pocketsKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "pocket1");
 
@@ -357,7 +392,7 @@ namespace Paulov.TarkovServices.Services
                     {
                         for (var i = 0; i < items.Count; i++)
                         {
-                            var item = items[i].DeepClone().ToObject<GClass1354>();
+                            var item = items[i].DeepClone().ToObject<FlatItem>();
                             if (i == 0)
                             {
                                 item.slotId = slotId;
@@ -387,9 +422,12 @@ namespace Paulov.TarkovServices.Services
 
                 // Get an ammo type for the weapon and add the ammo to the inventory
                 var weaponTemplate = DatabaseHelpers.GetTemplateItemById(_templates, weaponItem._tpl);
-                var newItems = CreateMagazineWithAmmoForWeapon(weaponItem, allAddedItems.Find(x => x.slotId == "mod_magazine"));
+                var magazine = allAddedItems.Find(x => x.slotId == "mod_magazine");
+                var newItems = CreateMagazineWithAmmoForWeapon(weaponItem, magazine);
                 foreach (var item in newItems)
+                {
                     InventoryService.AddItemToInventory(bot, item);
+                }
 
             }
 
@@ -417,7 +455,12 @@ namespace Paulov.TarkovServices.Services
 
             var templatesArray = DatabaseHelpers.GetTemplateItemsAsArray(_templates);
             var ammos = templatesArray
-                .Where(x => x["_props"]?["ammoType"]?.ToString() == "bullet" && x["_props"]?["Caliber"]?.ToString() == ammoCaliber && float.Parse(x["_props"]?["Damage"]?.ToString()) > 0)
+                .Where(x
+                => x["_props"]?["ammoType"]?.ToString() == "bullet"
+                && x["_props"]?["Caliber"]?.ToString() == ammoCaliber
+                && !x["_name"].ToString().Contains("shrapnel")
+                && float.Parse(x["_props"]?["Damage"]?.ToString()) > 0
+                )
                 .OrderBy(x => float.Parse(x["_props"]?["Damage"]?.ToString())).ToList();
             _ = ammos;
 
@@ -430,8 +473,11 @@ namespace Paulov.TarkovServices.Services
 
             if (magazineTemplate["_props"]?["Cartridges"]?.ToArray() != null)
             {
-                var selectedRandomAmmo = ammos.RandomElement();
-                var magazineMaxCount = int.Parse(magazineTemplate["_props"]["Cartridges"].ToArray()[0]["_max_count"].ToString());
+                var firstCartridge = magazineTemplate["_props"]["Cartridges"].ToArray()[0];
+                var cartridgeFilter = firstCartridge["_props"]["filters"].ToArray()[0]["Filter"].ToArray();
+
+                var selectedRandomAmmo = ammos.Where(x => cartridgeFilter.Contains(x["_id"].ToString())).RandomElement();
+                var magazineMaxCount = int.Parse(firstCartridge["_max_count"].ToString());
 
                 FlatItem randomAmmo = new()
                 {
