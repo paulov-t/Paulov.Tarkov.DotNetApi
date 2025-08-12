@@ -5,12 +5,10 @@ using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Reflection;
-using Paulov.TarkovServices.Models;
 
-namespace SIT.WebServer
+namespace Paulov.Tarkov.WebServer.DOTNET
 {
     public class Program
     {
