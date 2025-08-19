@@ -132,6 +132,12 @@ namespace Paulov.TarkovServices.Services
             var result = new Result();
 
             var accountProfile = _saveProvider.GetAccountProfileMode(account);
+            if (accountProfile == null)
+                return result;
+
+            if (accountProfile.Characters.PMC == null)
+                return result;
+
             var inventoryItems = _inventoryService.GetInventoryItems(accountProfile.Characters.PMC);
 
             var matchingInventoryItem = inventoryItems.FirstOrDefault(item => item._id == action["item"].ToString());
