@@ -138,8 +138,11 @@ namespace Paulov.TarkovServices.Services
 
             if (matchingInventoryItem != null)
             {
-                var jToken = JToken.Parse(action["to"]["location"].ToString());
-                matchingInventoryItem.location = new UnparsedData() { JToken = jToken };
+                if (action["to"]["location"] != null)
+                {
+                    var jTokenLocation = JToken.Parse(action["to"]["location"].ToString());
+                    matchingInventoryItem.location = new UnparsedData() { JToken = jTokenLocation };
+                }
                 if (action["to"]["id"] != null)
                     matchingInventoryItem.parentId = new EFT.MongoID(action["to"]["id"].ToString());
                 else if (action["to"]["container"] != null && !string.IsNullOrEmpty(action["to"]["container"].ToString()))
