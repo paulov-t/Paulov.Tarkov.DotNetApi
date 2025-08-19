@@ -22,6 +22,7 @@ namespace WebApiTests
         private readonly IDatabaseService databaseService;
         private readonly IAccountService accountService;
         private readonly IInventoryService inventoryService;
+        private readonly IActionCommandService actionCommandService;
 
         public GameControllerTest()
         {
@@ -32,7 +33,8 @@ namespace WebApiTests
             databaseService = new DatabaseService(configuration, databaseProvider);
             inventoryService = new InventoryService();
             accountService = new AccountService(_saveProvider, inventoryService, databaseService);
-            _controller = new GameController(_saveProvider, configuration, new TestsGlobalsService(), new InventoryService(), new MatchingService(new AccountService(_saveProvider, inventoryService, databaseService)));
+            actionCommandService = new ActionCommandService(accountService, inventoryService, _saveProvider);
+            _controller = new GameController(_saveProvider, configuration, new TestsGlobalsService(), new InventoryService(), new MatchingService(new AccountService(_saveProvider, inventoryService, databaseService)), actionCommandService);
         }
 
         [SetUp]
@@ -126,6 +128,7 @@ namespace WebApiTests
                 , new TestsGlobalsService()
                 , new InventoryService()
                 , new MatchingService(accountService)
+                , actionCommandService
                 )
             {
                 ControllerContext = controllerContext

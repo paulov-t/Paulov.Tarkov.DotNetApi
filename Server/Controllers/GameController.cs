@@ -335,20 +335,21 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> ItemPricesForTraderId(int? retry, bool? debug)
         {
-            var tradingProvider = new TradingProvider();
+            var tradingProvider = new TradingProvider(_inventoryService);
             JObject handbookPrices = JObject.Parse(tradingProvider.GetStaticPrices().ToJson());
             Dictionary<string, object> packet = new();
-            packet.Add("supplyNextTime", 0);
+            packet.Add("supplyNextTime", (int)Math.Floor(((DateTime.Now - new DateTime(1970, 1, 1)).TotalMilliseconds / 1000) + 60000));
             packet.Add("prices", handbookPrices);
             packet.Add("currencyCourses",
                 new Dictionary<string, object>() {
                     { "5449016a4bdc2d6f028b456f", handbookPrices["5449016a4bdc2d6f028b456f"] },
                     {  "569668774bdc2da2298b4568", handbookPrices["569668774bdc2da2298b4568"] },
-                    { "5696686a4bdc2da3298b456a", handbookPrices["5696686a4bdc2da3298b456a"] }
+                    {  "5696686a4bdc2da3298b456a", handbookPrices["5696686a4bdc2da3298b456a"] },
+                    { "5d235b4d86f7742e017bc88a", handbookPrices["5d235b4d86f7742e017bc88a"] }
                 }
                 );
 
-            return new BSGSuccessBodyResult(handbookPrices);
+            return new BSGSuccessBodyResult(packet.ToJson());
 
         }
 

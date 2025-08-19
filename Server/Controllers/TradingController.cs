@@ -15,11 +15,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
     {
         private readonly JsonFileSaveProvider _saveProvider;
         private readonly IGlobalsService _globalsService;
+        private readonly IInventoryService _inventoryService;
 
-        public TradingController(ISaveProvider saveProvider, IGlobalsService globalsService)
+        public TradingController(ISaveProvider saveProvider, IGlobalsService globalsService, IInventoryService inventoryService)
         {
             _saveProvider = saveProvider as JsonFileSaveProvider;
             _globalsService = globalsService;
+            _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService), "InventoryService cannot be null.");
+
         }
 
         private string SessionId
@@ -66,10 +69,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
 #endif
 
-            var tradingProvider = new TradingProvider();
+            var tradingProvider = new TradingProvider(_inventoryService);
 
             EFT.TraderAssortment traderAssortment = new();
-            //traderAssortment.Items = new List<FlatItem>().ToArray();
+            traderAssortment.Items = new List<FlatItem>().ToArray();
             traderAssortment.BarterScheme = new Dictionary<string, EFT.BarterScheme>();
             traderAssortment.LoyaltyLevelItems = new Dictionary<string, int>();
 
@@ -89,7 +92,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             var sessionId = SessionId;
 
-            var tradingProvider = new TradingProvider();
+            var tradingProvider = new TradingProvider(_inventoryService);
             TradingProvider.TryLoadTraders(out var traders);
 
             List<dynamic> result = new List<dynamic>();
