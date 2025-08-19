@@ -171,7 +171,9 @@ namespace Paulov.TarkovServices.Helpers
             // If the databaseprovider doesn't support entries, then attempt to get directly
             else
             {
-                databaseProvider.GetEntryStream(filePath).CopyTo(ms);
+                var stream = databaseProvider.GetEntryStream(filePath);
+                if (stream != null)
+                    stream.CopyTo(ms);
             }
 
             if (ms.Length == 0)

@@ -121,6 +121,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET
             Console.WriteLine($"Loading MatchingService");
             services.AddSingleton<IMatchingService, MatchingService>();
 
+            Console.WriteLine($"Loading ActionCommandService");
+            services.AddSingleton<IActionCommandService, ActionCommandService>();
+
         }
 
         /// <summary>

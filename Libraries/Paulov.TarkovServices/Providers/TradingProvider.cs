@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.SaveProviders;
 using Paulov.TarkovServices.Services;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 
@@ -13,7 +14,7 @@ namespace Paulov.TarkovServices
     {
         public static Dictionary<EMoney, string> MoneyToString = new() { { EMoney.ROUBLES, "5449016a4bdc2d6f028b456f" }, { EMoney.EUROS, "569668774bdc2da2298b4568" }, { EMoney.DOLLARS, "5696686a4bdc2da3298b456a" } };
 
-        public static Dictionary<string, int> StaticPrices = new();
+        public static ConcurrentDictionary<string, int> StaticPrices = new();
 
         //public static string DatabaseAssetPath => DatabaseProvider.DatabaseAssetPath;
         //public static string TradersAssetPath => Path.Combine(DatabaseProvider.DatabaseAssetPath, "traders");
@@ -47,7 +48,7 @@ namespace Paulov.TarkovServices
             return traderByTraderId.Count > 0;
         }
 
-        public Dictionary<string, int> GetStaticPrices()
+        public ConcurrentDictionary<string, int> GetStaticPrices()
         {
             if (StaticPrices.Count > 0)
                 return StaticPrices;
@@ -76,11 +77,11 @@ namespace Paulov.TarkovServices
                         if (handbookTemplateItems.Any(x => x["Id"].ToString() == template.Key))
                         {
                             if (!StaticPrices.ContainsKey(template.Key))
-                                StaticPrices.Add(template.Key, int.Parse(handbookTemplateItems.Single(x => x["Id"].ToString() == template.Key)["Price"].ToString()));
+                                StaticPrices.TryAdd(template.Key, int.Parse(handbookTemplateItems.Single(x => x["Id"].ToString() == template.Key)["Price"].ToString()));
                         }
                         else
                         {
-                            StaticPrices.Add(template.Key, 1);
+                            StaticPrices.TryAdd(template.Key, 1);
                         }
                     }
                 }

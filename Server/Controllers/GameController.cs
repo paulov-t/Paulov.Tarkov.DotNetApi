@@ -22,6 +22,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private readonly IGlobalsService _globalsService;
         private readonly IInventoryService _inventoryService;
         private readonly IMatchingService _matchingService;
+        private readonly IActionCommandService _actionCommandService;
 
         public GameController
             (
@@ -30,6 +31,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             , IGlobalsService globalsService
             , IInventoryService inventoryService
             , IMatchingService matchingService
+            , IActionCommandService actionCommandService
             )
         {
             this._saveProvider = saveProvider;
@@ -37,6 +39,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             this._globalsService = globalsService;
             this._inventoryService = inventoryService;
             this._matchingService = matchingService;
+            this._actionCommandService = actionCommandService;
         }
 
         private string SessionId
@@ -73,7 +76,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         }
 
         [Route("client/game/version/validate")]
-        [HttpPost] 
+        [HttpPost]
         public async void VersionValidate()
         {
             await HttpBodyConverters.CompressNullIntoResponseBodyBSG(Request, Response);
@@ -375,8 +378,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             sessionId = _saveProvider?.GetProfiles().First().Key;
 #endif
 
-
-            return new BSGSuccessBodyResult(await (new ActionCommandService().ExecuteCommandAsync(commands, sessionId)));
+            var result = (await (_actionCommandService.ExecuteCommandAsync(commands, sessionId))).ToJson();
+            return new BSGSuccessBodyResult(result);
         }
 
         //private void DoItemsMovingAction_Move(QueueData queueData, JToken actionData)

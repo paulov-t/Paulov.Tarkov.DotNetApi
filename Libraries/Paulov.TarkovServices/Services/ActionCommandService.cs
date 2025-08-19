@@ -1,24 +1,45 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Paulov.TarkovModels;
+using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services.Interfaces;
+using System.Text.Json.Serialization;
 
 namespace Paulov.TarkovServices.Services
 {
     public sealed class ActionCommandService : IActionCommandService
     {
-        public async Task<JObject> ExecuteCommandAsync(JArray commands, string sessionId)
+        private IAccountService _accountService;
+        private IInventoryService _inventoryService;
+        private ISaveProvider _saveProvider;
+
+        public ActionCommandService(IAccountService accountService, IInventoryService inventoryService, ISaveProvider saveProvider)
         {
-            // Simulate an asynchronous operation
-            await Task.Delay(1); // Simulating some delay for the command execution
+            _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService), "AccountService cannot be null.");
+            _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService), "InventoryService cannot be null.");
+            _saveProvider = saveProvider ?? throw new ArgumentNullException(nameof(saveProvider), "SaveProvider cannot be null.");
+        }
 
-            // Create a response object
-            JObject resultData = new JObject();
+        public class Result
+        {
+            public bool Success { get; set; } = true;
+            public string? Error { get; set; }
+        }
 
-            var profileChanges = new Dictionary<string, JObject>();
+        public class ExecuteCommandResult
+        {
+            [JsonProperty("profileChanges")]
+            [JsonPropertyName("profileChanges")]
+            public Dictionary<string, JObject> ProfileChanges { get; set; } = new Dictionary<string, JObject>();
 
-            resultData["ProfileChanges"] = JToken.FromObject(profileChanges);
-            resultData["InventoryWarnings"] = new JArray();
+            [JsonProperty("inventoryWarnings")]
+            [JsonPropertyName("inventoryWarnings")]
+            public JArray InventoryWarnings { get; set; } = new JArray();
+        }
 
-            profileChanges.Add(sessionId, JObject.FromObject(
+        public JObject GenerateEmptyProfileChanges()
+        {
+            return JObject.FromObject(
             new
             {
                 Experience = 0,
@@ -30,7 +51,18 @@ namespace Paulov.TarkovServices.Services
                 Stash = new { change = Array.Empty<object>(), del = Array.Empty<object>(), @new = Array.Empty<object>() },
                 TradersData = new Dictionary<string, EFT.TraderData>(),
                 UnlockedRecipes = new Dictionary<string, bool>()
-            }));
+            });
+        }
+
+        public async Task<ExecuteCommandResult> ExecuteCommandAsync(JArray commands, string sessionId)
+        {
+            // Simulate an asynchronous operation
+            await Task.Delay(1); // Simulating some delay for the command execution
+
+            // Create a response object
+            ExecuteCommandResult resultData = new ExecuteCommandResult();
+
+            resultData.ProfileChanges.Add(sessionId, GenerateEmptyProfileChanges());
 
             /**
              * Example of data
@@ -59,6 +91,7 @@ namespace Paulov.TarkovServices.Services
                     case "Merge":
                         break;
                     case "Move":
+                        ProcessMoveAction(_accountService.GetAccountBySessionId(sessionId), command, resultData);
                         break;
                     case "QuestAccept":
                         break;
@@ -86,5 +119,47 @@ namespace Paulov.TarkovServices.Services
             return resultData;
         }
 
+        public Result ProcessMoveAction(Account account, JToken action, ExecuteCommandResult outputChanges)
+        {
+            if (!outputChanges.ProfileChanges.ContainsKey(account.AccountId))
+            {
+                outputChanges.ProfileChanges.Add(account.AccountId, GenerateEmptyProfileChanges());
+            }
+
+            outputChanges.ProfileChanges[account.AccountId]["Items"] = new JObject();
+
+
+            var result = new Result();
+
+            var accountProfile = _saveProvider.GetAccountProfileMode(account);
+            var inventoryItems = _inventoryService.GetInventoryItems(accountProfile.Characters.PMC);
+
+            var matchingInventoryItem = inventoryItems.FirstOrDefault(item => item._id == action["item"].ToString());
+
+            if (matchingInventoryItem != null)
+            {
+                var jToken = JToken.Parse(action["to"]["location"].ToString());
+                matchingInventoryItem.location = new UnparsedData() { JToken = jToken };
+                if (action["to"]["id"] != null)
+                    matchingInventoryItem.parentId = new EFT.MongoID(action["to"]["id"].ToString());
+                else if (action["to"]["container"] != null && !string.IsNullOrEmpty(action["to"]["container"].ToString()))
+                {
+                    if (action["to"]["container"].ToString().StartsWith("pocket"))
+                    {
+                        matchingInventoryItem.parentId = inventoryItems.FirstOrDefault(item => item.slotId == "Pockets")._id;
+                    }
+                }
+                // Moving to container hideout. Use StashId
+                else if (action["to"]["container"] != null && action["to"]["container"].ToString() == "hideout")
+                    matchingInventoryItem.parentId = _inventoryService.GetStashId(accountProfile.Characters.PMC);
+                matchingInventoryItem.slotId = action["to"]["container"] != null ? action["to"]["container"].ToString() : null;
+
+            }
+
+            _inventoryService.SetInventoryItems(accountProfile.Characters.PMC, inventoryItems);
+            _saveProvider.SaveProfile(account.AccountId, account);
+
+            return result;
+        }
     }
 }

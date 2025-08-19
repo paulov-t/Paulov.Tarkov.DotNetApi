@@ -1,6 +1,7 @@
 ﻿using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Providers.Interfaces;
 using System.Data;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders
@@ -63,7 +64,11 @@ namespace Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProvider
                 );
             if (entry == null)
             {
-                throw new FileNotFoundException($"The entry '{entryName}' was not found in the database.");
+#if DEBUG
+                Debug.WriteLine($"The entry '{entryName}' was not found in the database.");
+#endif
+                //throw new FileNotFoundException($"The entry '{entryName}' was not found in the database.");
+                return null;
             }
 
 
