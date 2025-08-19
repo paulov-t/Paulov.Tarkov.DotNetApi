@@ -37,6 +37,9 @@ namespace Paulov.TarkovServices.Services
 
             Debug.WriteLine($"Generating loot for location {location["Id"]}.");
 
+            // Ensure MongoID is Generating from a new Process Id
+            MongoID.Generate(true);
+
             JArray lootItems = new JArray();
 
             DatabaseHelpers.TryLoadItemTemplates(out string templates);
@@ -46,7 +49,7 @@ namespace Paulov.TarkovServices.Services
             var locationIdLower = location["Id"].ToString().ToLower();
 
             var looseLootDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/looseLoot.json");
-            ParseLootLootDocument(location, lootItems, itemTemplates, locationLootChanceModifierFromFile, looseLootDocument);
+            ParseLootLootDocument(location, lootItems, itemTemplates, locationLootChanceModifierFromFile, looseLootDocument, itemTemplates);
             var staticAmmoDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticAmmo.json");
             var staticContainersDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticContainers.json");
             var staticLootDocument = DatabaseHelpers.GetJsonDocument($"database/locations/{locationIdLower}/staticLoot.json");
@@ -56,7 +59,7 @@ namespace Paulov.TarkovServices.Services
             return JArray.FromObject(lootItems);
         }
 
-        private void ParseLootLootDocument(JObject location, JArray lootItems, JObject itemTemplates, float locationLootChanceModifierFromFile, JsonDocument looseLootDocument)
+        private void ParseLootLootDocument(JObject location, JArray lootItems, JObject itemTemplates, float locationLootChanceModifierFromFile, JsonDocument looseLootDocument, JObject templateItemList)
         {
             var spawnsArray = new JArray();
             foreach (var r in looseLootDocument.RootElement.EnumerateObject())
@@ -89,6 +92,7 @@ namespace Paulov.TarkovServices.Services
                 var newRootId = MongoID.Generate(false).ToString();
                 var oldRootId = spawnTemplate["Root"].ToString();
                 spawnTemplate["Root"] = newRootId.ToString();
+                spawnTemplate["IsAlwaysSpawn"] = true;
 
                 ((JArray)spawnTemplate["Items"])[0]["_id"] = newRootId;
                 List<(string oldId, string newId)> changedId = new();
@@ -141,6 +145,26 @@ namespace Paulov.TarkovServices.Services
                     // parentId
                     if (item["parentId"] != null && item["parentId"].ToString().Length < MongoID.Generate(false).ToString().Length)
                         throw new Exception($"parentId {item["parentId"]} is not a MongoID");
+                }
+
+                var itemsArray = (JArray)spawnTemplate["Items"];
+                if (itemsArray.Count > 0)
+                {
+                    var chosenItem = spawnTemplate["Items"].RandomElement();
+                    if (chosenItem is null)
+                        continue;
+
+                    if (chosenItem["upd"] != null && chosenItem["upd"]["StackObjectsCount"] != null && int.TryParse(chosenItem["upd"]["StackObjectsCount"].ToString(), out var amount) && amount == 1)
+                        chosenItem["upd"].Parent.Remove();
+
+                    if (chosenItem["composedKey"] != null)
+                        chosenItem["composedKey"].Parent.Remove();
+
+                    chosenItem["__DEBUG_Name"] = templateItemList[chosenItem["_tpl"].ToString()]["_name"];
+
+                    spawnTemplate["Items"] = new JArray() { chosenItem };
+                    spawnTemplate["Root"] = chosenItem["_id"];
+
                 }
 
                 lootItems.Add(spawnTemplate);

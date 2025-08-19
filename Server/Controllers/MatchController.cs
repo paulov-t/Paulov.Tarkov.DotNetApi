@@ -402,7 +402,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (isPMC)
             {
                 var currentProfileItems = _inventoryService.GetInventoryItems(myAccountByMode.Characters.PMC).ToList();
-                foreach (var item in _inventoryService.GetInventoryItems(matchEndProfile))
+                var matchEndInventoryItems = _inventoryService.GetInventoryItems(matchEndProfile);
+                foreach (var item in matchEndInventoryItems)
                 {
                     if (currentProfileItems.FindIndex(x => x._id == item._id) == -1)
                     {

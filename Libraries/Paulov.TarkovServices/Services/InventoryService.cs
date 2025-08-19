@@ -18,16 +18,19 @@ namespace Paulov.TarkovServices.Services
 
             // Do a check to see if the code is attempting to add another item to the same equipment slot
             var slotId = item.slotId;
-            if (!string.IsNullOrEmpty(slotId) && Enum.TryParse<EFT.InventoryLogic.EquipmentSlot>(slotId, out _) && items.Any(x => x.slotId == slotId))
+            if (!string.IsNullOrEmpty(slotId) && Enum.TryParse<EFT.InventoryLogic.EquipmentSlot>(slotId, out var slot) && items.Any(x => x.slotId == slotId))
             {
-                throw new Exception($"Item already exists in Inventory in {slotId}");
+#if DEBUG
+                Debug.WriteLine($"Item {item._id}:{item._tpl} already exists in Inventory in {slot.ToString()}");
+#endif
+                return;
             }
 
-            if (!string.IsNullOrEmpty(slotId) && items.Any(x => x.slotId == slotId && x.parentId == item.parentId))
+            if (!string.IsNullOrEmpty(slotId) && items.Any(x => x._id == item._id && x.slotId == slotId && x.parentId == item.parentId))
             {
                 //throw new Exception($"Item already exists in Inventory in {slotId} with parent {item.parentId}");
 #if DEBUG
-                Debug.WriteLine($"Item already exists in Inventory in {slotId} with parent {item.parentId}");
+                Debug.WriteLine($"Item {item._id}:{item._tpl} already exists in Inventory in {slotId} with parent {item.parentId}");
 #endif
                 return;
             }
