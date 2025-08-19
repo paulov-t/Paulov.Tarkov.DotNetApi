@@ -383,43 +383,20 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             return new BSGSuccessBodyResult(result);
         }
 
-        //private void DoItemsMovingAction_Move(QueueData queueData, JToken actionData)
-        //{
-        //    var sessionId = SessionId;
-        //    var saveProvider = new SaveProvider();
-        //    var pmcProfile = saveProvider.GetPmcProfile(sessionId);
 
-        //    var inv = (JToken)pmcProfile["Inventory"];
-        //    var invItems = (JArray)inv["items"];
-        //    var itemIdToFind = actionData["item"].ToString();
-        //    for (var iInvItem = 0; iInvItem < invItems.Count; iInvItem++)
-        //    {
-        //        var invItem = invItems[iInvItem];
-        //        var _id = invItem["_id"].ToString().Trim();
-        //        var _tpl = invItem["_tpl"].ToString().Trim();
-        //        if (_id == itemIdToFind || _id == itemIdToFind)
-        //        {
-        //            Debug.WriteLine($"moving {_id} {_tpl}");
-        //            var matchedInvItem = invItem;
-        //            var m = matchedInvItem["parentId"];// = moveRequest.to.id;
+        [Route("/client/localGame/weather")]
+        [HttpPost]
+        public async Task<IActionResult> LocalGameWeather()
+        {
+            var weather = WeatherClass.CreateDefault();
+            JObject result = new JObject()
+            {
+                {  "season", 2 },
+                {  "weather", JToken.Parse((new List<WeatherClass>() { weather }).ToJson()) }
+            };
 
-        //            var to = actionData["to"].ToObject<ProcessTo>();
-        //            matchedInvItem["slotId"] = to.container;
-        //            matchedInvItem["parentId"] = to.id;
-        //            if (to.location != null)
-        //            {
-        //                matchedInvItem["location"] = JToken.Parse(to.location.ToJson());
-        //            }
-        //            else
-        //            {
-        //                matchedInvItem["location"] = null;
-        //            }
-        //            invItems[iInvItem] = matchedInvItem;
-        //        }
-        //    }
-        //    saveProvider.SaveProfile(sessionId);
-        //    //saveProvider.SaveProfile(sessionId, pmcProfile);
-        //}
+            return new BSGSuccessBodyResult(result.ToJson());
+        }
 
         [Route("/client/checkVersion")]
         [HttpPost]
