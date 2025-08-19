@@ -66,7 +66,7 @@ namespace Paulov.TarkovServices.Services
                 {
                     if (bodyPartName == "Common")
                         continue;
-                    BaseBot.Health.BodyParts.Add(Enum.Parse<EBodyPart>(bodyPartName), new Profile.ProfileHealthInfo.ProfileHealthInfoBodyPartInfo());
+                    BaseBot.Health.BodyParts.Add(Enum.Parse<EBodyPart>(bodyPartName), new Profile.ProfileHealthClass.ProfileHealthInfoBodyPartInfo());
                 }
             }
 
