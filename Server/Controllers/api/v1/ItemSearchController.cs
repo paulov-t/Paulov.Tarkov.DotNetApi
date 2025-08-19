@@ -17,7 +17,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             using FormReader formReader = new FormReader(Request.Body);
             Dictionary<string, StringValues> decodedForm = await formReader.ReadFormAsync();
 
-            int start = int.Parse(decodedForm["start"].First());
+
+            int start = decodedForm.ContainsKey("start") ? int.Parse(decodedForm["start"].First()) : 0;
             int length = int.MaxValue;
             if (decodedForm.TryGetValue("length", out StringValues lengthValues))
             {
