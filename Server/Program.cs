@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Paulov.Tarkov.AppInsights;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
@@ -32,7 +33,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET
             });
 
             app.UseMiddleware<WebSocketMiddleware>(builder.Services);
-            app.UseMiddleware<RequestLoggingMiddleware>();
+            app.UseMiddleware<RequestLoggingMiddleware>(builder.Services);
 
             app.UseSwagger();
             app.UseSwaggerUI();
@@ -59,7 +60,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET
 
 
             var services = builder.Services;
-
+            services.AddSingleton(typeof(IAppInsightsService), new AppInsightsService(builder.Configuration));
+            // The following line enables Application Insights telemetry collection.
+            services.AddApplicationInsightsTelemetry(builder.Configuration);
 
             //MVC building
             Console.WriteLine("Loading Mods:");
@@ -93,6 +96,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET
 
             Console.WriteLine($"Loading QuestService");
             services.AddSingleton(typeof(IQuestService), new QuestService(dbProvider, new JsonFileSaveProvider()));
+
 
             services
                 .AddSwaggerGen(ConfigureSwaggerGen)
