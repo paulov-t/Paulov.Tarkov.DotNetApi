@@ -1,3 +1,4 @@
+using Paulov.Tarkov.AppInsights;
 using System.Diagnostics;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Middleware;
@@ -13,6 +14,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Middleware;
 public class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;
+    private IAppInsightsService AppInsightsService;
 
     /// <summary>
     /// Middleware that logs details about incoming HTTP requests and their responses.
@@ -21,8 +23,9 @@ public class RequestLoggingMiddleware
     /// which can be used for debugging, monitoring, or auditing purposes. Ensure that this middleware is added
     /// to the pipeline in the correct order to avoid missing important request or response details.</remarks>
     /// <param name="next">The next middleware in the request pipeline. Cannot be null.</param>
-    public RequestLoggingMiddleware(RequestDelegate next)
+    public RequestLoggingMiddleware(RequestDelegate next, IServiceCollection services)
     {
+        AppInsightsService = services.First(x => x.ServiceType == typeof(IAppInsightsService)).ImplementationInstance as IAppInsightsService;
         _next = next;
     }
 
@@ -56,5 +59,8 @@ public class RequestLoggingMiddleware
         logMessage = $"{context.Request.Method} {context.Request.Path} {context.Response.StatusCode} {sw.Elapsed.TotalMilliseconds}ms";
         Console.WriteLine(logMessage);
         Debug.WriteLine(logMessage);
+
+        AppInsightsService?.TrackPageView(context.Request.Path);
+
     }
 }
