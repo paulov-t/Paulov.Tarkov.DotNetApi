@@ -305,8 +305,14 @@ namespace Paulov.TarkovServices.Services
             InventoryService.RemoveItemFromSlot(bot, "Armband");
 
             InventoryService.RemoveItemFromSlot(bot, "Backpack");
+            var backpackKeys = ((JObject)botDatabaseData["inventory"]["equipment"]["Backpack"]).Properties().Select(p => p.Name).ToArray();
+            if (backpackKeys.Length > 0)
+                AddRandomItemToSlot(bot, "Backpack", backpackKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "TacticalVest");
+            var tacticalVestKeys = ((JObject)botDatabaseData["inventory"]["equipment"]["TacticalVest"]).Properties().Select(p => p.Name).ToArray();
+            if (tacticalVestKeys.Length > 0)
+                AddRandomItemToSlot(bot, "TacticalVest", tacticalVestKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "Scabbard");
             var scabbardKeys = ((JObject)botDatabaseData["inventory"]["equipment"]["Scabbard"]).Properties().Select(p => p.Name).ToArray();
@@ -314,6 +320,8 @@ namespace Paulov.TarkovServices.Services
                 AddRandomItemToSlot(bot, "Scabbard", scabbardKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "ArmorVest");
+
+
 
             // ------------------------------------------------------------------------------------------------
             // The following should be completed AFTER all other actions have been taken on the Bot's Inventory
@@ -419,6 +427,9 @@ namespace Paulov.TarkovServices.Services
                         break;
                     }
                 }
+
+                if (weaponItem == null)
+                    return;
 
                 // Get an ammo type for the weapon and add the ammo to the inventory
                 var weaponTemplate = DatabaseHelpers.GetTemplateItemById(_templates, weaponItem._tpl);
