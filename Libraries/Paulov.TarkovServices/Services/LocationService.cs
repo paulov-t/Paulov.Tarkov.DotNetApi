@@ -57,21 +57,15 @@ namespace Paulov.TarkovServices.Services
                 }
             }
 
-            foreach (var mapBase in locationsJObjectByLocationMongoId.Values())
+            if (configuration["LABS_REQUIRES_KEYCARD"] != null && bool.TryParse(configuration["LABS_REQUIRES_KEYCARD"].ToString(), out var LABS_REQUIRES_KEYCARD))
             {
-                var bossSpawns = ((JArray)mapBase["BossLocationSpawn"]);
-                if (bossSpawns.Count == 0)
-                    continue;
-
-                foreach (var bossSpawn in bossSpawns)
+                foreach (var kvp in locationsJObjectByLocationMongoId)
                 {
-                    if (bossSpawn["BossName"]?.ToString() != "pmcUSEC")
-                        continue;
-
-                    bossSpawn["BossChance"] = 100;
-                    bossSpawn["Time"] = -1;
+                    var mapBase = locationsJObjectByLocationMongoId[kvp.Key];
+                    mapBase["AccessKeys"] = new JArray();
+                    mapBase["AccessKeysPvE"] = new JArray();
+                    locationsJObjectByLocationMongoId[kvp.Key] = mapBase;
                 }
-
             }
 
             if (!DatabaseHelpers.TryLoadLocationPaths(out var paths))
