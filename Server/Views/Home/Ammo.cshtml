@@ -2,45 +2,101 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<link rel='stylesheet' href="//cdn.datatables.net/2.2.1/css/dataTables.dataTables.min.css" />
+<link rel='stylesheet' href="//cdn.datatables.net/2.3.5/css/dataTables.dataTables.min.css" />
+<link rel='stylesheet' href="https://cdn.datatables.net/responsive/3.0.7/css/responsive.dataTables.css" />
 <div class="container">
     <h1>Ammo</h1>
-    <div>
-        <table id="myTable">
+    <div class="row">
+        <label>Caliber</label>
+        <select id="ddlCaliber">
+            <option></option>
+        </select>
+    </div>
+    <div class="row">
+        <table id="myTable" class="table table-striped nowrap">
             <thead>
                 <tr>
-                    <th>Template Id</th>
+                    <th class="d-none d-lg-table-cell">Template Id</th>
                     <th>Name</th>
-                    <th>Caliber</th>
-                    <th>Damage</th>
-                    <th>Armor Damage</th>
-                    <th>Penetration</th>
+                    <th class="d-none d-lg-table-cell">Caliber</th>
+                    <th class="d-none d-lg-table-cell">Damage</th>
+                    <th class="d-none d-lg-table-cell">Armor Damage</th>
+                    <th class="d-none d-lg-table-cell">Penetration</th>
                     <th>Rating</th>
                 </tr>
             </thead>
+            <tbody id="myTableBody">
+                
+            </tbody>
         </table>
     </div>
 </div>
 
 <!-- Add JQUERY -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="//cdn.datatables.net/2.2.1/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.5/js/dataTables.js"></script>
 <script>
-    // let table = new DataTable('#myTable');
-    $('#myTable').DataTable({
-        "ajax": {
-          "url": '/itemSearch/getAmmo/',
-          "type": "POST"
-        },
-        columns: [
-          { data: 'itemId' },
-          { data: 'langItem' },
-          { data: 'caliber' },
-          { data: 'damage' },
-          { data: 'armorDamage' },
-          { data: 'penetration' },
-          { data: 'rating' }
-        ]
+    // $('#myTable').DataTable({
+    //     "ajax": {
+    //       "url": '/itemSearch/getAmmo/',
+    //       "type": "POST"
+    //     },
+    //     columns: [
+    //       { data: 'itemId' },
+    //       { data: 'langItem' },
+    //       { data: 'caliber' },
+    //       { data: 'damage' },
+    //       { data: 'armorDamage' },
+    //       { data: 'penetration' },
+    //       { data: 'rating' }
+    //     ]
+    //     , responsive: true
+    // });
+
+    $.get('/itemSearch/getAmmoCalibers', function(resp) {
+
+        let data = resp.data;
+        document.getElementById('ddlCaliber').innerHTML = '';
+        let defaultOption = document.createElement('option');
+        document.getElementById('ddlCaliber').appendChild(defaultOption);
+
+        for (let d of data) {
+            let option = document.createElement('option');
+            option.value = d;
+            option.innerText = d;
+            document.getElementById('ddlCaliber').appendChild(option);
+        }
     });
+
+    $('#ddlCaliber').on("change", (function(d) {
+    
+        let caliberVal = $('#ddlCaliber').val();
+        $.post(`/itemSearch/getAmmo/${caliberVal}` , function(resp) {
+
+            document.getElementById('myTableBody').innerHTML = '';
+
+            let data = resp.data;
+
+            for (let d of data) {
+
+                let tr = document.createElement('tr');
+
+                for (let k of Object.keys(d)) {
+                    let td = document.createElement('td');
+                    td.innerText = d[k];
+
+                    if (k != 'rating' && k != 'langItem') {
+                        td.classList.add('d-none');
+                        td.classList.add('d-lg-table-cell');
+                    }
+
+                    tr.appendChild(td);
+                }
+                document.getElementById('myTableBody').appendChild(tr);
+            }
+        });
+    }));
+
+    
 
 </script>

@@ -71,7 +71,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     _ = localizationDictionary.TryGetValue($"{item.ParentID} Name", out localizedParentItemName);
                 }
 
-                int rating = 0;
                 double priceRatio = 0;
                 if (item.Price > 0)
                 {
@@ -85,6 +84,18 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     priceRatio *= basePvERarityMultiplier + ((int)rarity * 0.25);
                     priceRatio = Math.Max(Math.Min(priceRatio, 100), 1);
                     priceRatio = Math.Ceiling(priceRatio);
+                }
+                int rating = 0;
+                if (item.Props.Damage > 0)
+                {
+                    var armorDamage = Math.Max(1, item.Props.ArmorDamage > 0 ? item.Props.ArmorDamage * 2 : 1);
+                    var penRating = Math.Max(1, item.Props.PenetrationPower > 0 ? item.Props.PenetrationPower * 2 : 1);
+                    var damageRating = Math.Max(1, item.Props.Damage > 0 ? item.Props.Damage * 0.01 : 1);
+
+                    rating = (int)Math.Round(armorDamage * penRating * damageRating);
+
+                    if (rating == 0)
+                        rating = 1;
                 }
 
                 if (rootResponseObject.Count > length) break;
@@ -104,11 +115,44 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             return new BSGSuccessBodyResult(rootResponseObject);
         }
 
-
-        [Route("/itemSearch/getAmmo/")]
-        [HttpPost]
-        public async Task<IActionResult> Ammo()
+        [Route("/itemSearch/getAmmoCalibers/")]
+        [HttpGet]
+        public async Task<IActionResult> AmmoCalibers()
         {
+            //Item pre-loading
+            IEnumerable<MinimalTemplateItem> templatesItemsMinimalEnumerable =
+                DatabaseService.LoadDatabaseFileAsEnumerable("templates/items.json")
+                    .Select(x => new MinimalTemplateItem(x.Value, 0));
+
+            const string ammoParentId = "5485a8684bdc2da71d8b4567";
+            string[] ammoIdsToIgnore = ["5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1"];
+
+            HashSet<string> hash = new HashSet<string>();
+            await Parallel.ForEachAsync(templatesItemsMinimalEnumerable, (item, _) =>
+            {
+                if (!string.Equals(item.ParentID, ammoParentId)) return ValueTask.CompletedTask;
+                if (ammoIdsToIgnore.Contains(item.ItemID)) return ValueTask.CompletedTask;
+                if (!string.Equals(item.Props.AmmoType, "bullet")) return ValueTask.CompletedTask;
+
+                if (!hash.Contains(item.Props.Caliber))
+                    hash.Add(item.Props.Caliber);
+
+                return ValueTask.CompletedTask;
+            });
+
+            JArray rootResponseObject = [];
+            foreach (var item in hash.OrderBy(x => x))
+                rootResponseObject.Add(item);
+
+            return new BSGSuccessBodyResult(rootResponseObject);
+        }
+
+
+        [Route("/itemSearch/getAmmo/{caliber}")]
+        [HttpPost]
+        public async Task<IActionResult> Ammo(string caliber)
+        {
+
             //Localization pre-loading
             IEnumerable<KeyValuePair<string, JToken>> enumerableLocalizations =
                 DatabaseService.LoadDatabaseFileAsEnumerable("locales/global/en.json");
@@ -125,13 +169,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             const string ammoParentId = "5485a8684bdc2da71d8b4567";
             string[] ammoIdsToIgnore = ["5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1"];
 
-            JArray rootResponseObject = [];
+            List<JObject> unorderedItems = new List<JObject>();
             await Parallel.ForEachAsync(templatesItemsMinimalEnumerable, (item, _) =>
             {
                 if (!string.Equals(item.ParentID, ammoParentId)) return ValueTask.CompletedTask;
                 if (ammoIdsToIgnore.Contains(item.ItemID)) return ValueTask.CompletedTask;
                 if (!string.Equals(item.Props.AmmoType, "bullet")) return ValueTask.CompletedTask;
-                
+                if (!string.Equals(item.Props.Caliber, caliber)) return ValueTask.CompletedTask;
+
                 //Localized name
                 string localizedItemName = item.ItemID;
                 if (!localizationDictionary.TryGetValue($"{item.ItemID} Name", out localizedItemName))
@@ -139,9 +184,19 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     localizationDictionary.TryGetValue($"{item.ItemID} ShortName", out localizedItemName);
                 }
 
-                int rating = 0; // Math.ceil((item.PaulovRating / highestRating) * 100);
-                
-                rootResponseObject.Add(new JObject
+                int rating = 0;
+                if (item.Props.Damage > 0)
+                {
+                    var armorDamage = Math.Max(1, item.Props.ArmorDamage > 0 ? item.Props.ArmorDamage * 2.25 : 1);
+                    var penRating = Math.Max(1, item.Props.PenetrationPower > 0 ? item.Props.PenetrationPower * 2 : 1);
+                    var damageRating = Math.Max(1, item.Props.Damage > 0 ? item.Props.Damage * 0.015 : 1);
+
+                    rating = (int)Math.Round(armorDamage * penRating * damageRating);
+
+                    if (rating == 0)
+                        rating = 1;
+                }
+                unorderedItems.Add(new JObject
                 {
                     ["itemId"] = item.ItemID,
                     ["langItem"] = localizedItemName,
@@ -153,6 +208,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                 });
                 return ValueTask.CompletedTask;
             });
+
+            JArray rootResponseObject = JArray.FromObject(unorderedItems.OrderByDescending(x => x["rating"]));
             return new BSGSuccessBodyResult(rootResponseObject);
         }
 
