@@ -169,6 +169,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             const string ammoParentId = "5485a8684bdc2da71d8b4567";
             string[] ammoIdsToIgnore = ["5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1"];
 
+            decimal ammoBestRating = 18000;
             List<JObject> unorderedItems = new List<JObject>();
             await Parallel.ForEachAsync(templatesItemsMinimalEnumerable, (item, _) =>
             {
@@ -187,15 +188,30 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                 int rating = 0;
                 if (item.Props.Damage > 0)
                 {
-                    var armorDamage = Math.Max(1, item.Props.ArmorDamage > 0 ? item.Props.ArmorDamage * 2.25 : 1);
-                    var penRating = Math.Max(1, item.Props.PenetrationPower > 0 ? item.Props.PenetrationPower * 2 : 1);
-                    var damageRating = Math.Max(1, item.Props.Damage > 0 ? item.Props.Damage * 0.015 : 1);
+                    var armorDamage = Math.Max(1, item.Props.ArmorDamage > 0 ? item.Props.ArmorDamage * 2.24 : 1);
+                    var penRating = Math.Max(1, item.Props.PenetrationPower > 0 ? item.Props.PenetrationPower * 2.06 : 1);
+                    var damageRating = Math.Max(1, item.Props.Damage > 0 ? item.Props.Damage * 0.014 : 1);
 
-                    rating = (int)Math.Round(armorDamage * penRating * damageRating);
+                    var roughLargeNumberRating = (decimal)(armorDamage * penRating * damageRating);
+                    var ratioRating = roughLargeNumberRating / (decimal)ammoBestRating;
+                    rating = Math.Min(100, (int)Math.Round(ratioRating * 100, 3));
 
                     if (rating == 0)
                         rating = 1;
                 }
+
+                string ratingWord = "";
+                if (rating > 75)
+                    ratingWord = "God Tier";
+                else if (rating > 45)
+                    ratingWord = "Good";
+                else if (rating > 25)
+                    ratingWord = "OK";
+                else if (rating > 10)
+                    ratingWord = "Bad";
+                else 
+                    ratingWord = "Awful";
+
                 unorderedItems.Add(new JObject
                 {
                     ["itemId"] = item.ItemID,
@@ -204,7 +220,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     ["armorDamage"] = item.Props.ArmorDamage,
                     ["penetration"] = item.Props.PenetrationPower,
                     ["damage"] = item.Props.Damage,
-                    ["rating"] = rating
+                    ["rating"] = rating,
+                    ["ratingWord"] = ratingWord
                 });
                 return ValueTask.CompletedTask;
             });

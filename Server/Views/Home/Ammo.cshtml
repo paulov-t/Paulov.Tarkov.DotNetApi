@@ -6,13 +6,17 @@
 <link rel='stylesheet' href="https://cdn.datatables.net/responsive/3.0.7/css/responsive.dataTables.css" />
 <div class="container">
     <h1>Ammo</h1>
-    <div class="row">
-        <label>Caliber</label>
-        <select id="ddlCaliber">
+    <div id="loadingDiv" class="row">
+        <img src="https://media.tenor.com/Pq1cZiuhlEEAAAAi/rajinikanth.gif"  style="width: 50px; height: 50px" />
+    </div>
+    <div id="divCaliber" class="row d-none">
+        <label for="ddlCaliber" class="form-label mt-4">Select the Caliber</label>
+        <select class="form-select" id="ddlCaliber">
             <option></option>
         </select>
     </div>
-    <div class="row">
+    <hr />
+    <div id="divAmmoTable" class="row d-none">
         <table id="myTable" class="table table-striped nowrap">
             <thead>
                 <tr>
@@ -22,7 +26,8 @@
                     <th class="d-none d-lg-table-cell">Damage</th>
                     <th class="d-none d-lg-table-cell">Armor Damage</th>
                     <th class="d-none d-lg-table-cell">Penetration</th>
-                    <th>Rating</th>
+                    <th class="d-none d-lg-table-cell">Rating</th>
+                    <th>Rating Word</th>
                 </tr>
             </thead>
             <tbody id="myTableBody">
@@ -36,22 +41,6 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/2.3.5/js/dataTables.js"></script>
 <script>
-    // $('#myTable').DataTable({
-    //     "ajax": {
-    //       "url": '/itemSearch/getAmmo/',
-    //       "type": "POST"
-    //     },
-    //     columns: [
-    //       { data: 'itemId' },
-    //       { data: 'langItem' },
-    //       { data: 'caliber' },
-    //       { data: 'damage' },
-    //       { data: 'armorDamage' },
-    //       { data: 'penetration' },
-    //       { data: 'rating' }
-    //     ]
-    //     , responsive: true
-    // });
 
     $.get('/itemSearch/getAmmoCalibers', function(resp) {
 
@@ -66,12 +55,20 @@
             option.innerText = d;
             document.getElementById('ddlCaliber').appendChild(option);
         }
+
+        document.getElementById('loadingDiv').classList.add('d-none');
+        document.getElementById('divCaliber').classList.remove('d-none');
+        document.getElementById('divAmmoTable').classList.remove('d-none');
     });
 
     $('#ddlCaliber').on("change", (function(d) {
     
+        document.getElementById('loadingDiv').classList.remove('d-none');
+
         let caliberVal = $('#ddlCaliber').val();
         $.post(`/itemSearch/getAmmo/${caliberVal}` , function(resp) {
+
+            document.getElementById('loadingDiv').classList.add('d-none');
 
             document.getElementById('myTableBody').innerHTML = '';
 
@@ -85,7 +82,7 @@
                     let td = document.createElement('td');
                     td.innerText = d[k];
 
-                    if (k != 'rating' && k != 'langItem') {
+                    if (k != 'ratingWord' && k != 'langItem') {
                         td.classList.add('d-none');
                         td.classList.add('d-lg-table-cell');
                     }
@@ -94,6 +91,8 @@
                 }
                 document.getElementById('myTableBody').appendChild(tr);
             }
+
+
         });
     }));
 
