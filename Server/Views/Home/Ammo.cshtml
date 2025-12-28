@@ -23,11 +23,12 @@
                     <th class="d-none d-lg-table-cell">Template Id</th>
                     <th>Name</th>
                     <th class="d-none d-lg-table-cell">Caliber</th>
-                    <th class="d-none d-lg-table-cell">Damage</th>
                     <th class="d-none d-lg-table-cell">Armor Damage</th>
                     <th class="d-none d-lg-table-cell">Penetration</th>
-                    <th class="d-none d-lg-table-cell">Rating</th>
-                    <th>Rating Word</th>
+                    <th class="d-none d-lg-table-cell">Damage</th>
+                    <th class="d-none d-lg-table-cell">Rating Value</th>
+                    <th>Rating</th>
+                    <th class="d-none d-lg-table-cell">Tier</th>
                 </tr>
             </thead>
             <tbody id="myTableBody">
@@ -42,7 +43,7 @@
 <script src="https://cdn.datatables.net/2.3.5/js/dataTables.js"></script>
 <script>
 
-    $.get('/itemSearch/getAmmoCalibers', function(resp) {
+    $.get('/api/v1/itemSearch/getAmmoCalibers', function(resp) {
 
         let data = resp.data;
         document.getElementById('ddlCaliber').innerHTML = '';
@@ -66,7 +67,7 @@
         document.getElementById('loadingDiv').classList.remove('d-none');
 
         let caliberVal = $('#ddlCaliber').val();
-        $.post(`/itemSearch/getAmmo/${caliberVal}` , function(resp) {
+        $.post(`/api/v1/itemSearch/getAmmo/${caliberVal}` , function(resp) {
 
             document.getElementById('loadingDiv').classList.add('d-none');
 

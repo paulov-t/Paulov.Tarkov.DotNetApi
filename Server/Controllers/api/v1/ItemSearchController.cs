@@ -15,7 +15,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
 {
     public class ItemSearchController : Controller
     {
-        [Route("/itemSearch/getItemEnglishNameAndTpl/")]
+        [Route("/api/v1/itemSearch/getItemEnglishNameAndTpl/")]
         [HttpPost]
         public async Task<IActionResult> Items()
         {
@@ -115,7 +115,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             return new BSGSuccessBodyResult(rootResponseObject);
         }
 
-        [Route("/itemSearch/getAmmoCalibers/")]
+        [Route("/api/v1/itemSearch/getAmmoCalibers/")]
         [HttpGet]
         public async Task<IActionResult> AmmoCalibers()
         {
@@ -148,7 +148,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
         }
 
 
-        [Route("/itemSearch/getAmmo/{caliber}")]
+        [Route("/api/v1/itemSearch/getAmmo/{caliber}")]
         [HttpPost]
         public async Task<IActionResult> Ammo(string caliber)
         {
@@ -169,7 +169,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             const string ammoParentId = "5485a8684bdc2da71d8b4567";
             string[] ammoIdsToIgnore = ["5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1"];
 
-            decimal ammoBestRating = 18000;
+            decimal ammoBestRating = -1;
             List<JObject> unorderedItems = new List<JObject>();
             await Parallel.ForEachAsync(templatesItemsMinimalEnumerable, (item, _) =>
             {
@@ -185,32 +185,17 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     localizationDictionary.TryGetValue($"{item.ItemID} ShortName", out localizedItemName);
                 }
 
-                int rating = 0;
+                decimal roughLargeNumberRating = 0;
                 if (item.Props.Damage > 0)
                 {
-                    var armorDamage = Math.Max(1, item.Props.ArmorDamage > 0 ? item.Props.ArmorDamage * 2.24 : 1);
-                    var penRating = Math.Max(1, item.Props.PenetrationPower > 0 ? item.Props.PenetrationPower * 2.06 : 1);
-                    var damageRating = Math.Max(1, item.Props.Damage > 0 ? item.Props.Damage * 0.014 : 1);
+                    var armorDamage = Math.Max(1, item.Props.ArmorDamage > 0 ? item.Props.ArmorDamage * 2.23 : 1);
+                    var penRating = Math.Max(1, item.Props.PenetrationPower > 0 ? item.Props.PenetrationPower * 2.09 : 1);
+                    var damageRating = Math.Max(1, item.Props.Damage > 0 ? item.Props.Damage * 0.015 : 1);
 
-                    var roughLargeNumberRating = (decimal)(armorDamage * penRating * damageRating);
-                    var ratioRating = roughLargeNumberRating / (decimal)ammoBestRating;
-                    rating = Math.Min(100, (int)Math.Round(ratioRating * 100, 3));
-
-                    if (rating == 0)
-                        rating = 1;
+                    roughLargeNumberRating = (decimal)(armorDamage * penRating * damageRating);
+                    if (roughLargeNumberRating > ammoBestRating)
+                        ammoBestRating = roughLargeNumberRating;
                 }
-
-                string ratingWord = "";
-                if (rating > 75)
-                    ratingWord = "God Tier";
-                else if (rating > 45)
-                    ratingWord = "Good";
-                else if (rating > 25)
-                    ratingWord = "OK";
-                else if (rating > 10)
-                    ratingWord = "Bad";
-                else 
-                    ratingWord = "Awful";
 
                 unorderedItems.Add(new JObject
                 {
@@ -220,11 +205,59 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     ["armorDamage"] = item.Props.ArmorDamage,
                     ["penetration"] = item.Props.PenetrationPower,
                     ["damage"] = item.Props.Damage,
-                    ["rating"] = rating,
-                    ["ratingWord"] = ratingWord
+                    ["rating"] = 0,
+                    ["ratingNumber"] = roughLargeNumberRating,
+                    ["ratingWord"] = "",
+                    ["ratingTier"] = ""
                 });
                 return ValueTask.CompletedTask;
             });
+
+            foreach (var item in unorderedItems)
+            {
+                var roughLargeNumberRating = (decimal)(item["ratingNumber"] ?? 0);
+
+                int rating = 0;
+                var ratioRating = roughLargeNumberRating / (decimal)ammoBestRating;
+                rating = Math.Min(100, (int)Math.Round(ratioRating * 100, 3));
+
+                if (rating == 0)
+                    rating = 1;
+
+                string ratingWord = "";
+                if (rating > 90)
+                    ratingWord = "Best in Caliber";
+                else if (rating > 75)
+                    ratingWord = "Very Good";
+                else if (rating > 60)
+                    ratingWord = "Good";
+                else if (rating > 45)
+                    ratingWord = "OK";
+                else if (rating > 15)
+                    ratingWord = "Bad";
+                else
+                    ratingWord = "Sh*t / Aim for Legs";
+
+                string ratingTier = "F";
+                if (rating > 90)
+                    ratingTier = "S";
+                else if (rating > 75)
+                    ratingTier = "A";
+                else if (rating > 60)
+                    ratingTier = "B";
+                else if (rating > 45)
+                    ratingTier = "C";
+                else if (rating > 30)
+                    ratingTier = "D";
+                else if (rating > 15)
+                    ratingTier = "E";
+
+                item["rating"] = rating;
+                item["ratingWord"] = ratingWord;
+                item["ratingTier"] = ratingTier;
+
+                item.Remove("ratingNumber");
+            }
 
             JArray rootResponseObject = JArray.FromObject(unorderedItems.OrderByDescending(x => x["rating"]));
             return new BSGSuccessBodyResult(rootResponseObject);
