@@ -24,6 +24,8 @@ namespace Paulov.TarkovServices.Services.Interfaces
         /// is found.</returns>
         public Account GetAccountByAID(string aid);
 
+        public Account GetAccountBySessionId(string sessionId);
+
         public MatchingGroupMember GetMatchingGroupMember(Account account, bool isLeader, bool isReady, string gameMode);
         public JObject GetMatchingGroupMemberWithHealthAndPVR(Account account, bool isLeader, bool isReady, string gameMode);
 

@@ -36,9 +36,9 @@ namespace Paulov.TarkovModels.GroupingModels
         public bool HasCoopExtension;
 
         [JsonProperty("Health")]
-        public Profile.ProfileHealthInfo Health;
+        public Profile.ProfileHealthClass Health;
 
-        public MatchingGroupPlayerInfoModel(string nickname, EPlayerSide side, int level, int prestigeLevel, EMemberCategory memberCategory, EMemberCategory selectedMemberCategory, double savageLockTime, string savageNickname, string gameVersion, bool hasCoopExtension, Profile.ProfileHealthInfo health)
+        public MatchingGroupPlayerInfoModel(string nickname, EPlayerSide side, int level, int prestigeLevel, EMemberCategory memberCategory, EMemberCategory selectedMemberCategory, double savageLockTime, string savageNickname, string gameVersion, bool hasCoopExtension, Profile.ProfileHealthClass health)
         {
             Nickname = nickname ?? throw new ArgumentNullException(nameof(nickname), "Nickname cannot be null.");
             Side = side;

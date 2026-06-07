@@ -1,20 +1,28 @@
 ﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Providers.SaveProviders;
-using Paulov.TarkovServices.Services;
+using Paulov.TarkovServices.Services.Interfaces;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 {
     public class TradingController : ControllerBase
     {
         private readonly JsonFileSaveProvider _saveProvider;
-        public TradingController(ISaveProvider saveProvider)
+        private readonly IGlobalsService _globalsService;
+        private readonly IInventoryService _inventoryService;
+
+        public TradingController(ISaveProvider saveProvider, IGlobalsService globalsService, IInventoryService inventoryService)
         {
             _saveProvider = saveProvider as JsonFileSaveProvider;
+            _globalsService = globalsService;
+            _inventoryService = inventoryService ?? throw new ArgumentNullException(nameof(inventoryService), "InventoryService cannot be null.");
+
         }
 
         private string SessionId
@@ -38,7 +46,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> TraderSettings(int? retry)
         {
-            DatabaseService.TryLoadTraders(out JObject traders);
+            DatabaseHelpers.TryLoadTraders(out JObject traders);
 
             JArray arrayResponse = new JArray();
             foreach (var key in traders)
@@ -61,10 +69,10 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             }
 #endif
 
-            var tradingProvider = new TradingProvider();
+            var tradingProvider = new TradingProvider(_inventoryService);
 
             EFT.TraderAssortment traderAssortment = new();
-            //traderAssortment.Items = new List<FlatItem>().ToArray();
+            traderAssortment.Items = new List<FlatItem>().ToArray();
             traderAssortment.BarterScheme = new Dictionary<string, EFT.BarterScheme>();
             traderAssortment.LoyaltyLevelItems = new Dictionary<string, int>();
 
@@ -73,8 +81,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGSuccessBodyResult(traderAssortment);
             }
 
+            _globalsService.LoadGlobalsIntoComfortSingleton();
             var traderAssortmentForPlayer = tradingProvider.GetTraderAssortmentById(traderId, sessionId);
-            return new BSGSuccessBodyResult(traderAssortmentForPlayer);
+            return new BSGSuccessBodyResult(JsonConvert.SerializeObject(traderAssortmentForPlayer, DatabaseHelpers.CachedSerializer.Converters.ToArray()));
         }
 
         [Route("/client/trading/api/getTraders")]
@@ -83,7 +92,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         {
             var sessionId = SessionId;
 
-            var tradingProvider = new TradingProvider();
+            var tradingProvider = new TradingProvider(_inventoryService);
             TradingProvider.TryLoadTraders(out var traders);
 
             List<dynamic> result = new List<dynamic>();

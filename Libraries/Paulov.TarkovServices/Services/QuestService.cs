@@ -115,9 +115,16 @@ namespace Paulov.TarkovServices.Services
                 profileQuestData.Add(questToAdd);
             }
 
+            foreach (var questData in profileQuestData)
+            {
+                if (questData.Template == null)
+                {
+                    questData.Template = allQuestsJObject[questData.Id].ToObject<RawQuestClass>(newtonSoftJsonSerializer);
+                }
+            }
 
 
-            return profileQuestData.Select(x => x.Template).ToList();
+            return profileQuestData.Where(x => x.Template != null).Select(x => x.Template).ToList();
         }
 
     }

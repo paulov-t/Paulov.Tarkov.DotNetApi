@@ -106,6 +106,13 @@ namespace Paulov.Tarkov.WebServer.DOTNET
                 .AddSingleton<IInventoryService, InventoryService>()
                 .AddSingleton<IPasswordService, PasswordService>();
 
+
+            Console.WriteLine($"Loading LootGenerationService");
+            services.AddSingleton<ILootGenerationService, LootGenerationService>();
+
+            Console.WriteLine($"Loading LocationService");
+            services.AddSingleton<ILocationService, LocationService>();
+
             Console.WriteLine($"Loading AccountService");
             services.AddSingleton<IAccountService, AccountService>();
 
@@ -117,6 +124,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET
 
             Console.WriteLine($"Loading MatchingService");
             services.AddSingleton<IMatchingService, MatchingService>();
+
+            Console.WriteLine($"Loading ActionCommandService");
+            services.AddSingleton<IActionCommandService, ActionCommandService>();
 
         }
 

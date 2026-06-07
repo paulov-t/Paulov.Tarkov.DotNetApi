@@ -26,6 +26,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private IAccountService _accountService;
         private IWebSocketService _webSocketService;
         private IMatchingService _matchingService;
+        private ILootGenerationService _lootGenerationService;
 
         public MatchController(
             ISaveProvider saveProvider
@@ -34,6 +35,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             , IAccountService accountService
             , IWebSocketService webSocketService
             , IMatchingService matchingService
+            , ILootGenerationService lootGenerationService
             )
         {
             _saveProvider = saveProvider ?? throw new ArgumentNullException(nameof(saveProvider));
@@ -42,6 +44,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
             _webSocketService = webSocketService ?? throw new ArgumentNullException(nameof(webSocketService));
             _matchingService = matchingService ?? throw new ArgumentNullException(nameof(matchingService));
+            _lootGenerationService = lootGenerationService ?? throw new ArgumentNullException(nameof(lootGenerationService));
         }
 
         private string SessionId
@@ -260,7 +263,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
                 return new BSGErrorBodyResult(500, "expected location in request body");
 
             // Load all Location Bases
-            DatabaseService.TryLoadLocationBases(out JObject locationsJO);
+            DatabaseHelpers.TryLoadLocationBases(out JObject locationsJO);
 
             // Match Location Base to requested location by Location Id
             // Todo: This needs refining
@@ -269,14 +272,22 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             foreach (var locationJO in locationsJO)
             {
                 var l = locationJO.Value;
-                if (locationStringLower.Contains(l["Id"].ToString()))
+                if (locationStringLower.Contains(l["Id"].ToString(), StringComparison.OrdinalIgnoreCase))
                 {
                     location = l;
+                    break;
                 }
             }
 
+            if (location == null)
+            {
+                Debug.WriteLine($"Location {requestBody["location"]} not found in database.");
+                return new BSGErrorBodyResult(500, $"Location {requestBody["location"]} not found in database.");
+            }
+
             // Generate the loot for the Location
-            location["Loot"] = JToken.FromObject(Array.Empty<string>());
+            location["Loot"] = _lootGenerationService.GenerateLootForLocation(location as JObject);
+
 
 #if DEBUG
             // Paulov: I have left this here just as a reference
@@ -290,7 +301,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             locationSettings.Add("locationLoot", location);
             //locationSettings.Add("profile", new JObject() { { "insuredItems", new JArray() } });
             locationSettings.Add("profile", new JObject() { });
-            DatabaseService.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
+            DatabaseHelpers.TryLoadDatabaseFile("templates/locationServices.json", out JObject serverSettings);
             locationSettings.Add("serverSettings", serverSettings);
             //locationSettings.Add("transitionType", "None");
             locationSettings.Add("transition", new JObject() { });
@@ -391,7 +402,8 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             if (isPMC)
             {
                 var currentProfileItems = _inventoryService.GetInventoryItems(myAccountByMode.Characters.PMC).ToList();
-                foreach (var item in _inventoryService.GetInventoryItems(matchEndProfile))
+                var matchEndInventoryItems = _inventoryService.GetInventoryItems(matchEndProfile);
+                foreach (var item in matchEndInventoryItems)
                 {
                     if (currentProfileItems.FindIndex(x => x._id == item._id) == -1)
                     {
@@ -457,7 +469,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> GetMetricsConfig()
         {
-            DatabaseService.TryLoadDatabaseFile("match/metrics.json", out JObject dbFile);
+            DatabaseHelpers.TryLoadDatabaseFile("match/metrics.json", out JObject dbFile);
             return new BSGSuccessBodyResult(dbFile);
         }
 

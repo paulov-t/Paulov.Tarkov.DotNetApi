@@ -37,7 +37,7 @@ namespace Paulov.Tarkov.Web.Api.Controllers
             _globalsService = globalsService;
             _inventoryService = inventoryService;
 
-            if (DatabaseService.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            if (DatabaseHelpers.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
             {
                 foreach (var j in customizationTemplates)
                 {
@@ -168,14 +168,14 @@ namespace Paulov.Tarkov.Web.Api.Controllers
 
             var profileModels = DatabaseHelpers.GetObject<ProfileEditionModels>("templates/profiles.json");
 
-            //if (!DatabaseService.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
+            //if (!DatabaseHelpers.TryLoadDatabaseFile("templates/profiles.json", out JObject profileTemplates))
             if (!DatabaseHelpers.TryGetJObject("templates/profiles.json", out JObject profileTemplates))
             {
                 Response.StatusCode = 500;
                 return new BSGErrorBodyResult(500, "");
             }
 
-            if (!DatabaseService.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            if (!DatabaseHelpers.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
             {
                 Response.StatusCode = 500;
                 return new BSGErrorBodyResult(500, "");

@@ -3,6 +3,7 @@ using EFT;
 using EFT.InventoryLogic;
 using Newtonsoft.Json.Linq;
 using Paulov.TarkovModels;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Models;
 using Paulov.TarkovServices.Services.Interfaces;
 using System.Diagnostics;
@@ -34,7 +35,7 @@ namespace Paulov.TarkovServices.Services
 
         public BotGenerationService(IGlobalsService globalsService, IInventoryService inventoryService)
         {
-            if (DatabaseService.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
+            if (DatabaseHelpers.TryLoadDatabaseFile("templates/customization.json", out JObject customizationTemplates))
             {
                 foreach (var j in customizationTemplates)
                 {
@@ -65,7 +66,7 @@ namespace Paulov.TarkovServices.Services
                 {
                     if (bodyPartName == "Common")
                         continue;
-                    BaseBot.Health.BodyParts.Add(Enum.Parse<EBodyPart>(bodyPartName), new Profile.ProfileHealthInfo.ProfileHealthInfoBodyPartInfo());
+                    BaseBot.Health.BodyParts.Add(Enum.Parse<EBodyPart>(bodyPartName), new Profile.ProfileHealthClass.ProfileHealthInfoBodyPartInfo());
                 }
             }
 
@@ -113,7 +114,7 @@ namespace Paulov.TarkovServices.Services
 
         public List<AccountProfileCharacter> GenerateBots(List<WaveInfoClass> conditions)
         {
-            DatabaseService.TryLoadTemplateFile("items.json", out _templates);
+            DatabaseHelpers.TryLoadTemplateFile("items.json", out _templates);
 
             List<AccountProfileCharacter> bots = new List<AccountProfileCharacter>();
 
@@ -145,7 +146,7 @@ namespace Paulov.TarkovServices.Services
         public AccountProfileCharacter GenerateBot(WaveInfoClass condition)
         {
             if (_templates == null)
-                DatabaseService.TryLoadTemplateFile("items.json", out _templates);
+                DatabaseHelpers.TryLoadTemplateFile("items.json", out _templates);
 
             if (condition.Role == WildSpawnType.gifter)
                 condition.Role = WildSpawnType.assault;
@@ -166,7 +167,7 @@ namespace Paulov.TarkovServices.Services
 
             // Load the bot database data role (roles are stored in lowercase)
             var lowerRole = condition.Role.ToString().ToLower();
-            DatabaseService.TryLoadDatabaseFile($"bots/types/{lowerRole}.json", out JObject botDatabaseData);
+            DatabaseHelpers.TryLoadDatabaseFile($"bots/types/{lowerRole}.json", out JObject botDatabaseData);
             if (botDatabaseData == null)
                 return bot;
 
@@ -304,8 +305,14 @@ namespace Paulov.TarkovServices.Services
             InventoryService.RemoveItemFromSlot(bot, "Armband");
 
             InventoryService.RemoveItemFromSlot(bot, "Backpack");
+            var backpackKeys = ((JObject)botDatabaseData["inventory"]["equipment"]["Backpack"]).Properties().Select(p => p.Name).ToArray();
+            if (backpackKeys.Length > 0)
+                AddRandomItemToSlot(bot, "Backpack", backpackKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "TacticalVest");
+            var tacticalVestKeys = ((JObject)botDatabaseData["inventory"]["equipment"]["TacticalVest"]).Properties().Select(p => p.Name).ToArray();
+            if (tacticalVestKeys.Length > 0)
+                AddRandomItemToSlot(bot, "TacticalVest", tacticalVestKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "Scabbard");
             var scabbardKeys = ((JObject)botDatabaseData["inventory"]["equipment"]["Scabbard"]).Properties().Select(p => p.Name).ToArray();
@@ -313,6 +320,8 @@ namespace Paulov.TarkovServices.Services
                 AddRandomItemToSlot(bot, "Scabbard", scabbardKeys);
 
             InventoryService.RemoveItemFromSlot(bot, "ArmorVest");
+
+
 
             // ------------------------------------------------------------------------------------------------
             // The following should be completed AFTER all other actions have been taken on the Bot's Inventory
@@ -374,7 +383,7 @@ namespace Paulov.TarkovServices.Services
             {
                 // TODO: This needs refactoring in to individual methods
 
-                DatabaseService.TryLoadGlobals(out var globals);
+                DatabaseHelpers.TryLoadGlobals(out var globals);
                 var itemPresets = ((JObject)globals["ItemPresets"]);
 
                 // Assign the weaponItem so we know what ammo to generate for it later on
@@ -419,8 +428,11 @@ namespace Paulov.TarkovServices.Services
                     }
                 }
 
+                if (weaponItem == null)
+                    return;
+
                 // Get an ammo type for the weapon and add the ammo to the inventory
-                var weaponTemplate = DatabaseService.GetTemplateItemById(_templates, weaponItem._tpl);
+                var weaponTemplate = DatabaseHelpers.GetTemplateItemById(_templates, weaponItem._tpl);
                 var magazine = allAddedItems.Find(x => x.slotId == "mod_magazine");
                 var newItems = CreateMagazineWithAmmoForWeapon(weaponItem, magazine);
                 foreach (var item in newItems)
@@ -442,7 +454,7 @@ namespace Paulov.TarkovServices.Services
         {
             List<FlatItem> resultItems = new List<FlatItem>();
 
-            var weaponTemplate = DatabaseService.GetTemplateItemById(_templates, weaponItem._tpl);
+            var weaponTemplate = DatabaseHelpers.GetTemplateItemById(_templates, weaponItem._tpl);
             var weaponTemplateProps = weaponTemplate["_props"];
 
             if (magazine == null)
@@ -452,7 +464,7 @@ namespace Paulov.TarkovServices.Services
             if (string.IsNullOrEmpty(ammoCaliber))
                 return resultItems;
 
-            var templatesArray = DatabaseService.GetTemplateItemsAsArray(_templates);
+            var templatesArray = DatabaseHelpers.GetTemplateItemsAsArray(_templates);
             var ammos = templatesArray
                 .Where(x
                 => x["_props"]?["ammoType"]?.ToString() == "bullet"
@@ -466,7 +478,7 @@ namespace Paulov.TarkovServices.Services
             if (ammos.Count == 0)
                 return resultItems;
 
-            var magazineTemplate = DatabaseService.GetTemplateItemById(_templates, magazine._tpl);
+            var magazineTemplate = DatabaseHelpers.GetTemplateItemById(_templates, magazine._tpl);
             if (magazineTemplate == null)
                 return resultItems;
 

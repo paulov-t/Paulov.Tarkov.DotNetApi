@@ -21,6 +21,22 @@ namespace Paulov.TarkovServices.Services
             _databaseService = databaseService ?? throw new ArgumentNullException(nameof(databaseService));
         }
 
+        public Account GetAccountBySessionId(string sessionId)
+        {
+            if (string.IsNullOrEmpty(sessionId))
+            {
+                throw new ArgumentException("sessionId ID cannot be null or empty.", nameof(sessionId));
+            }
+            var profiles = _saveProvider.GetProfiles();
+            if (profiles == null || !profiles.Any())
+            {
+                return null;
+            }
+            return profiles.Values
+                .Where(x => x.AccountId == sessionId)
+                .FirstOrDefault();
+        }
+
         public Account GetAccountByAID(string aid)
         {
             if (string.IsNullOrEmpty(aid))

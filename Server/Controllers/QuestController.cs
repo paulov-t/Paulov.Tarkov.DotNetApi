@@ -69,9 +69,9 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
 
             var returnString = JsonConvert.SerializeObject(questList, Formatting.Indented, converters.ToArray());
 
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-
             return new BSGSuccessBodyResult(returnString);
+            // TODO: This breaks after leaving a raid. Needs fixing.
+            //return new BSGSuccessBodyResult("[]");
         }
     }
 }

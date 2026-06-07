@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Paulov.Tarkov.WebServer.DOTNET.Middleware;
 using Paulov.TarkovServices;
+using Paulov.TarkovServices.Helpers;
 using Paulov.TarkovServices.Providers.Interfaces;
 using Paulov.TarkovServices.Services;
 using Paulov.TarkovServices.Services.Interfaces;
@@ -21,6 +22,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         private readonly IGlobalsService _globalsService;
         private readonly IInventoryService _inventoryService;
         private readonly IMatchingService _matchingService;
+        private readonly IActionCommandService _actionCommandService;
 
         public GameController
             (
@@ -29,6 +31,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             , IGlobalsService globalsService
             , IInventoryService inventoryService
             , IMatchingService matchingService
+            , IActionCommandService actionCommandService
             )
         {
             this._saveProvider = saveProvider;
@@ -36,6 +39,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             this._globalsService = globalsService;
             this._inventoryService = inventoryService;
             this._matchingService = matchingService;
+            this._actionCommandService = actionCommandService;
         }
 
         private string SessionId
@@ -72,7 +76,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         }
 
         [Route("client/game/version/validate")]
-        [HttpPost] 
+        [HttpPost]
         public async void VersionValidate()
         {
             await HttpBodyConverters.CompressNullIntoResponseBodyBSG(Request, Response);
@@ -131,7 +135,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         public async Task<IActionResult> TemplateItems(int? count, int? page)
         {
 
-            if (DatabaseService.TryLoadItemTemplates(out var items, count, page))
+            if (DatabaseHelpers.TryLoadItemTemplates(out var items, count, page))
             {
                 //var dict = items.ParseJsonTo<GClass1372>();
                 //var dict = JsonConvert.DeserializeObject<GClass1372>(items, new JsonSerializerSettings() { Converters = DatabaseProvider.CachedSerializer.Converters, ReferenceLoopHandling = ReferenceLoopHandling.Ignore,   });
@@ -174,7 +178,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult Settings(int? retry, bool? debug)
         {
-            DatabaseService.TryLoadDatabaseFile("settings.json", out JObject items);
+            DatabaseHelpers.TryLoadDatabaseFile("settings.json", out JObject items);
 
             var rawText = items.ToJson();
             return new BSGSuccessBodyResult(rawText);
@@ -195,7 +199,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public IActionResult AccountCustomization(int? retry, bool? debug)
         {
-            DatabaseService.TryLoadDatabaseFile("templates/character.json", out string items);
+            DatabaseHelpers.TryLoadDatabaseFile("templates/character.json", out string items);
 
             return new BSGSuccessBodyResult(items);
         }
@@ -248,7 +252,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> HandbookTemplates(int? retry, bool? debug)
         {
-            DatabaseService.TryLoadTemplateFile("handbook.json", out var templates);
+            DatabaseHelpers.TryLoadTemplateFile("handbook.json", out var templates);
 
             return new BSGSuccessBodyResult(templates);
 
@@ -331,20 +335,21 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
         [HttpPost]
         public async Task<IActionResult> ItemPricesForTraderId(int? retry, bool? debug)
         {
-            var tradingProvider = new TradingProvider();
+            var tradingProvider = new TradingProvider(_inventoryService);
             JObject handbookPrices = JObject.Parse(tradingProvider.GetStaticPrices().ToJson());
             Dictionary<string, object> packet = new();
-            packet.Add("supplyNextTime", 0);
+            packet.Add("supplyNextTime", (int)Math.Floor(((DateTime.Now - new DateTime(1970, 1, 1)).TotalMilliseconds / 1000) + 60000));
             packet.Add("prices", handbookPrices);
             packet.Add("currencyCourses",
                 new Dictionary<string, object>() {
                     { "5449016a4bdc2d6f028b456f", handbookPrices["5449016a4bdc2d6f028b456f"] },
                     {  "569668774bdc2da2298b4568", handbookPrices["569668774bdc2da2298b4568"] },
-                    { "5696686a4bdc2da3298b456a", handbookPrices["5696686a4bdc2da3298b456a"] }
+                    {  "5696686a4bdc2da3298b456a", handbookPrices["5696686a4bdc2da3298b456a"] },
+                    { "5d235b4d86f7742e017bc88a", handbookPrices["5d235b4d86f7742e017bc88a"] }
                 }
                 );
 
-            return new BSGSuccessBodyResult(handbookPrices);
+            return new BSGSuccessBodyResult(packet.ToJson());
 
         }
 
@@ -374,47 +379,24 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers
             sessionId = _saveProvider?.GetProfiles().First().Key;
 #endif
 
-
-            return new BSGSuccessBodyResult(await (new ActionCommandService().ExecuteCommandAsync(commands, sessionId)));
+            var result = (await (_actionCommandService.ExecuteCommandAsync(commands, sessionId))).ToJson();
+            return new BSGSuccessBodyResult(result);
         }
 
-        //private void DoItemsMovingAction_Move(QueueData queueData, JToken actionData)
-        //{
-        //    var sessionId = SessionId;
-        //    var saveProvider = new SaveProvider();
-        //    var pmcProfile = saveProvider.GetPmcProfile(sessionId);
 
-        //    var inv = (JToken)pmcProfile["Inventory"];
-        //    var invItems = (JArray)inv["items"];
-        //    var itemIdToFind = actionData["item"].ToString();
-        //    for (var iInvItem = 0; iInvItem < invItems.Count; iInvItem++)
-        //    {
-        //        var invItem = invItems[iInvItem];
-        //        var _id = invItem["_id"].ToString().Trim();
-        //        var _tpl = invItem["_tpl"].ToString().Trim();
-        //        if (_id == itemIdToFind || _id == itemIdToFind)
-        //        {
-        //            Debug.WriteLine($"moving {_id} {_tpl}");
-        //            var matchedInvItem = invItem;
-        //            var m = matchedInvItem["parentId"];// = moveRequest.to.id;
+        [Route("/client/localGame/weather")]
+        [HttpPost]
+        public async Task<IActionResult> LocalGameWeather()
+        {
+            var weather = WeatherClass.CreateDefault();
+            JObject result = new JObject()
+            {
+                {  "season", 2 },
+                {  "weather", JToken.Parse((new List<WeatherClass>() { weather }).ToJson()) }
+            };
 
-        //            var to = actionData["to"].ToObject<ProcessTo>();
-        //            matchedInvItem["slotId"] = to.container;
-        //            matchedInvItem["parentId"] = to.id;
-        //            if (to.location != null)
-        //            {
-        //                matchedInvItem["location"] = JToken.Parse(to.location.ToJson());
-        //            }
-        //            else
-        //            {
-        //                matchedInvItem["location"] = null;
-        //            }
-        //            invItems[iInvItem] = matchedInvItem;
-        //        }
-        //    }
-        //    saveProvider.SaveProfile(sessionId);
-        //    //saveProvider.SaveProfile(sessionId, pmcProfile);
-        //}
+            return new BSGSuccessBodyResult(result.ToJson());
+        }
 
         [Route("/client/checkVersion")]
         [HttpPost]

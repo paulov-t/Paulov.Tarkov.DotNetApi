@@ -1,15 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using BSGHelperLibrary.ResponseModels;
-using EFT.InventoryLogic;
+﻿using BSGHelperLibrary.ResponseModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json.Linq;
-using Paulov.Tarkov.WebServer.DOTNET.Middleware;
-using Paulov.TarkovServices.Services;
-using Sirenix.Serialization;
+using Paulov.TarkovServices.Helpers;
+using System.Collections.Concurrent;
 
 namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
 {
@@ -22,33 +17,34 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             using FormReader formReader = new FormReader(Request.Body);
             Dictionary<string, StringValues> decodedForm = await formReader.ReadFormAsync();
 
-            int start = int.Parse(decodedForm["start"].First());
+
+            int start = decodedForm.ContainsKey("start") ? int.Parse(decodedForm["start"].First()) : 0;
             int length = int.MaxValue;
-            if (decodedForm.TryGetValue("length", out  StringValues lengthValues))
+            if (decodedForm.TryGetValue("length", out StringValues lengthValues))
             {
                 length = int.Parse(lengthValues.First());
             }
-            
+
             //Localization pre-loading
             IEnumerable<KeyValuePair<string, JToken>> enumerableLocalizations =
-                DatabaseService.LoadDatabaseFileAsEnumerable("locales/global/en.json");
+                DatabaseHelpers.LoadDatabaseFileAsEnumerable("locales/global/en.json");
             Dictionary<string, string> localizationDictionary =
                 enumerableLocalizations.ToDictionary(localization =>
                     localization.Key, localization => localization.Value.ToString());
 
             //Price pre-loading
             IEnumerable<KeyValuePair<string, JToken>> enumerablePrices =
-                DatabaseService.LoadDatabaseFileAsEnumerable("templates/prices.json");
+                DatabaseHelpers.LoadDatabaseFileAsEnumerable("templates/prices.json");
             Dictionary<string, long> pricesDictionary =
                 enumerablePrices.ToDictionary(price =>
                     price.Key, price => long.Parse(price.Value.ToString()));
-            
+
             //Item pre-loading
             IEnumerable<KeyValuePair<string, JToken>> enumerableItems =
-                DatabaseService.LoadDatabaseFileAsEnumerable("templates/items.json");
+                DatabaseHelpers.LoadDatabaseFileAsEnumerable("templates/items.json");
             List<MinimalTemplateItem> items = enumerableItems.Select(x =>
                 new MinimalTemplateItem(x.Value, pricesDictionary.GetValueOrDefault(x.Key))).ToList();
-            
+
             //Highest price
             long highestPrice = items.Max(x => x.Price);
 
@@ -80,7 +76,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     const double basePvERarityMultiplier = 2.5;
 
                     Enum.TryParse(item.PvERarity, true, out PvERarity rarity);
-                    
+
                     priceRatio *= basePvERarityMultiplier + ((int)rarity * 0.25);
                     priceRatio = Math.Max(Math.Min(priceRatio, 100), 1);
                     priceRatio = Math.Ceiling(priceRatio);
@@ -99,7 +95,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                 }
 
                 if (rootResponseObject.Count > length) break;
-                
+
                 rootResponseObject.Add(new JObject
                 {
                     ["itemId"] = item.ItemID,
@@ -111,7 +107,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     ["priceRatio"] = priceRatio
                 });
             }
-            
+
             return new BSGSuccessBodyResult(rootResponseObject);
         }
 
@@ -155,17 +151,17 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
 
             //Localization pre-loading
             IEnumerable<KeyValuePair<string, JToken>> enumerableLocalizations =
-                DatabaseService.LoadDatabaseFileAsEnumerable("locales/global/en.json");
+                DatabaseHelpers.LoadDatabaseFileAsEnumerable("locales/global/en.json");
             ConcurrentDictionary<string, string> localizationDictionary =
                 new(enumerableLocalizations.Select(localization =>
                     new KeyValuePair<string, string>(localization.Key, localization.Value.ToString())));
-            
-            
+
+
             //Item pre-loading
             IEnumerable<MinimalTemplateItem> templatesItemsMinimalEnumerable =
-                DatabaseService.LoadDatabaseFileAsEnumerable("templates/items.json")
+                DatabaseHelpers.LoadDatabaseFileAsEnumerable("templates/items.json")
                     .Select(x => new MinimalTemplateItem(x.Value, 0));
-            
+
             const string ammoParentId = "5485a8684bdc2da71d8b4567";
             string[] ammoIdsToIgnore = ["5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1"];
 
