@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <PackageReference Include="FMT.FileTools" Version="2025.6.17.13001" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.14" />
     <PackageReference Include="MongoDB.Driver" Version="3.4.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -24,13 +26,9 @@
 
 	<ItemGroup>
 	  <Compile Remove="Models\**" />
-	  <Compile Remove="Services\**" />
 	  <Content Remove="Models\**" />
-	  <Content Remove="Services\**" />
 	  <EmbeddedResource Remove="Models\**" />
-	  <EmbeddedResource Remove="Services\**" />
 	  <None Remove="Models\**" />
-	  <None Remove="Services\**" />
 	</ItemGroup>
 
 

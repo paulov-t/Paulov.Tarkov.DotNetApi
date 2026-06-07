@@ -10,7 +10,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
 {
     public class ItemSearchController : Controller
     {
-        [Route("/itemSearch/getItemEnglishNameAndTpl/")]
+        [Route("/api/v1/itemSearch/getItemEnglishNameAndTpl/")]
         [HttpPost]
         public async Task<IActionResult> Items()
         {
@@ -67,7 +67,6 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     _ = localizationDictionary.TryGetValue($"{item.ParentID} Name", out localizedParentItemName);
                 }
 
-                int rating = 0;
                 double priceRatio = 0;
                 if (item.Price > 0)
                 {
@@ -81,6 +80,18 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     priceRatio *= basePvERarityMultiplier + ((int)rarity * 0.25);
                     priceRatio = Math.Max(Math.Min(priceRatio, 100), 1);
                     priceRatio = Math.Ceiling(priceRatio);
+                }
+                int rating = 0;
+                if (item.Props.Damage > 0)
+                {
+                    var armorDamage = Math.Max(1, item.Props.ArmorDamage > 0 ? item.Props.ArmorDamage * 2 : 1);
+                    var penRating = Math.Max(1, item.Props.PenetrationPower > 0 ? item.Props.PenetrationPower * 2 : 1);
+                    var damageRating = Math.Max(1, item.Props.Damage > 0 ? item.Props.Damage * 0.01 : 1);
+
+                    rating = (int)Math.Round(armorDamage * penRating * damageRating);
+
+                    if (rating == 0)
+                        rating = 1;
                 }
 
                 if (rootResponseObject.Count > length) break;
@@ -100,11 +111,44 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             return new BSGSuccessBodyResult(rootResponseObject);
         }
 
-
-        [Route("/itemSearch/getAmmo/")]
-        [HttpPost]
-        public async Task<IActionResult> Ammo()
+        [Route("/api/v1/itemSearch/getAmmoCalibers/")]
+        [HttpGet]
+        public async Task<IActionResult> AmmoCalibers()
         {
+            //Item pre-loading
+            IEnumerable<MinimalTemplateItem> templatesItemsMinimalEnumerable =
+                DatabaseService.LoadDatabaseFileAsEnumerable("templates/items.json")
+                    .Select(x => new MinimalTemplateItem(x.Value, 0));
+
+            const string ammoParentId = "5485a8684bdc2da71d8b4567";
+            string[] ammoIdsToIgnore = ["5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1"];
+
+            HashSet<string> hash = new HashSet<string>();
+            await Parallel.ForEachAsync(templatesItemsMinimalEnumerable, (item, _) =>
+            {
+                if (!string.Equals(item.ParentID, ammoParentId)) return ValueTask.CompletedTask;
+                if (ammoIdsToIgnore.Contains(item.ItemID)) return ValueTask.CompletedTask;
+                if (!string.Equals(item.Props.AmmoType, "bullet")) return ValueTask.CompletedTask;
+
+                if (!hash.Contains(item.Props.Caliber))
+                    hash.Add(item.Props.Caliber);
+
+                return ValueTask.CompletedTask;
+            });
+
+            JArray rootResponseObject = [];
+            foreach (var item in hash.OrderBy(x => x))
+                rootResponseObject.Add(item);
+
+            return new BSGSuccessBodyResult(rootResponseObject);
+        }
+
+
+        [Route("/api/v1/itemSearch/getAmmo/{caliber}")]
+        [HttpPost]
+        public async Task<IActionResult> Ammo(string caliber)
+        {
+
             //Localization pre-loading
             IEnumerable<KeyValuePair<string, JToken>> enumerableLocalizations =
                 DatabaseHelpers.LoadDatabaseFileAsEnumerable("locales/global/en.json");
@@ -121,12 +165,14 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
             const string ammoParentId = "5485a8684bdc2da71d8b4567";
             string[] ammoIdsToIgnore = ["5996f6d686f77467977ba6cc", "5d2f2ab648f03550091993ca", "5cde8864d7f00c0010373be1"];
 
-            JArray rootResponseObject = [];
+            decimal ammoBestRating = -1;
+            List<JObject> unorderedItems = new List<JObject>();
             await Parallel.ForEachAsync(templatesItemsMinimalEnumerable, (item, _) =>
             {
                 if (!string.Equals(item.ParentID, ammoParentId)) return ValueTask.CompletedTask;
                 if (ammoIdsToIgnore.Contains(item.ItemID)) return ValueTask.CompletedTask;
                 if (!string.Equals(item.Props.AmmoType, "bullet")) return ValueTask.CompletedTask;
+                if (!string.Equals(item.Props.Caliber, caliber)) return ValueTask.CompletedTask;
 
                 //Localized name
                 string localizedItemName = item.ItemID;
@@ -135,9 +181,19 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     localizationDictionary.TryGetValue($"{item.ItemID} ShortName", out localizedItemName);
                 }
 
-                int rating = 0; // Math.ceil((item.PaulovRating / highestRating) * 100);
+                decimal roughLargeNumberRating = 0;
+                if (item.Props.Damage > 0)
+                {
+                    var armorDamage = Math.Max(1, item.Props.ArmorDamage > 0 ? item.Props.ArmorDamage * 2.23 : 1);
+                    var penRating = Math.Max(1, item.Props.PenetrationPower > 0 ? item.Props.PenetrationPower * 2.09 : 1);
+                    var damageRating = Math.Max(1, item.Props.Damage > 0 ? item.Props.Damage * 0.015 : 1);
 
-                rootResponseObject.Add(new JObject
+                    roughLargeNumberRating = (decimal)(armorDamage * penRating * damageRating);
+                    if (roughLargeNumberRating > ammoBestRating)
+                        ammoBestRating = roughLargeNumberRating;
+                }
+
+                unorderedItems.Add(new JObject
                 {
                     ["itemId"] = item.ItemID,
                     ["langItem"] = localizedItemName,
@@ -145,10 +201,61 @@ namespace Paulov.Tarkov.WebServer.DOTNET.Controllers.api.v1
                     ["armorDamage"] = item.Props.ArmorDamage,
                     ["penetration"] = item.Props.PenetrationPower,
                     ["damage"] = item.Props.Damage,
-                    ["rating"] = rating
+                    ["rating"] = 0,
+                    ["ratingNumber"] = roughLargeNumberRating,
+                    ["ratingWord"] = "",
+                    ["ratingTier"] = ""
                 });
                 return ValueTask.CompletedTask;
             });
+
+            foreach (var item in unorderedItems)
+            {
+                var roughLargeNumberRating = (decimal)(item["ratingNumber"] ?? 0);
+
+                int rating = 0;
+                var ratioRating = roughLargeNumberRating / (decimal)ammoBestRating;
+                rating = Math.Min(100, (int)Math.Round(ratioRating * 100, 3));
+
+                if (rating == 0)
+                    rating = 1;
+
+                string ratingWord = "";
+                if (rating > 90)
+                    ratingWord = "Best in Caliber";
+                else if (rating > 75)
+                    ratingWord = "Very Good";
+                else if (rating > 60)
+                    ratingWord = "Good";
+                else if (rating > 45)
+                    ratingWord = "OK";
+                else if (rating > 15)
+                    ratingWord = "Bad";
+                else
+                    ratingWord = "Sh*t / Aim for Legs";
+
+                string ratingTier = "F";
+                if (rating > 90)
+                    ratingTier = "S";
+                else if (rating > 75)
+                    ratingTier = "A";
+                else if (rating > 60)
+                    ratingTier = "B";
+                else if (rating > 45)
+                    ratingTier = "C";
+                else if (rating > 30)
+                    ratingTier = "D";
+                else if (rating > 15)
+                    ratingTier = "E";
+
+                item["rating"] = rating;
+                item["ratingWord"] = ratingWord;
+                item["ratingTier"] = ratingTier;
+
+                item.Remove("ratingNumber");
+            }
+
+            JArray rootResponseObject = JArray.FromObject(unorderedItems.OrderByDescending(x => x["rating"]));
             return new BSGSuccessBodyResult(rootResponseObject);
         }
 
