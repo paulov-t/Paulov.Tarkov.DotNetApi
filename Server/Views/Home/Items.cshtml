@@ -29,8 +29,8 @@
     // JQuery search for "myTable" and apply DataTable to it
     $('#myTable').DataTable({
         "ajax": {
-          "url": '/itemSearch/getItemEnglishNameAndTpl/',
-          "type": "POST"
+            "url": '/api/v1/itemSearch/getItemEnglishNameAndTpl/',
+            "type": "POST"
         },
         columns: [
           { data: 'itemId' },
