@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Paulov.TarkovServices.Models;
+using Paulov.TarkovServices.Providers.DatabaseProviders.ApiProviders;
 using Paulov.TarkovServices.Providers.DatabaseProviders.CloudDatabaseProviders;
 using Paulov.TarkovServices.Providers.DatabaseProviders.FileDatabaseProviders;
 using Paulov.TarkovServices.Providers.DatabaseProviders.ZipDatabaseProviders;
@@ -74,6 +75,9 @@ namespace Paulov.TarkovServices.Services
 
             switch (configuration["DatabaseProvider"])
             {
+                case "TarkovDevApiProvider":
+                    databaseProvider = new TarkovDevApiProvider(configuration);
+                    break;
                 case "MongoDatabaseProvider":
                     databaseProvider = new MongoDatabaseProvider(configuration);
                     break;

@@ -16,7 +16,7 @@ namespace Paulov.TarkovServices.Providers.DatabaseProviders.ZipDatabaseProviders
         {
             get
             {
-                var reader = ReaderFactory.Open(DatabaseAssetStream);
+                var reader = ReaderFactory.OpenReader(DatabaseAssetStream);
                 return reader;
             }
         }
