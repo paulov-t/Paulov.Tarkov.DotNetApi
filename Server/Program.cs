@@ -32,6 +32,7 @@ namespace Paulov.Tarkov.WebServer.DOTNET
                 KeepAliveInterval = TimeSpan.FromMinutes(2)
             });
 
+            app.UseMiddleware<RobotHandlingMiddleware>();
             app.UseMiddleware<WebSocketMiddleware>(builder.Services);
             app.UseMiddleware<RequestLoggingMiddleware>(builder.Services);
 

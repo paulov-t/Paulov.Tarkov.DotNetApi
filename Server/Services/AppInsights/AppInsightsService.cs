@@ -21,7 +21,7 @@ namespace Paulov.Tarkov.AppInsights
             var telemetryConfiguration = new Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration()
             {
                 ConnectionString = configuration.GetValue<string>("APPLICATIONINSIGHTS_CONNECTION_STRING"),
-                InstrumentationKey = configuration.GetValue<string>("APPINSIGHTS_INSTRUMENTATIONKEY"),
+                //InstrumentationKey = configuration.GetValue<string>("APPINSIGHTS_INSTRUMENTATIONKEY"),
             };
 
             telemetryClient = new TelemetryClient(telemetryConfiguration);
