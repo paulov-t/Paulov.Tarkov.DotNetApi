@@ -57,7 +57,7 @@ jobs:
           app-name: 'paulovtarkovdotnetapi-linux-dev'
           slot-name: 'Production'
           package: ${{env.DOTNET_ROOT}}/myapp
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6178094BA35E46E5B8B2982317F96537 }}
+          publish-profile: ${{ secrets.PUBLISHPROFILE }}
 
       - name: Set Web App Database Provider
         uses: Azure/appservice-settings@v1
